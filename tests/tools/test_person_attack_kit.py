@@ -192,6 +192,65 @@ def test_R7_fires_on_five_consecutive_hits_with_no_decision_and_passes_on_four_o
     assert rules(fought + filler())["R7"]["result"] == "PASS"
 
 
+def chain_rows(ticks: List[int], **kw: Any) -> List[Dict[str, Any]]:
+    return [row(t, attacker=1, victim=100, **kw) for t in ticks]
+
+
+def test_R7_chain_runs_on_while_every_gap_is_at_most_50_ticks_even_when_the_chain_is_long() -> None:        # C1, firing
+    assert rules(chain_rows([2000, 2050, 2100, 2150, 2200]) + filler())["R7"]["result"] == "FAIL"
+    assert rules(chain_rows([2000, 2050, 2100], victim_asleep_before=True) + filler())["R7"]["result"] == "FAIL"
+
+
+def test_R7_chain_resets_on_a_gap_of_more_than_50_ticks_so_it_never_spans_two_engagements() -> None:     # C1, non-firing
+    five_split = chain_rows([2000, 2010, 2020, 2071, 2081])                                             # gap 51 between the third and fourth hit: runs of 3 and 2
+    assert rules(five_split + filler())["R7"]["result"] == "PASS"
+    asleep_split = chain_rows([2000, 2010, 2061, 2071], victim_asleep_before=True)                      # asleep runs of 2 and 2 (would be 4 without the reset)
+    assert rules(asleep_split + filler())["R7"]["result"] == "PASS"
+    assert summary.hit_chains(chain_rows([2000, 2051]), [])["no_decision_run"]["run"] == 1
+
+
+def test_R7_a_watched_attack_by_the_victim_is_a_fight_decision_and_an_attack_by_someone_else_is_not() -> None:  # C2, non-firing and firing
+    hits = chain_rows([2000, 2010, 2020, 2030, 2040]) + filler()
+    victim_fights = [{"tick": 2025, "attacker_id": 100, "victim_id": 1}]
+    bystander_attacks = [{"tick": 2025, "attacker_id": 777, "victim_id": 1}]
+    assert summary.rules_for_cell(hits, [], engagements_of(hits), attack_rows=victim_fights)["R7"]["result"] == "PASS"
+    assert summary.rules_for_cell(hits, [], engagements_of(hits), attack_rows=bystander_attacks)["R7"]["result"] == "FAIL"
+    assert summary.rules_for_cell(hits, [], engagements_of(hits), attack_rows=[])["R7"]["result"] == "FAIL"
+
+
+def test_the_spy_records_an_attack_by_a_watched_id_on_anyone_and_none_by_an_unwatched_id() -> None:     # C2, spy side
+    spy = fresh_spy()
+    state = world_state(5, two_bodies())
+    spy.observe(state, attack_update(3, 1), state)                 # id 3 is not watched yet: not recorded
+    spy.observe(state, attack_update(1, 2), state)                 # wolf hits a person: ids 1 and 2 become watched
+    spy.observe(state, attack_update(2, 3, hp_delta=0), state)     # the person fights back at a non-person, a miss: recorded as an attack by watched id 2
+    assert [(a["attacker_id"], a["victim_id"]) for a in spy.attack_rows] == [(1, 2), (2, 3)]
+
+
+def test_disk_floor_returns_none_with_room_and_a_stop_record_when_either_filesystem_is_short(tmp_path: Path) -> None:   # C3
+    gib = 1024 ** 3
+    usage = lambda by_path: (lambda path: SimpleNamespace(free=by_path.get(path, 100 * gib)))  # noqa: E731
+    assert run.disk_stop(tmp_path, "cell", free=usage({})) is None
+    assert run.disk_stop(tmp_path, "cell", free=usage({str(tmp_path): 2 * gib})) is None                      # exactly 2 GiB is enough
+    short_out = run.disk_stop(tmp_path, "cell-a", free=usage({str(tmp_path): 2 * gib - 1}))
+    assert short_out is not None and short_out["free_bytes"] == {str(tmp_path): 2 * gib - 1} and short_out["stopped_before"] == "cell-a"
+    assert json.loads((tmp_path / run.DISK_STOP_FILE).read_text())["stopped_before"] == "cell-a"
+    short_root = run.disk_stop(tmp_path, "cell-b", free=usage({"/": gib}))
+    assert short_root is not None and list(short_root["free_bytes"]) == ["/"]
+
+
+def test_disk_floor_stop_record_failure_is_reported_not_raised(tmp_path: Path) -> None:
+    out = tmp_path / "missing_dir"
+    stop = run.disk_stop(out, "cell", free=lambda path: SimpleNamespace(free=0))
+    assert stop is not None and stop["record_not_written"] is True
+
+
+def test_the_launcher_checks_the_disk_floor_before_the_start_and_before_every_cell() -> None:
+    text = (ROOT / "tools" / "rpg_measure" / "person_attack_launch.sh").read_text(encoding="utf-8")
+    assert text.index('disk_ok "the start"') < text.index("T0=$(date +%s)")
+    assert text.index('disk_ok "$name"') < text.index("scope_command \"$arm\" \"$w\" \"$sd\" \"$mode\"\n  PAT=") and "STOPPED_DISK_FLOOR_BEFORE_" in text
+
+
 # --------------------------------------------------------------------------------------------- the twin check and the summary switch
 def cell(hash_: str, rows: Optional[List[Dict[str, Any]]] = None, **kw: Any) -> Dict[str, Optional[Dict[str, Any]]]:
     base = {"final_hash": hash_, "ticks": 5000, "runner": "PINNED", "logging_errors": []}

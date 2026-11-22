@@ -139,6 +139,7 @@ class PersonAttackSpy:
         self.control_applied_count = 0
         self.rows: List[Dict[str, Any]] = []
         self.mode_rows: List[Dict[str, Any]] = []
+        self.attack_rows: List[Dict[str, Any]] = []  # every attack (any target, hit or miss) BY a watched id: a fight decision of that id
         self.watched: Dict[int, str] = {}
         self.apply_calls = 0
         self.last_tick_seen = first_tick
@@ -259,6 +260,10 @@ class PersonAttackSpy:
                         entity = state.entities.get(watch)
                         self.watched[watch] = mode_name(entity) if entity is not None else "ABSENT"
                         self.mode_rows.append({"tick": state.tick, "id": watch, "mode": self.watched[watch], "first": True})
+        for victim_id, upd in updates.items():
+            attacker_id = getattr(getattr(upd, "combat", None), "attacker_id", None)
+            if attacker_id in self.watched and len(self.attack_rows) < ROW_LIMIT:
+                self.attack_rows.append({"tick": state.tick, "attacker_id": attacker_id, "victim_id": victim_id})
         for watch, last in list(self.watched.items()):
             entity = state.entities.get(watch)
             now = mode_name(entity) if entity is not None and entity.combat.alive else "DEAD_OR_ABSENT"
@@ -314,7 +319,7 @@ class PersonAttackSpy:
             "ledger_evidence": {**self.ledger_evidence, "observe_calls": self.ledger_observe_calls, "apply_calls": self.apply_calls, "reasserts": self.ledger_reasserts, "payload_ticks": self.ledger_payload_ticks,
                                 "spy_first_tick": self.first_tick_seen, "spy_last_tick": self.last_tick_seen, "ledger_live_at_finish": ledger_live},
             "mode_breaches": self.mode_breaches[:50], "mode_breach_count": len(self.mode_breaches), "rows_truncated": self.rows_truncated,
-            "apply_calls": self.apply_calls, "rows": self.rows, "row_count": len(self.rows), "mode_rows": self.mode_rows, "final_alive": self.final_alive,
+            "apply_calls": self.apply_calls, "rows": self.rows, "row_count": len(self.rows), "mode_rows": self.mode_rows, "attack_rows": self.attack_rows, "attack_row_count": len(self.attack_rows), "final_alive": self.final_alive,
             "control": self.control, "control_tick": self.control_tick, "control_applied_count": self.control_applied_count, "cell_valid": wiring_ok and self.control is None,
         }
 

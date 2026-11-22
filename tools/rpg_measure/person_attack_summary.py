@@ -16,6 +16,7 @@ MEASUREMENT CHOICES (each is approved with the kit shas, none is a rule change; 
     plus the gap), ``attacker_fled`` (the same for the attacker), ``unresolved_at_end`` (the run ended within the gap of its last event), else ``disengaged``.
  6. R3 is evaluated on the tighter reading: the largest number of engagements one attacker STARTS inside any rolling window of 2400 ticks (the calendar-day bin count is reported too).
  7. R7 reads the O3-group hits only (the attackers the trace is about); the same counts over every attacker are reported as ``all_attackers_info``. A DECISION between two hits of one victim is: its mode after the first hit
+    (Rulings of 2026-11-22, C1/C2: a chain of consecutive hits resets when two consecutive hits on the victim are more than 50 ticks apart, the engagement rule; and any attack BY a watched id, on any target, hit or miss, is a fight decision of that id.)
     in {RETREAT (flight), PURSUE (fight)}, or it attacked on that tick (fight), or a mode row in {RETREAT, PURSUE} between the two ticks, or its mode before the second hit in {RETREAT, PURSUE}. Asleep = the task action is
     in lodging_rules.SLEEP_ACTIONS, lodged = navigation.lodged_in set, both read from the state BEFORE the hit.
  8. ARMS (rpg-designer's answer, relayed at rpg-planner-ubuntu's seat commit a3eedf7e7): R1-R5 and R7 are judged on NEW; BASE is context, computed and shown side by side. A miss on NEW AND on BASE in the same seed reads
@@ -161,12 +162,14 @@ def per_pair(engagements: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return [v for _, v in sorted(out.items())]
 
 
-def hit_states(rows: List[Dict[str, Any]], mode_rows: List[Dict[str, Any]], only_o3: bool = True) -> List[Dict[str, Any]]:
-    """View (e): per hit, the victim's state, its movement mode and whether a flight or fight decision followed (module docstring, choice 7)."""
+def hit_states(rows: List[Dict[str, Any]], mode_rows: List[Dict[str, Any]], only_o3: bool = True, attack_rows: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
+    """View (e): per hit, the victim's state, its movement mode and whether a flight or fight decision followed (module docstring, choice 7). An attack by a watched id (``attack_rows``, any target) is a fight decision of that id."""
     decisions: Dict[int, List[int]] = defaultdict(list)
     for mode_row in mode_rows:
         if mode_row["mode"] in DECISION_MODES:
             decisions[mode_row["id"]].append(mode_row["tick"])
+    for attack in attack_rows or []:
+        decisions[attack["attacker_id"]].append(attack["tick"])
     out = []
     for row in rows:
         if not row["hit"] or (only_o3 and not row["in_o3_group"]):
@@ -178,10 +181,11 @@ def hit_states(rows: List[Dict[str, Any]], mode_rows: List[Dict[str, Any]], only
     return out
 
 
-def hit_chains(rows: List[Dict[str, Any]], mode_rows: List[Dict[str, Any]], only_o3: bool = True) -> Dict[str, Any]:
-    """R7's two measures: the longest run of consecutive hits on one victim while it was asleep or lodged at every hit, and the longest run of consecutive hits with no decision between them."""
+def hit_chains(rows: List[Dict[str, Any]], mode_rows: List[Dict[str, Any]], only_o3: bool = True, attack_rows: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+    """R7's two measures: the longest run of consecutive hits on one victim while it was asleep or lodged at every hit, and the longest run of consecutive hits with no decision between them.
+    A chain resets when two consecutive hits on the victim are more than ENGAGEMENT_GAP ticks apart (the engagement rule), so one chain never spans separate engagements."""
     by_victim: Dict[int, List[Dict[str, Any]]] = defaultdict(list)
-    for hit in hit_states(rows, mode_rows, only_o3):
+    for hit in hit_states(rows, mode_rows, only_o3, attack_rows):
         by_victim[hit["victim_id"]].append(hit)
     worst_asleep: Dict[str, Any] = {"run": 0}
     worst_none: Dict[str, Any] = {"run": 0}
@@ -189,13 +193,15 @@ def hit_chains(rows: List[Dict[str, Any]], mode_rows: List[Dict[str, Any]], only
         hits.sort(key=lambda h: h["tick"])
         asleep_run, none_run = 0, 0
         for i, hit in enumerate(hits):
+            if i > 0 and hit["tick"] - hits[i - 1]["tick"] > ENGAGEMENT_GAP:
+                asleep_run, none_run = 0, 0
             if hit["victim_state"] in ("asleep", "lodged"):
                 asleep_run += 1
             else:
                 asleep_run = 0
             if asleep_run > worst_asleep["run"]:
                 worst_asleep = {"run": asleep_run, "victim_id": victim_id, "attackers": sorted({h["attacker_id"] for h in hits[i - asleep_run + 1:i + 1]}), "end_tick": hit["tick"]}
-            if i == 0:
+            if i == 0 or none_run == 0:
                 none_run = 1
             else:
                 prev = hits[i - 1]
@@ -225,7 +231,7 @@ def _result(applies: bool, value_result: str, not_evaluated: str = "NOT_APPLICAB
     return out
 
 
-def rules_for_cell(rows: List[Dict[str, Any]], mode_rows: List[Dict[str, Any]], engagements: List[Dict[str, Any]], all_rows: Optional[List[Dict[str, Any]]] = None, group: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
+def rules_for_cell(rows: List[Dict[str, Any]], mode_rows: List[Dict[str, Any]], engagements: List[Dict[str, Any]], all_rows: Optional[List[Dict[str, Any]]] = None, group: Optional[str] = None, attack_rows: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Dict[str, Any]]:
     """R1-R5 and R7 for one (arm, seed) cell over ``rows`` (the group in scope); ``all_rows`` (default ``rows``) feeds R7's all-attackers information."""
     share_rules_apply = len(engagements) >= MIN_ENGAGEMENTS  # R2 and R5 are share rules: NOT EVALUATED below 10 engagements; R1, R3, R4 and R7 are judged in every seed at any count
     attackers = per_attacker(engagements, rows)
@@ -258,11 +264,11 @@ def rules_for_cell(rows: List[Dict[str, Any]], mode_rows: List[Dict[str, Any]], 
         frac = inside / len(known) if known else 1.0
         miss = frac < 0.9
         out["R5"] = _result(share_rules_apply, "FAIL" if miss else "PASS", NOT_EVALUATED, inside_fraction=frac, tag=R5_TAG if miss else "", attacker_ids=sorted({e["attacker_id"] for e in known if not e["inside_period"]}) if miss else [], **unknown_info)
-    chains = hit_chains(rows, mode_rows)
+    chains = hit_chains(rows, mode_rows, attack_rows=attack_rows)
     a, n = chains["asleep_or_lodged_run"], chains["no_decision_run"]
     fail = a["run"] >= 3 or n["run"] >= 5
     out["R7"] = _result(True, "FAIL" if fail else "PASS", attacker_ids=sorted(set(a.get("attackers", []) if a["run"] >= 3 else []) | set(n.get("attackers", []) if n["run"] >= 5 else [])),
-                        asleep_or_lodged_run=a, no_decision_run=n, all_attackers_info=hit_chains(all_rows if all_rows is not None else rows, mode_rows, only_o3=False))
+                        asleep_or_lodged_run=a, no_decision_run=n, all_attackers_info=hit_chains(all_rows if all_rows is not None else rows, mode_rows, only_o3=False, attack_rows=attack_rows))
     return out
 
 
@@ -321,11 +327,11 @@ def load_cells(directory: Path) -> Dict[Tuple[str, str, int], Dict[str, Optional
     return cells
 
 
-def group_cell_view(group_rows: List[Dict[str, Any]], mode_rows: List[Dict[str, Any]], final_tick: int, is_night: Callable[[int], bool]) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+def group_cell_view(group_rows: List[Dict[str, Any]], mode_rows: List[Dict[str, Any]], final_tick: int, is_night: Callable[[int], bool], attack_rows: Optional[List[Dict[str, Any]]] = None) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """Engagements and the views (a)-(e) of one group's O3 rows in one cell."""
     eng = build_engagements(group_rows, mode_rows, final_tick, is_night)
     view = {"engagements_count": len(eng), "hits": sum(e["hits"] for e in eng), "engagements": eng, "per_attacker": per_attacker(eng, group_rows), "per_pair": per_pair(eng),
-            "hit_states": [{k: v for k, v in h.items() if not k.startswith("_")} for h in hit_states(group_rows, mode_rows)], "period_unknown": sum(1 for e in eng if e["inside_period"] is None)}
+            "hit_states": [{k: v for k, v in h.items() if not k.startswith("_")} for h in hit_states(group_rows, mode_rows, attack_rows=attack_rows)], "period_unknown": sum(1 for e in eng if e["inside_period"] is None)}
     return eng, view
 
 
@@ -354,10 +360,10 @@ def summarize(cells: Dict[Tuple[str, str, int], Dict[str, Optional[Dict[str, Any
         for group in sorted(set(TIED_GROUPS) | present):
             tied = group in TIED_GROUPS
             group_rows = [r for r in spy["rows"] if r["attacker_group"] == group and r["in_o3_group"]]
-            eng, view = group_cell_view(group_rows, spy["mode_rows"], spy["final_tick"], is_night)
+            eng, view = group_cell_view(group_rows, spy["mode_rows"], spy["final_tick"], is_night, spy.get("attack_rows"))
             engagements[(group, arm, world, seed)] = eng
             g = out["groups"].setdefault(group, {"tied": tied, "cells": {}, "rules": {name: {} for name in RULE_NAMES}} if tied else {"tied": False, "cells": {}})
-            rules = rules_for_cell(group_rows, spy["mode_rows"], eng, spy["rows"], group)
+            rules = rules_for_cell(group_rows, spy["mode_rows"], eng, spy["rows"], group, spy.get("attack_rows"))
             if tied:
                 g["cells"][label] = view
                 for name, value in rules.items():

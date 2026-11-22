@@ -41,6 +41,15 @@ heavy_running() {   # heavy_running '<script regex>' -> 0 when another process R
   done < <(ps -ww -eo pid=,args=)
   return 1
 }
+disk_ok() {   # disk_ok <label>: 0 when OUT and / each have >= 2 GiB free; otherwise the runner's stop record (disk_floor_stop.json) is written and 1 is returned
+  (cd "$KIT" && PYTHONPATH="$KIT" "$PY" -c 'import json, sys
+from pathlib import Path
+from tools.rpg_measure import person_attack_run as r
+stop = r.disk_stop(Path(sys.argv[1]), sys.argv[2])
+if stop is not None:
+    print(json.dumps(stop, sort_keys=True))
+sys.exit(0 if stop is None else 1)' "$OUT" "$1" >> "$LOG" 2>&1)
+}
 HEAVY_WORDS='tools\.rpg_measure|tools\.test_architecture\.rpg_gate_(harness|run|report)|births_child|coin_boss_spy|births_cost_child|person_attack_(spy|run)'
 
 # --- PREFLIGHT ---
@@ -62,6 +71,7 @@ for f in person_attack_spy.py person_attack_summary.py person_attack_run.py pers
 done
 heavy_running "$HEAVY_WORDS" && abort "another heavy measurement process is running"
 memcheck "the runner"
+disk_ok "the start" || abort "disk floor (2 GiB free on OUT and /) crossed before the start"
 
 # --- the 12 processes, ONE AT A TIME, each in its OWN scope, with its own watcher (summed RSS of that child, 2.85 GiB, PAT from the environment), freeze and memory checks around every process ---
 export PYTHONDONTWRITEBYTECODE=1   # the children import from the frozen trees: no .pyc may land in them
@@ -73,6 +83,7 @@ for w in $WORLDS; do for sd in $SEEDS; do for arm in new base; do for mode in pl
   N=$((N+1)); name="${arm}__${w}__s${sd}__${mode}"
   heavy_running "$HEAVY_WORDS" && abort "another heavy measurement process is running before $name"
   memcheck "$name"
+  if ! disk_ok "$name"; then STATUS="STOPPED_DISK_FLOOR_BEFORE_$name"; RC=4; echo "STOP: disk floor crossed before $name (see disk_floor_stop.json)" >> "$LOG"; continue; fi
   scope_command "$arm" "$w" "$sd" "$mode"
   PAT='person_attack_spy\.py' "$KIT/tools/rpg_measure/person_attack_watch.sh" "$OUT/watcher_$name.log" &
   WP=$!

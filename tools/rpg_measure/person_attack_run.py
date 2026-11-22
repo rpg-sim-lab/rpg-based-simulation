@@ -31,6 +31,8 @@ HASHSEED = "0"
 RECORDING_OFF_ENV = {"SIM_OBS_MODE": "OFF", "RPG_OBS_MODE": "OFF"}
 MODES = ("plain", "spy")
 FREEZE_COMMAND = ("uv", "pip", "freeze", "--python")
+DISK_FLOOR_BYTES = 2 * 1024 ** 3  # at least 2 GiB free on the record dir's filesystem AND on / (ruled by rpg-designer, C3)
+DISK_STOP_FILE = "disk_floor_stop.json"
 
 
 def child_env(tree: Path, out: Path) -> Dict[str, str]:
@@ -51,6 +53,23 @@ def freeze_sha(python: str, runner=subprocess.run) -> str:
     if proc.returncode != 0:
         raise RuntimeError(f"freeze failed: {proc.stderr.strip()[-300:]}")
     return hashlib.sha256(proc.stdout.encode("utf-8")).hexdigest()
+
+
+def disk_stop(out: Path, label: str, floor: int = DISK_FLOOR_BYTES, free=shutil.disk_usage) -> Optional[Dict[str, Any]]:
+    """None when OUT and / each have at least ``floor`` bytes free; otherwise the stop record (also written to ``<out>/disk_floor_stop.json``, best effort: the disk may be the thing that is full)."""
+    shortfalls = {}
+    for path in (str(out), "/"):
+        available = free(path).free
+        if available < floor:
+            shortfalls[path] = available
+    if not shortfalls:
+        return None
+    record = {"stopped_before": label, "floor_bytes": floor, "free_bytes": shortfalls, "message": f"DISK FLOOR CROSSED before {label}: less than {floor} bytes free on {sorted(shortfalls)}; the run stops cleanly here"}
+    try:
+        (out / DISK_STOP_FILE).write_text(json.dumps(record, indent=2, sort_keys=True), encoding="utf-8")
+    except OSError:
+        record["record_not_written"] = True
+    return record
 
 
 def move_tree_runs(tree: Path, destination: Path) -> Optional[Path]:
