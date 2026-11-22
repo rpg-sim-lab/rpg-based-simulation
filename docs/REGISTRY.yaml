@@ -7986,6 +7986,36 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-THE-GATE-ATTACK-AND-UNEATEN-KILL-ROWS-SPLIT-VICTIMS-INTO-PEOPLE-AND-NON-PEOPLE.md
+  ticket_id: TCK-20261122-THE-GATE-ATTACK-AND-UNEATEN-KILL-ROWS-SPLIT-VICTIMS-INTO-PEOPLE-AND-NON-PEOPLE
+  title: 'The gate''s O3 attack row and O6 uneaten-kill row split attackers and victims
+    into people and non-people: redefine both by attacker diet group, over any living
+    victim'
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-22'
+  related_code_areas:
+  - is_person
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261121-RPG-GATE-A-BASELINE-CAN-BE-NAMED-ITS-MILESTONES-REFERENCE.md
+  ticket_id: TCK-20261121-RPG-GATE-A-BASELINE-CAN-BE-NAMED-ITS-MILESTONES-REFERENCE
+  title: 'A baseline can be named its milestone''s reference (`milestone_reference`),
+    set only by `rebaseline` citing an owner-ruling comment on #715, so a re-record
+    inside M1 does not leave the stale first baseline as the fixed reference'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-21'
+  related_code_areas:
+  - tools/test_architecture/rpg_gate_baseline.py
+  - tools/test_architecture/rpg_gate_report.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261121-RPG-GATE-A-BASELINE-CAN-BE-NAMED-ITS-MILESTONES-REFERENCE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261121-RPG-GATE-A-BASELINE-CAN-BE-NAMED-ITS-MILESTONES-REFERENCE/plan.md
+  - agent-working/stored_artifacts/TCK-20261121-RPG-GATE-A-BASELINE-CAN-BE-NAMED-ITS-MILESTONES-REFERENCE/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-GROUP-AS-UNDECLARED.md
   ticket_id: TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-GROUP-AS-UNDECLARED
   title: 'The rpg gate marks crowded_frontier s42 and s44 `no-data` with `GateDataMissingError:
@@ -8027,21 +8057,6 @@
   related_code_areas:
   - src/ai/goals/scorers.py (graze/forage scoring), src/systems/strategic_systems/intelligence.py
   - tools/test_architecture/rpg_gate_known.yaml (the scoped known entry)
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261121-MEAT-EATERS-IN-FRONTIER-LIVING-WORLD-ATTACK-PEOPLE-FORTY-TIMES-MORE-AFTER-THE-NIGHT-AND-SLOT-FIXES.md
-  ticket_id: TCK-20261121-MEAT-EATERS-IN-FRONTIER-LIVING-WORLD-ATTACK-PEOPLE-FORTY-TIMES-MORE-AFTER-THE-NIGHT-AND-SLOT-FIXES
-  title: 'Meat-eaters in frontier_living_world attack people about forty times more
-    often (gate O3 0.6 -> 24.0 per seed) since the night fix (#953) and the suspended-project
-    expiry (#954): trace who attacks, and decide intended vs a loop'
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-21'
-  related_code_areas:
-  - src/observability/rpg_gate_metrics.py (O3 counting, meat grouping)
-  - src/core/calendar.py, src/systems/strategic_systems/intelligence.py (suspension
-    expiry), src/engine/tactical.py (attack decisions)
   artifact_files: []
   tags: []
 - type: ticket
