@@ -103,3 +103,12 @@ def test_a_body_just_under_the_line_on_a_tick_with_no_biological_step_still_heal
     """With a biological cadence of 4 the apply tick 41 does not accrue (41 % 4 != 0), so hunger stays under the line and the heal stands."""
     out = TownResolutionSystem.resolve(_state(_body(CROSSING), tick=40), StateUpdate(), SystemCadence(biological=4))
     assert out.entity_updates[3].combat.hp_delta == 1
+
+
+@pytest.mark.parametrize("hunger,cadence", [(0.0, 1), (50.0, 1), (94.96, 1), (94.9, 4), (99.99, 1), (100.0, 1), (100.0, 4), (95.0, 7)])
+def test_hunger_after_accrual_is_the_inline_accrual_expression(hunger, cadence):
+    """The shared helper is the expression the apply path used inline, clamp at 100 included."""
+    from src.engine.biological_needs import hunger_after_accrual
+
+    body = _body(hunger)
+    assert hunger_after_accrual(body, cadence) == min(100.0, hunger + need_rates(body)[0] * cadence)
