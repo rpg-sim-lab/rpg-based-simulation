@@ -66,6 +66,11 @@ src/domains/combat_engagement/, hostility predicates, content
 - Owner-level choices are asked when the milestone starts, not guessed here.
 
 ## Implementation Notes
+- 2026-11-22, the owner's direction (#715 7078469868, relayed by lead-planner-u24), scoped by rpg-designer: fight dispositions differ by kind, declared from properties and kind-neutral in code. This ticket owns the declaration. SLICE 1, which TCK-20261122-AN-ATTACKED-SUBJECT-CHOOSES-TO-FIGHT-BACK-WHEN-FLIGHT-FAILS-OR-IT-CAN-WIN (Step B) DEPENDS on:
+  - a typed per-kind `fight_disposition` in content with the values ALWAYS_FLEES, FIGHTS_BACK (the visible default for an undeclared kind, AGENCY-08) and STRIKES_FIRST_IF_CAN_WIN;
+  - a load-time validation;
+  - a declared value for every existing kind, chosen from its properties. It's proposed as a per-kind TABLE that's owner-visible before it lands.
+  Later slices: AGGRESSIVE (strikes first by nature) and GUARDS / TERRITORIAL, which need territory or motive data. Order: Step A → this slice 1 → Step B → TCK-20261122-EVERY-CAN-I-WIN-JUDGEMENT-GOES-THROUGH-ONE-POWER-SEAM.
 None yet.
 
 ## Test Summary

@@ -27,24 +27,32 @@ feature
 P1
 
 ## Request Summary
+ORDER (rpg-designer, 2026-11-22): Step A → decision-62 slice 1 (TCK-20261109-M1-EACH-MONSTER-KIND-DECLARES-WHY-IT-FIGHTS) → this ticket → TCK-20261122-EVERY-CAN-I-WIN-JUDGEMENT-GOES-THROUGH-ONE-POWER-SEAM.
 Owner point 4 (#715 7076062275), with its wording approved as the AGENCY-07 amendment "when to fight back" (#715 7076096298). The owner's order is to measure it as its own step after Step A (#715, "fix 1-3 first, point 4 as separate step").
 BLOCKED on TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS: a prey can't fight back while its strike is illegal. Also after Step A, TCK-20261122-A-RESOLVED-OBJECTIVE-PULLS-A-FLEEING-SUBJECT-BACK-TOWARD-IT.
 
 ## Scope
 1. The decision layer weighs fighting back against fleeing for a subject under attack. It fights when its flight is failing (cornered, outpaced, or caught again and again) or when its own appraisal says it can win (the CONFLICT-03 appraisal). Kind-neutral; any threshold goes in data.
-2. Mechanic-scenario tests, with rpg-designer's REVISED invariants (2026-11-22, after the owner chose "Only if it judges it can win", relayed via lead-planner-u24 from #715). N = 2 property-chosen pairs × 3 seeds = 6 cases, all holding, each with a failing control.
-   - The pre-registered can-win predicate: `can_win(subject, other)` = the SAME `can_overcome` judgement the engine's appraisal uses (src/engine/appraisal.py, the function behind PREDATION and WARY), evaluated by the subject about the other on the decision's state. No new formula. The plan cites its path and line. Any margin is a named constant in data, never inline.
-   - B0 PERMISSION: a prey's strike on its predator between the predator's blows is LEGAL (dependency ticket, PR #992).
-   - B1 CORNERED: with no legal retreat tile and under attack, it strikes back within 1 decision.
-   - B2 CAN WIN, UNDER ATTACK: hit, and can_win true: it fights back and does not flee.
-   - B3 OUTMATCHED WITH AN ESCAPE: can_win false, under attack, an open retreat: it flees, and doesn't turn while its flight succeeds.
-   - B4 CAUGHT AGAIN AND AGAIN: hit 3 times inside its flight, it turns within 1 decision (3 is the scenario's threshold, in data if adopted).
-   - B5 FIRST STRIKE ONLY IF IT CAN WIN (replaces the earlier B5 "no forced reflex" and B6 "no first strike, full tick"), both arms:
-     - B5a: a subject facing a would-be predator that has NOT attacked it, with can_win FALSE, never strikes first: NO attack action over a full scheduler tick and a 50-tick window, run through the real kernel (lead-planner-u24's full-tick requirement, #715 7076325384, kept). It keeps distance or flees per Step A. "No forced reflex" holds here and in B5c: no first strike without can_win, whatever else.
-     - B5b: the same scene with can_win TRUE (a clearly stronger, healthy subject, neutral disposition): it strikes first within 2 decisions in all 6 cases. The fixture names its disposition so "may" is deterministic here; in this fixture it DOES strike first.
-     - B5c: swapping the kind labels while keeping identical properties gives identical choices (no kind-name rule).
-   - B6 NO STALE FEAR (rpg-designer, 2026-11-22, from #992's test_9): when no basis remains for either party to strike (no faction verdict, no PREDATION, no recent hit), the flight guard does not hold the subject; it may flee or carry on. Rule: the guard's free-swing fear (felt_lethal_attacker, src/engine/felt_swing.py:16-38) counts an attacker only if that attacker may legally strike the subject NOW, by the same attack_allowed as the subject's own strike, so guard and strike-back lapse together. This flips #992's test_9 (an 11-tick-old hit by a fed wolf), which is a further owner ask at that point.
-   - The catalog text: a THIRD AGENCY-07 amendment, "A first strike when it judges it can win", proposed by rpg-designer. It's sent for the owner's word-for-word check (via lead-planner-u24) and lands with the catalog-text ticket only after the owner's yes.
+2. RE-SCOPED 2026-11-22 after the owner's directions (#715 7078469868: ONE power-judgement component; fight dispositions declared per kind), from rpg-designer's text.
+   - THE SEAM: `judge_power(observer, other, state) -> PowerJudgement`, typed {can_overcome: bool, basis: OBSERVED | REMEMBERED | DEFAULT, confidence: float}.
+     - It lives in the perception layer, next to OpponentPerceptionService (src/domains/combat_engagement/perception.py).
+     - v1 MAY delegate to the existing can_overcome judgement (basis DEFAULT, disclosed). Later versions use OpponentPerceptionService's observation and memory without callers changing.
+     - Step B's can_win reads ONLY this seam. A source test asserts no inline power comparison in Step B's code, listing the two known bypasses (CONFLICT-03's PREDATION/WARY can_overcome; tactical_threat.py:93-94 apparent_power) as the allowed exceptions until TCK-20261122-EVERY-CAN-I-WIN-JUDGEMENT-GOES-THROUGH-ONE-POWER-SEAM lands.
+     - Those two do NOT move here: moving them is hash-moving and has its own ticket.
+   - WAYS OF FIGHTING: read from the kind's DECLARED fight_disposition (decision 62's slice 1, a dependency; Step B does not introduce the declaration). Values: ALWAYS_FLEES, FIGHTS_BACK (the visible default), STRIKES_FIRST_IF_CAN_WIN. AGGRESSIVE and GUARDS/TERRITORIAL are later decision-62 slices and don't exist in Step B's code.
+   - INVARIANTS: N = 2 property-chosen pairs × 3 seeds, all must hold, each with a failing control. Every fixture DECLARES its disposition.
+     - B0 PERMISSION: a prey's strike on its predator between the predator's blows is LEGAL (PR #992); it's a fact about the pair, never about disposition.
+     - B1 CORNERED, under attack, no legal retreat tile: FIGHTS_BACK and STRIKES_FIRST_IF_CAN_WIN strike back within 1 decision; ALWAYS_FLEES does not strike (it keeps trying to flee, or holds).
+     - B2 CAN WIN, under attack: FIGHTS_BACK and STRIKES_FIRST fight back and do not flee; ALWAYS_FLEES flees.
+     - B3 OUTMATCHED WITH AN ESCAPE: every disposition flees and does not turn while flight succeeds.
+     - B4 CAUGHT AGAIN AND AGAIN (3 hits in flight; 3 in data if adopted): FIGHTS_BACK and STRIKES_FIRST turn within 1 decision; ALWAYS_FLEES keeps fleeing.
+     - B5 FIRST STRIKE, not attacked, over a full scheduler tick + 50t through the real kernel (lead-planner-u24, #715 7076325384):
+       - B5a: can_win false: no disposition strikes first;
+       - B5b: can_win true: STRIKES_FIRST_IF_CAN_WIN strikes first within 2 decisions; FIGHTS_BACK and ALWAYS_FLEES never do;
+       - B5c: identical properties AND an identical declared disposition give identical choices; changing only the kind label changes nothing.
+     - B6 NO STALE FEAR (from #992's test_9): when no basis remains for either party to strike (no faction verdict, no PREDATION, no recent hit), the flight guard does not hold the subject. The guard's free-swing fear (felt_lethal_attacker, src/engine/felt_swing.py:16-38) counts an attacker only if it may legally strike the subject NOW, by the same attack_allowed. This flips #992's test_9, which is a further owner ask at that point.
+     - B7 ONE SEAM: can_win is read only through judge_power. Control: a stub seam returning the opposite flips B5b's outcome.
+   - THE CATALOG TEXT: the third AGENCY-07 amendment. The owner approved a first version (7078442937). rpg-designer then revised it for declared ways of fighting ("If its kind's declared way of fighting allows a first strike, …"), and that revision is APPROVED by the owner word for word (ask 7078497229, answer 7078502579; it replaces 7078442937's text). It lands with the catalog-text ticket.
 3. AGENCY-07 amendment evidence updated to SUPPORTED; Bible, divergence and parity.
 4. A re-trace for points 5 and 6 on top of Step A (R7 and R6), with its own S9.
 
@@ -52,7 +60,7 @@ BLOCKED on TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS
 - Permission (the dependency ticket) and Step A's flight hold.
 
 ## Acceptance Criteria
-1. B1-B6 (B5 in all three arms) hold in all 6 cases, and each fails on its control.
+1. B0-B7 (B5 in all three arms, every disposition named in each) hold in all 6 cases, and each fails on its control.
 2. The re-trace is reported against Step A's.
 3. Docs updated; hash change disclosed.
 
@@ -60,6 +68,8 @@ BLOCKED on TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS
 - TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS (depends on)
 - TCK-20261122-A-RESOLVED-OBJECTIVE-PULLS-A-FLEEING-SUBJECT-BACK-TOWARD-IT (Step A)
 - TCK-20261122-A-FLEEING-SUBJECT-KEEPS-FLEEING-AND-AN-ATTACKED-ONE-WEIGHS-FIGHTING-BACK (the rules text)
+- TCK-20261109-M1-EACH-MONSTER-KIND-DECLARES-WHY-IT-FIGHTS (depends on its slice 1: the declared fight_disposition)
+- TCK-20261122-EVERY-CAN-I-WIN-JUDGEMENT-GOES-THROUGH-ONE-POWER-SEAM (follow-up: routes the two known bypasses)
 
 ## Related Docs
 - docs/world_rules/knowledge-agency/agency-decision.md AGENCY-07 amendment "when to fight back"
