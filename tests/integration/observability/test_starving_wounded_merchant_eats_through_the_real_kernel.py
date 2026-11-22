@@ -16,7 +16,7 @@ pytestmark = pytest.mark.integration
 TICKS = 60
 
 
-def _run_merchant(run_id):
+def _run_merchant(run_id, gold=0):
     from tools.test_architecture.rpg_gate_run import build_kernel
 
     kernel = build_kernel("frontier_living_world", 42, run_id)
@@ -25,7 +25,7 @@ def _run_merchant(run_id):
         merchant, hunter = state.entities[37], state.entities[45]
         entities = dict(state.entities)
         entities[37] = replace(merchant, navigation=replace(merchant.navigation, position=(41.0, 31.0)), combat=replace(merchant.combat, hp=10, max_hp=85),
-                               biological=replace(merchant.biological, hunger=100.0, sleep_debt=0.0), inventory=replace(merchant.inventory, gold=0, items=[]))
+                               biological=replace(merchant.biological, hunger=100.0, sleep_debt=0.0), inventory=replace(merchant.inventory, gold=gold, items=[]))
         entities[45] = replace(hunter, navigation=replace(hunter.navigation, position=(41.0, 30.0)))
         object.__setattr__(state, "entities", entities)
         for _ in range(TICKS):
@@ -53,3 +53,20 @@ def test_the_same_merchant_with_the_old_threat_gate_does_not_eat_in_the_same_tic
     monkeypatch.setattr(scorers, "_hunger_escalated_unless_threatened", scorers._escalated_unless_threatened)
     monkeypatch.setattr(scorers, "acting_threat_to", present_threat_to)  # the old gate reads states (wounded, adjacent, outmatched), not acts
     assert _run_merchant("v3_ii_merchant_control") >= 90.0
+
+
+def test_a_starving_wounded_merchant_who_can_pay_in_reach_of_an_inn_gets_a_hunger_project_and_eats():
+    """The same scene as the gold-0 one above, but the merchant can pay (D73): it holds the price of a meal, so the inn is an open way and the threat weighing decides."""
+    from src.engine.service_prices import EAT_PRICE_GOLD
+    assert _run_merchant("v3_ii_merchant_pays", gold=EAT_PRICE_GOLD) < 90.0
+
+
+def test_the_same_paying_merchant_with_the_old_threat_gate_does_not_eat_in_the_same_ticks(monkeypatch):
+    import src.ai.goals.scorers as scorers
+
+    from src.ai.goals.present_threat import present_threat_to
+    from src.engine.service_prices import EAT_PRICE_GOLD
+
+    monkeypatch.setattr(scorers, "_hunger_escalated_unless_threatened", scorers._escalated_unless_threatened)
+    monkeypatch.setattr(scorers, "acting_threat_to", present_threat_to)  # the old gate reads states (wounded, adjacent, outmatched), not acts
+    assert _run_merchant("v3_ii_merchant_pays_control", gold=EAT_PRICE_GOLD) >= 90.0

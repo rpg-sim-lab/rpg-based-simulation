@@ -42,7 +42,7 @@ def _preconditions(state, worker, raider):
     assert dist > max(1, raider.combat.range), f"tick {state.tick}: the raider ({dist} tiles) is within its reach {max(1, raider.combat.range)}"
 
 
-def _run(run_id):
+def _run(run_id, gold=0):
     from src.config.profiles import PROD_SMALL
     from src.core.state import TaskComponent
     from src.engine.executor import LocalSequentialExecutor
@@ -78,7 +78,7 @@ def _run(run_id):
             assert not crowd, f"tick {state.tick}: bodies {crowd} stand on the raider's held tile {HELD_TILE}"
             if i == 0:
                 worker = replace(worker, navigation=replace(worker.navigation, position=(42.0, 31.0)), combat=replace(worker.combat, hp=10, max_hp=100),
-                                 biological=replace(worker.biological, hunger=100.0, sleep_debt=0.0), inventory=replace(worker.inventory, gold=0))
+                                 biological=replace(worker.biological, hunger=100.0, sleep_debt=0.0), inventory=replace(worker.inventory, gold=gold))
             worker = replace(worker, combat=replace(worker.combat, last_attacker_id=RAIDER, last_hit_attackers=(RAIDER,), last_hit_tick=state.tick - 3))
             entities[WORKER] = worker
             entities[RAIDER] = replace(raider, navigation=replace(raider.navigation, position=(42.0, 26.0)), task=TaskComponent(work_kind="ENTITY_ACT", payload={}))
@@ -112,4 +112,24 @@ def test_the_same_worker_with_the_old_ten_tick_hit_window_does_not_eat_in_the_sa
 
     monkeypatch.setattr(threat, "_hit_acts_on", old_hit_acts_on)
     assert _run("d1_hit_reach_cf_control") >= 90.0
+    _no_hard_law_violation(caplog)
+
+
+def test_a_starving_wounded_worker_who_can_pay_hit_by_a_raider_that_fell_behind_walks_to_the_inn_and_eats(caplog):
+    """The same scene as the gold-0 one above, but the worker can pay (D73): it holds the price of a meal, so the inn is an open way and the threat weighing is what decides."""
+    from src.engine.service_prices import EAT_PRICE_GOLD
+    assert _run("d1_hit_reach_cf_pays", gold=EAT_PRICE_GOLD) < 90.0
+    _no_hard_law_violation(caplog)
+
+
+def test_the_same_paying_worker_with_the_old_ten_tick_hit_window_does_not_eat_in_the_same_ticks(monkeypatch, caplog):
+    import src.engine.tactical_threat as threat
+    from src.engine.service_prices import EAT_PRICE_GOLD
+
+    def old_hit_acts_on(hostile, subject, tick):  # the predicate before the reach test: the hit acts for one brain cadence wherever the hitter is
+        hit_tick = subject.combat.last_hit_tick
+        return hit_tick is not None and hostile.id in subject.combat.last_hit_attackers and tick - hit_tick <= threat.NEED_WAKE_CADENCE
+
+    monkeypatch.setattr(threat, "_hit_acts_on", old_hit_acts_on)
+    assert _run("d1_hit_reach_cf_pays_control", gold=EAT_PRICE_GOLD) >= 90.0
     _no_hard_law_violation(caplog)
