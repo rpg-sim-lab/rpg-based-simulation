@@ -42,6 +42,7 @@ rpg-designer's ruling on motive stage 2 (#715 7076126573; read notes at /mnt/dat
 3. Mechanic-scenario tests (the tests/mechanic_scenarios pattern), with the designer's invariants verbatim (drafts/rpg-planner-goblin-fix-invariants.md):
    - N = 2 kind pairs chosen by properties (for example wolf→goblin, wolf→small_plant_eater) × 3 fixed seeds = 6 cases, and ALL must hold;
    - A1 wary, no panic; A2 approach, then flee; A3 flight holds; A4 a resolved goal never blocks; A5 danger over need; A6 wakes when hit;
+   - A7 NEED PATH YIELDS TO A PRESENT THREAT (rpg-designer, 2026-11-22, from #995's integration probe): a subject whose need step's route would put it adjacent to a hostile that is a present threat to it does not take that step; it flees or holds per A2/A3. One case is #995's broke variant of tests/integration/observability/test_starving_subject_eats_past_a_hitter_left_behind_through_the_real_kernel.py: a wounded gold-0 worker whose FORAGE route (opening_steps._forage_step, node 10005) runs onto a held raider's tile and dies at t25. That test lands as a STRICT xfail citing A7 and flips to pass when this ticket lands. The cause is pre-existing, EXPOSED by #781's free-meal removal (forage was never chosen while a free meal sat 2 tiles away). Probe: /mnt/data2/rpg-wt/freemeal-logs/read_probe_all.py 99245351…, scene1.txt.
    - each with a failing control (the pre-fix tree, or the guard removed).
 4. Bible ch04/AGENCY-07 evidence lines updated to SUPPORTED with the test paths; a divergence entry (Bug Fix) and parity.
 5. A re-trace on the motive kit to judge points 5 and 6: R7 no-decision PASS in NEW s42/s45, and R6 NEW ≤ 2× BASE. That needs its own S9.
@@ -52,7 +53,7 @@ rpg-designer's ruling on motive stage 2 (#715 7076126573; read notes at /mnt/dat
 - Kind-specific logic of any sort.
 
 ## Acceptance Criteria
-1. A1-A6 hold in all 6 cases, and each fails on its control.
+1. A1-A7 hold in all 6 cases, and each fails on its control.
 2. The re-trace: R7 no-decision PASS where it failed, and R6 within 2× BASE.
 3. Docs, divergence and parity updated in the same change; hash change disclosed.
 4. Any changed existing test expectation is an owner ask.
