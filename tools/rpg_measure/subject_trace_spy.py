@@ -10,8 +10,10 @@ the Chebyshev distance (max of the axis distances) to each counterpart (the atta
 The state has no single "goal" field: the fields above are every place a goal or objective lives in the entity (task payload, navigation target, strategic objective); nothing is derived from them.
 
 LEGALITY WRAPPER. ``LegalityServiceV2.verify_attack_legality`` is wrapped by a pass-through: the ORIGINAL result object is returned unchanged; a row (tick, attacker, target, result, failure text, opportunity flag)
-is recorded only where the attacker is a subject and the tick is inside that subject's window (a call whose state has no tick is recorded with ``in_window: null``). The engine calls it from several sites
-(combat.py:166, 268, 342; tactical.py; tactical_flight_guard.py; tactical_hold.py at 87792e3e8); the class-level wrapper sees every one of them. ``combat_actions.py`` has no call at 87792e3e8.
+is recorded only where the attacker is a subject and the tick is inside that subject's window (a call whose state has no tick is recorded with ``in_window: null``). The engine calls it from these sites (re-grepped in both frozen trees, every match, no truncation):
+at 87792e3e8 domain/combat_actions.py:56, combat.py:166, 268, 342, 444, tactical.py:423, tactical_flight_guard.py:71, tactical_hold.py:38; at e72270894 the same sites, with tactical.py at :434. The class-level wrapper sees every one of them.
+One ATTACK action can give TWO calls (combat_actions.py:56, then combat.py:166 inside resolve_attack), so legality call counts are not attack counts. combat_actions.py:56 passes a context, not the state: a call whose
+context has no tick is recorded with ``in_window: null`` and counts as in-window for the reach rule (``legality_calls_in_window`` counts every row whose ``in_window`` is not False).
 
 NON-PERTURBATION AND FATALITY. The spy's final hash must equal the SEALED plain twin's (checked by ``subject_trace_run check``). Any exception raised inside a wrapper's own recording code is stored AND re-raised:
 a kernel that swallows it still leaves ``spy_exceptions`` in the document, and the child exits 8 (fatal, the cell is void). The original verification's own exceptions are not the spy's: they pass through.
