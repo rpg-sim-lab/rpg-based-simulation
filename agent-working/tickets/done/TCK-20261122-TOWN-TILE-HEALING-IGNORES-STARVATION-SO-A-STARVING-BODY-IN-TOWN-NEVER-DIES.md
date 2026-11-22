@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: simulation
 authority: P1
 audience: agent
 ticket_id: TCK-20261122-TOWN-TILE-HEALING-IGNORES-STARVATION-SO-A-STARVING-BODY-IN-TOWN-NEVER-DIES
-phase: open
+phase: done
 date: 2026-11-22
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 Town-tile healing has no hunger check, so a starving body standing in town regains every HP the starvation drain takes and never dies
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -92,8 +92,10 @@ None new. It changes a heal rule on existing hp.
 Option A (designer): gate on post-accrual hunger vs the one STARVING_LINE. Helper hunger_after_accrual shared with apply.py. Writer path is src/engine/town_resolution.py.
 
 ## Test Summary
+New tests/unit/engine/test_town_heal_starvation_line.py: 25 passed (executed), each starving case with a failing control; scoped not-slow run over engine, resource, interaction recovery, logic guards, vacancy signal and starvation-over-days: 1611 passed, 4 skipped, 1 xfailed; parity tool tests 192 passed. No existing expectation changed.
 
 ## Files Changed
 src/engine/town_resolution.py, src/engine/biological_needs.py, src/engine/apply.py, tests/unit/engine/test_town_heal_starvation_line.py, docs/mechanics/01_entity_anatomy.md, docs/guidelines/intentional_divergences.md (2.221), docs/parity_ledger/progression.yaml (PROG-138)
 
 ## Completion Summary
+Town-tile healing now obeys the starving line (option A, designer ruling; owner: keep as town effect, #715 7075850847): the +1 is withheld when post-accrual hunger is at or past STARVING_LINE. hunger_after_accrual is shared with apply.py. Bible ch01, divergence 2.221 (Bug Fix) and PROG-138 updated. The gate mirrors only is_bio_due (disclosed). Paid bed/inn/AP unchanged.
