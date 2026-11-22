@@ -8058,6 +8058,32 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261122-V3-TWO-WOLVES-STARVE-ONCE-992-LETS-THE-GOBLIN-STRIKE-BACK-GET-A-SCOPED-KNOWN-ENTRY.md
+  ticket_id: TCK-20261122-V3-TWO-WOLVES-STARVE-ONCE-992-LETS-THE-GOBLIN-STRIKE-BACK-GET-A-SCOPED-KNOWN-ENTRY
+  title: 'Gate V3 on two wolves that starve once #992 lands gets a scoped known entry
+    that expires on 2026-12-15'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-22'
+  related_code_areas:
+  - tools/test_architecture/rpg_gate_known.yaml
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-A-STARVING-PREDATOR-HAS-NO-FALLBACK-WAY-TO-EAT.md
+  ticket_id: TCK-20261122-A-STARVING-PREDATOR-HAS-NO-FALLBACK-WAY-TO-EAT
+  title: A starving predator has no fallback way to eat (no carcass, no food node,
+    and its hunt belief says it cannot win)
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-22'
+  related_code_areas:
+  - src/ai/goals/opening_steps.py (HUNT, SCAVENGE, HUNT_EAT_RAW steps); src/engine/appraisal.py
+    (can_overcome)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261122-THREE-STARVING-BODIES-DIE-WITH-WAYS-UNTRIED-ONCE-THE-TOWN-HEAL-STOPS-HIDING-THEM.md
   ticket_id: TCK-20261122-THREE-STARVING-BODIES-DIE-WITH-WAYS-UNTRIED-ONCE-THE-TOWN-HEAL-STOPS-HIDING-THEM
   title: 'Three bodies starve to death with ways untried (V3) once #991 stops the
