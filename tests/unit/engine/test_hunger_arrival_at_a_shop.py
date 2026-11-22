@@ -95,3 +95,23 @@ def test_a_shop_arrival_gives_the_shift_when_the_nearest_inn_is_out_of_range_eve
     state = _state(ent, _shop(pos=(21.0, 10.0)), _inn(pos=(25.0, 10.0), bid=20), _inn(pos=(8.0, 10.0), bid=21))
     assert work_in_reach(ent, state) is not None  # the shop is within the range; the step is open
     assert _action(building_arrival_update(state, ent, _project(), SHOP_ID)) == "WORK"  # so the arrival does not end the visit (it did on 4b10ece43)
+
+
+def test_a_tie_between_two_inns_picks_the_first_in_state_buildings_order_as_the_index_does():
+    """Two inns at equal Manhattan distance, the higher id listed first: the helper picks the FIRST in ``state.buildings`` order (not the lower id), the same building the index-based
+    `SpatialQueryService.nearest_building` picks, so a silent switch to id order is caught here."""
+    from src.engine.spatial_query import SpatialQueryService
+    from src.engine.work_shift import nearest_inn
+    ent = _worker(hunger=60.0, gold=5, pos=(20.0, 10.0))
+    state = _state(ent, _inn(pos=(20.0, 14.0), bid=30), _inn(pos=(20.0, 6.0), bid=20))
+    assert list(state.buildings) == [30, 20]  # building order and id order differ
+    assert nearest_inn(state, ent.navigation.position).id == 30
+    assert nearest_inn(state, ent.navigation.position).id == SpatialQueryService.nearest_building(state, ent.navigation.position, "inn").id
+
+
+def test_a_nearer_inn_wins_whatever_the_building_order_and_matches_the_index():
+    from src.engine.spatial_query import SpatialQueryService
+    from src.engine.work_shift import nearest_inn
+    ent = _worker(hunger=60.0, gold=5, pos=(20.0, 10.0))
+    state = _state(ent, _inn(pos=(20.0, 16.0), bid=30), _inn(pos=(20.0, 12.0), bid=40), _inn(pos=(20.0, 6.0), bid=20))
+    assert nearest_inn(state, ent.navigation.position).id == 40 == SpatialQueryService.nearest_building(state, ent.navigation.position, "inn").id
