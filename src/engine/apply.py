@@ -37,7 +37,7 @@ from src.core.state import (
 )
 from src.core.quests import QuestState, QuestStatus
 from src.core.models.quests import QuestOpportunity, QuestOpportunityStatus
-from src.engine.biological_needs import need_rates
+from src.engine.biological_needs import hunger_after_accrual, need_rates
 from src.engine.cadence import SystemCadence, should_run
 from src.core.inventory import InventoryService
 from src.core.enums import EntityRole, Faction, ReasonCode, DiplomaticState, PassiveDeathCause
@@ -119,7 +119,7 @@ class ApplyPath:
             if is_bio_due:
                 bio = entity.biological
                 changes["biological"] = replace(bio, 
-                    hunger=min(100.0, bio.hunger + need_rates(entity)[0] * cadence.biological),
+                    hunger=hunger_after_accrual(entity, cadence.biological),
                     sleep_debt=max(0.0, min(100.0, bio.sleep_debt + debt_change_per_tick(need_rates(entity)[1], is_asleep(entity)) * cadence.biological))
                 )
             
