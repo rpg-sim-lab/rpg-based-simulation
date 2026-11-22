@@ -1804,5 +1804,5 @@
   v2_evidence: "src/engine/town_resolution.py (Part A, _hunger_when_applied), src/engine/biological_needs.py (hunger_after_accrual, shared with src/engine/apply.py), src/engine/starvation.py (STARVING_LINE)."
   proof_type: regression
   test_path: tests/unit/engine/test_town_heal_starvation_line.py
-  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.220.
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.221.
   support_boundary: "The paid bed (+5), the inn rest and the vitality AP are unchanged; whether they heal a starving body is an open designer question. The town heal does not slow while weakened."

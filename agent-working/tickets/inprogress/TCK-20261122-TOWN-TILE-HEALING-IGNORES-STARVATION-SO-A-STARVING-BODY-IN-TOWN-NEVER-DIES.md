@@ -94,6 +94,6 @@ Option A (designer): gate on post-accrual hunger vs the one STARVING_LINE. Helpe
 ## Test Summary
 
 ## Files Changed
-src/engine/town_resolution.py, src/engine/biological_needs.py, src/engine/apply.py, tests/unit/engine/test_town_heal_starvation_line.py, docs/mechanics/01_entity_anatomy.md, docs/guidelines/intentional_divergences.md (2.220), docs/parity_ledger/progression.yaml (PROG-138)
+src/engine/town_resolution.py, src/engine/biological_needs.py, src/engine/apply.py, tests/unit/engine/test_town_heal_starvation_line.py, docs/mechanics/01_entity_anatomy.md, docs/guidelines/intentional_divergences.md (2.221), docs/parity_ledger/progression.yaml (PROG-138)
 
 ## Completion Summary
