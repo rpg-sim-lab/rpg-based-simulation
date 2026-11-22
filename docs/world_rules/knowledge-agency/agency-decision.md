@@ -358,6 +358,8 @@ wording "Approve as worded" #715 7076096298 on the text in #715 7076083309):**
 - **Engineering, not this Rule:** the reach distance, what counts as safety, and any hysteresis
   band.
 - Kind-neutral: it holds for every subject, decided from its own threat terms.
+- **Repository evidence: NOT YET SUPPORTED.** It lands as a rule first. Its implementation is Step A
+  of the goblin-30 fix (owner order 2026-11-22: points 1-3 first).
 
 **Amendment, when to fight back (decided by the owner, 2026-11-22: intent #715 7076062275, wording
 "Approve as worded" #715 7076096298 on the text in #715 7076083309):**
