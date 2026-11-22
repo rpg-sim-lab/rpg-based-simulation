@@ -61,3 +61,37 @@ def test_the_open_earn_step_and_the_shop_arrival_agree_on_the_same_state(shop_go
     assert earn.available is step_open
     dispatched = _action(building_arrival_update(state, ent, _project(), SHOP_ID)) == "WORK"
     assert dispatched is step_open  # a shop that cannot pay its wage (or hires no one) opens no step and dispatches no shift
+
+
+def _leashed(ent, home, radius):
+    return replace(ent, navigation=replace(ent.navigation, home_position=home, leash_radius=radius))
+
+
+@pytest.mark.parametrize("gold", [0, 5])
+@pytest.mark.parametrize("inns", [
+    [],                                                       # no inn at all
+    [(30.0, 10.0)],                                           # one inn, in range (no leash)
+    [(25.0, 10.0), (8.0, 10.0)],                              # nearest inn OUT of the range, a farther one IN it (the loop by another door)
+    [(8.0, 10.0), (25.0, 10.0)],                              # the nearer inn in range
+    [(25.0, 10.0)],                                           # the only inn out of range
+])
+@pytest.mark.parametrize("leashed", [False, True])
+def test_a_meal_in_reach_is_one_definition_for_the_way_set_and_the_arrival(inns, gold, leashed):
+    """The arrival's "a meal in reach" is the INN_MEAL way's own test: the nearest inn in range and the admission rule. (On 4b10ece43 the arrival took ANY inn in range.)"""
+    from src.ai.goals.ways import inn_in_reach
+    from src.engine.building_arrival import _meal_in_reach
+    from src.engine.service_admission import admits
+    ent = _worker(hunger=60.0, gold=gold, pos=(20.0, 10.0))
+    if leashed:
+        ent = _leashed(ent, (10.0, 10.0), 12)
+    state = _state(ent, *[_inn(pos=p, bid=20 + i) for i, p in enumerate(inns)])
+    assert _meal_in_reach(state, ent) == (inn_in_reach(ent, state) is not None and admits(ent, "EAT"))
+    if leashed and gold >= 5 and inns[:1] == [(25.0, 10.0)]:
+        assert _meal_in_reach(state, ent) is False  # the nearest inn is out of range: a farther in-range inn does not stand in for it
+
+
+def test_a_shop_arrival_gives_the_shift_when_the_nearest_inn_is_out_of_range_even_if_a_farther_one_is_in_it():
+    ent = _leashed(_worker(hunger=60.0, gold=5, pos=(20.0, 10.0)), (10.0, 10.0), 12)
+    state = _state(ent, _shop(pos=(21.0, 10.0)), _inn(pos=(25.0, 10.0), bid=20), _inn(pos=(8.0, 10.0), bid=21))
+    assert work_in_reach(ent, state) is not None  # the shop is within the range; the step is open
+    assert _action(building_arrival_update(state, ent, _project(), SHOP_ID)) == "WORK"  # so the arrival does not end the visit (it did on 4b10ece43)

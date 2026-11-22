@@ -21,6 +21,7 @@ from src.engine.need_pull import TICKS_PER_TILE, step_travel_tiles
 from src.engine.place_tax import building_holder, tax_on
 from src.engine.serves import serves
 from src.engine.starvation import STARVING_LINE, hp_loss_period
+from src.engine.way_in_range import way_in_range
 from src.engine.work_wake import held_work_is_threatened
 
 SHIFT_TICKS = 200
@@ -37,8 +38,8 @@ def _can_pay_shift(state: Any, building: Any) -> bool:
     return holder is not None and can_pay(state.global_resources, holder, WAGE_GOLD - building.inventory.gold)
 
 
-def meal_position_after(state: Any, work_pos: Any) -> Optional[tuple]:
-    """Where the wage is spent: the inn nearest to the place of work, or None when there is none."""
+def nearest_inn(state: Any, pos: Any) -> Optional[Any]:
+    """The inn nearest to ``pos``, or None. The ONE selection of "the inn": the wage's meal (`meal_position_after`) and "an inn in reach" (`inn_in_reach`, read by the way set, the hunger scorer and the arrival)."""
     # A direct scan of ``state.buildings``, not `SpatialQueryService.nearest_building`: this is read from a tactical ENTITY_BRAIN worker (`building_arrival` -> `shift_takeable`) on a WorkerPacket,
     # which carries ``buildings`` but not the `world_indexes` the spatial query reads (an undeclared state read stops the run: docs/engine/contracts/bounded_concurrency_contract.md section 4).
     # The same answer as the index: Manhattan distance, the first strictly smaller wins, in ``state.buildings`` order (the order the index is built in).
@@ -46,9 +47,21 @@ def meal_position_after(state: Any, work_pos: Any) -> Optional[tuple]:
     for building in state.buildings.values():
         if building.kind != "inn":
             continue
-        dist = abs(building.position[0] - work_pos[0]) + abs(building.position[1] - work_pos[1])
+        dist = abs(building.position[0] - pos[0]) + abs(building.position[1] - pos[1])
         if dist < best:
             inn, best = building, dist
+    return inn
+
+
+def inn_in_reach(state: Any, entity: Any) -> Optional[Any]:
+    """The nearest inn when it lies inside the subject's range (owner decision D57), else None: a farther inn in range does not stand in for a nearer one out of it."""
+    inn = nearest_inn(state, entity.navigation.position)
+    return inn if inn is not None and way_in_range(entity, inn.position) else None
+
+
+def meal_position_after(state: Any, work_pos: Any) -> Optional[tuple]:
+    """Where the wage is spent: the inn nearest to the place of work, or None when there is none."""
+    inn = nearest_inn(state, work_pos)
     return None if inn is None else (inn.position[0], inn.position[1])
 
 

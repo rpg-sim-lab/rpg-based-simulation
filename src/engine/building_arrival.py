@@ -15,8 +15,7 @@ from src.engine.building_services import SERVICE_KINDS, offers_work
 from src.engine.lodging import finds_no_bed
 from src.engine.service_admission import admits
 from src.engine.shop_sale import plan_sale
-from src.engine.way_in_range import way_in_range
-from src.engine.work_shift import SHIFT_START, shift_startable
+from src.engine.work_shift import SHIFT_START, inn_in_reach, shift_startable
 from src.engine.work_wake import held_work_is_threatened
 
 
@@ -42,11 +41,9 @@ def _act(entity: Any, action: str, building_id: int, **extra: Any) -> EntityUpda
 
 
 def _meal_in_reach(state: Any, entity: Any) -> bool:
-    """True when the subject could buy a meal at an inn inside its range now (an EAT way open: the one admission rule, so it can pay). A direct scan of ``state.buildings``, as
-    `work_shift.meal_position_after` does: this is read from a worker packet, which carries no world index."""
-    if not admits(entity, "EAT"):
-        return False
-    return any(b.kind in SERVICE_KINDS["EAT"] and getattr(b, "functional", True) and way_in_range(entity, tuple(b.position)) for b in state.buildings.values())
+    """True when the subject could buy a meal in reach now: the INN_MEAL way's own test (`ways.ways_in_reach`): the nearest inn is inside its range (`work_shift.inn_in_reach`, one definition,
+    read from ``state.buildings`` because a worker packet has no world index) and the one admission rule `admits(EAT)` holds."""
+    return admits(entity, "EAT") and inn_in_reach(state, entity) is not None
 
 
 def _hunger_arrival(state: Any, entity: Any, project: Any, building_id: int) -> EntityUpdate:
