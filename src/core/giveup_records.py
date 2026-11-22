@@ -7,10 +7,19 @@ counted in `GiveUpDropCounts` (observability only)."""
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 # The designer's structural bound on unconsumed records (FINAL v2, OBJ-2): the strategic pass consumes them every pass, so more than this means the strategic pass is not running for the subject.
 GIVEUP_RECORDS_CAP = 4
+
+# The "near" of a give-up anchor (rpg-designer F2 v2.2a A''): a tile within this Chebyshev distance of an anchor is the anchor for suppression (destination_suppression, the consume step's held-target count) and for
+# the navigation patch's same-update rule (a give-up's clear beats a target_set near its own anchor). Written here ONCE; the +-1 covers the task layer's one-tile jitter of an objective's target.
+GIVEUP_NEAR_RADIUS = 1
+
+
+def near_anchor(tile: Tuple[float, float], anchor: Tuple[float, float]) -> bool:
+    """True when ``tile`` is within `GIVEUP_NEAR_RADIUS` (Chebyshev, integer tiles) of ``anchor``. Pure geometry: no policy, no state."""
+    return max(abs(int(tile[0]) - int(anchor[0])), abs(int(tile[1]) - int(anchor[1]))) <= GIVEUP_NEAR_RADIUS
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,3 +81,9 @@ class HeldTargetAtAnchorCounts:
         """Clear the count (run start, and test teardown)."""
         cls._held = 0
 
+
+
+def giveup_clear_beats_target(target_set: Optional[Tuple[float, float]], record: Optional[GiveUpRecord]) -> bool:
+    """The navigation patch's same-update rule (rpg-designer F2 v2.2a A''): True when ONE merged update carries a give-up record AND a ``target_set`` within `GIVEUP_NEAR_RADIUS` of THAT record's anchor, so
+    the give-up's clear wins over the set. A set elsewhere stands (a flee's retreat tile keeps its tick); no record, no rule. Pure geometry: no world read, no suppression policy."""
+    return target_set is not None and record is not None and near_anchor(target_set, record.anchor)

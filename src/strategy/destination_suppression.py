@@ -9,7 +9,7 @@ import re
 from dataclasses import dataclass, replace
 from typing import Dict, Iterable, Mapping, Optional, Tuple
 
-from src.core.giveup_records import GiveUpRecord
+from src.core.giveup_records import GiveUpRecord, near_anchor
 from src.core.movement_modes import MovementMode
 from src.core.state import EntityState
 from src.core.strategic import BlockerState
@@ -61,7 +61,7 @@ def _blocker_hit(blockers: Mapping[str, BlockerState], tx: int, ty: int, tick: i
         tile = access_blocker_tile(blocker)
         if tile is None or blocker.resolved or tick >= blocker.suppression_until_tick:
             continue
-        if max(abs(tx - tile[0]), abs(ty - tile[1])) <= 1 and (hit is None or blocker.id < hit.blocker_id):
+        if near_anchor((tx, ty), tile) and (hit is None or blocker.id < hit.blocker_id):
             hit = SuppressionHit(blocker.id, tile, blocker.suppression_until_tick, False, blocker.giveup_count)
     return hit
 
@@ -70,7 +70,7 @@ def _record_hit(records: Iterable[GiveUpRecord], tx: int, ty: int) -> Optional[S
     """The first pending give-up record whose anchor is within Chebyshev 1 of (tx, ty), as a pending hit, or None."""
     for record in records:
         anchor = (int(record.anchor[0]), int(record.anchor[1]))
-        if max(abs(tx - anchor[0]), abs(ty - anchor[1])) <= 1:
+        if near_anchor((tx, ty), anchor):
             return SuppressionHit(access_blocker_id(anchor), anchor, None, True, 0)
     return None
 

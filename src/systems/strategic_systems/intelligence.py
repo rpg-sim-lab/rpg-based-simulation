@@ -268,7 +268,7 @@ class StrategicIntelligenceSystem:
             eval_concerns = should_run(state.tick, e_id, cadence.concern_evaluation)
             eval_intents = should_run(state.tick, e_id, cadence.strategic_intelligence)
             
-            if not eval_concerns and not eval_intents and strat_up is None and not entity.strategic.blockers and not entity.strategic.leads:
+            if not eval_concerns and not eval_intents and strat_up is None and not entity.strategic.blockers and not entity.strategic.leads and not entity.navigation.giveup_records:  # F2 v2.2a C(a): a pending give-up record takes the slow pass (the one consume site)
                 nav_changed = False
                 proj_resolved = False
                 curr_proj_id = entity.strategic.current_project_id
