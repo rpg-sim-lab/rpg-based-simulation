@@ -78,6 +78,7 @@ Parked: waits on TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TI
 - The A'' rule (a give-up's clear beats a same-update target set near its own anchor, `NavigationPatch.apply`) acts on ONE merged update only: a record and a set applied as two separate patches do not trigger it. The same-update `path_set` is dropped with the set (the update already carries `clear_path`; designer accepted).
 - The fast path and the queue test the STORED record: a record staged this tick is consumed next tick.
 - Kit note (rpg-designer 2026-11-22): the trace runner writes `__pycache__` into its tree (no PYTHONDONTWRITEBYTECODE unless the launcher exports it) and the kernel writes `data/runs` into its tree, so every run gets a fresh `git archive` and a tree that has been run in is never reused (fixtree_v10 and fixtree_v11 each held one smoke; the earlier smokes stand because their trees were clean at the start).
+- Kit note (rpg-designer 2026-11-22, after the pairing run's busy_gate STOP, driver_rc 9): no pytest or other heavy job on the host while a measurement runs (busy_gate counts any pytest under the rpg paths as heavy and stops the run between processes). A stopped attempt's directory stays as its record (cells_v11_pair holds the crowded_frontier plain twin, final_hash 0f4c98e2..., equal to the v10.1 full run's plain: a determinism cross-check); a re-run uses a new directory through a launcher copy and a fresh tree.
 
 ## Test Summary
 
