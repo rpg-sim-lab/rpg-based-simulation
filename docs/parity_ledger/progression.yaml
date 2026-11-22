@@ -1796,3 +1796,13 @@
   test_path: tests/unit/progression/test_death_record.py
   divergence_note: null
   support_boundary: "Recency of the last attacker is not recorded (no last_attacker_tick); a follow-up if testing or SimQ need it."
+- id: PROG-138
+  text: "TCK-20261122-TOWN-TILE-HEALING-IGNORES-STARVATION-SO-A-STARVING-BODY-IN-TOWN-NEVER-DIES: town-tile healing obeys the starving line (hunger 95): a living body on a town tile is healed 1 HP per town-resolution pass only while its hunger, after the same tick's accrual step, is below the line, so a starving body in town loses HP on the starvation schedule and gains none (Mechanics Bible 01 Staged Starvation D36, Natural Healing D42)."
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: "src/engine/town_resolution.py (Part A, _hunger_when_applied), src/engine/biological_needs.py (hunger_after_accrual, shared with src/engine/apply.py), src/engine/starvation.py (STARVING_LINE)."
+  proof_type: regression
+  test_path: tests/unit/engine/test_town_heal_starvation_line.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.220.
+  support_boundary: "The paid bed (+5), the inn rest and the vitality AP are unchanged; whether they heal a starving body is an open designer question. The town heal does not slow while weakened."

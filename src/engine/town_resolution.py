@@ -12,10 +12,13 @@ from src.core.updates import (
     EntityUpdate,
     InventoryUpdate,
 )
+from src.engine.biological_needs import hunger_after_accrual
+from src.engine.cadence import should_run
+from src.engine.starvation import STARVING_LINE
 from src.engine.work_shift import WAGE_GOLD
 
 if TYPE_CHECKING:
-    from src.core.state import AuthoritativeState, BuildingState
+    from src.core.state import AuthoritativeState, BuildingState, EntityState
     from src.core.updates import StateUpdate
     from src.engine.cadence import SystemCadence
 
@@ -93,8 +96,8 @@ class TownResolutionSystem:
             # --- Part A: Town Logic (Healing). Building services (bed, meal, sale) land with their action: building_services.py ---
             tile_pos = (int(pos[0]), int(pos[1]))
             if tile_pos in state.town_tiles:
-                # Healing
-                if entity.combat.hp < entity.combat.max_hp:
+                # Healing: nothing heals at or past the starving line (D36, D42), the one line natural healing and the starvation drain use
+                if entity.combat.hp < entity.combat.max_hp and _hunger_when_applied(entity, state.tick, cadence) < STARVING_LINE:
                     cb_upd = ent_upd.combat or CombatUpdate()
                     ent_upd = replace(ent_upd, combat=cb_upd.merge(CombatUpdate(hp_delta=PASSIVE_HEAL_AMT)))
                     refined_entity_updates[e_id] = ent_upd
@@ -160,6 +163,14 @@ class TownResolutionSystem:
             metric_counters=new_metric_counters,
             owed_remove=new_owed_remove,
         )
+
+
+def _hunger_when_applied(entity: "EntityState", tick: int, cadence: "SystemCadence") -> float:
+    """The hunger the apply path will test the starving drain against for this update: the apply tick (``tick + 1``) accrues one biological step first
+    (``ApplyPath._compute_entity_changes``), so a body that crosses the starving line on that tick must not be healed on it. Same expression as the apply path."""
+    if should_run(tick + 1, None, cadence.biological):
+        return hunger_after_accrual(entity, cadence.biological)
+    return entity.biological.hunger
 
 
 def _meet_upkeep(building: "BuildingState", key: str, treasury_balances: Dict[str, float], resource_updates: Dict[str, float],
