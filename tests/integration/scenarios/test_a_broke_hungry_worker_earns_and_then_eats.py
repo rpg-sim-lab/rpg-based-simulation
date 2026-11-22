@@ -2,7 +2,7 @@
 beside the inn is not fed, goes to its paid work, and eats once it can pay.
 
 Run through the real kernel under the ATOMIC payment law (the law after the free-meal removal; main keeps CLAMP, where a broke subject is fed and this
-path never fires). The core EAT action's own free relief (``core_actions.eat_update``, removed by D73) is switched off here so the inn is the only
+path never fires). The core EAT action's own free relief (``core_actions.eat_update``) no longer exists (D73, #781), so the inn is the only
 way to a meal, which is the stack the removal lands. The subject is staged beside the inn on urban_political, alone, hungry enough to be pulled but far from the starvation line."""
 from __future__ import annotations
 
@@ -24,11 +24,9 @@ INN_ID = 20003
 
 
 @pytest.fixture
-def no_free_meal_d73_shape(monkeypatch):
-    """The free relief of the core EAT action (``core_actions.eat_update``) is removed, as D73 removes it. This patches the NAME ``can_use_inn_meal`` inside
-    ``core_actions`` only: ``service_admission`` and ``building_services`` import their own reference, so admission and the inn's meal stay real and a meal
-    here can only come from the inn's paid service."""
-    monkeypatch.setattr("src.engine.domain.core_actions.can_use_inn_meal", lambda eater: False)
+def no_free_meal_d73_shape():
+    """The free relief of the core EAT action no longer exists (D73, #781): ``core_actions.eat_update`` returns the typed failure SOURCE_MISSING with nothing carried, so a meal here
+    can only come from the inn's paid service. Nothing is patched; the fixture keeps the staging's name."""
 
 
 def _staged(hunger=50.0):
