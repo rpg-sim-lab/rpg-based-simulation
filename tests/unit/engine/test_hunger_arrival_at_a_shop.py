@@ -72,7 +72,7 @@ def _leashed(ent, home, radius):
     [],                                                       # no inn at all
     [(30.0, 10.0)],                                           # one inn, in range (no leash)
     [(25.0, 10.0), (8.0, 10.0)],                              # nearest inn OUT of the range, a farther one IN it (the loop by another door)
-    [(8.0, 10.0), (25.0, 10.0)],                              # the nearer inn in range
+    [(8.0, 10.0), (25.0, 10.0)],                              # the same layout in the other building order (the nearest, at x=25, is still out of range)
     [(25.0, 10.0)],                                           # the only inn out of range
 ])
 @pytest.mark.parametrize("leashed", [False, True])
