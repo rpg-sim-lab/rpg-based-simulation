@@ -1,0 +1,8 @@
+RUN new__frontier_living_world__s42__plain: 215.4s returncode 0
+RUN new__frontier_living_world__s42__spy: 206.9s returncode 0
+RUN new__frontier_living_world__s45__plain: 227.1s returncode 0
+RUN new__frontier_living_world__s45__spy: 239.1s returncode 0
+RUN base__frontier_living_world__s42__plain: 184.5s returncode 0
+RUN base__frontier_living_world__s42__spy: 186.3s returncode 0
+RUN base__frontier_living_world__s45__plain: 240.0s returncode 0
+RUN base__frontier_living_world__s45__spy: 243.5s returncode 0

@@ -1,0 +1,59 @@
+{
+ "derived_from": {},
+ "expect_deaths": [
+  {
+   "cause": "STARVATION",
+   "id": 47,
+   "seed": 42,
+   "tick": 3553
+  },
+  {
+   "cause": "STARVATION",
+   "id": 49,
+   "seed": 45,
+   "tick": 3969
+  }
+ ],
+ "kind": "hand_written",
+ "min_hits": 10,
+ "pad": 0,
+ "plan_sha256": "53eebf2fe8955aeed574b8ba79b23366ddc784c1b807f28d88dcb61f53921218",
+ "seeds_with_subjects": [
+  42,
+  45
+ ],
+ "subjects_by_seed": {
+  "42": [
+   {
+    "counterparts": [],
+    "id": 47,
+    "roles": [
+     "subject"
+    ],
+    "windows": [
+     [
+      2953,
+      3653
+     ]
+    ]
+   }
+  ],
+  "45": [
+   {
+    "counterparts": [],
+    "id": 49,
+    "roles": [
+     "subject"
+    ],
+    "windows": [
+     [
+      3369,
+      4069
+     ]
+    ]
+   }
+  ]
+ },
+ "way_reads": true,
+ "world": "frontier_living_world"
+}

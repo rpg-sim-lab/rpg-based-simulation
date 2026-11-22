@@ -1,0 +1,49 @@
+{
+ "all_valid": false,
+ "cells": {
+  "base/s42": {
+   "arm": "base",
+   "final_hash_sealed_plain": "a2bb9be2dfccd4cd94310b1dfefdfc0112f19f3acfe2ccc4a14a54bc27243365",
+   "final_hash_spy": "a2bb9be2dfccd4cd94310b1dfefdfc0112f19f3acfe2ccc4a14a54bc27243365",
+   "legality_calls_in_window": 20,
+   "reasons": [],
+   "row_count": 701,
+   "seed": 42,
+   "valid": true
+  },
+  "base/s45": {
+   "arm": "base",
+   "final_hash_sealed_plain": "e022694004079dd7f6f11eea851b4ef21a3487c02f061323f054a67d6e161722",
+   "final_hash_spy": "e022694004079dd7f6f11eea851b4ef21a3487c02f061323f054a67d6e161722",
+   "legality_calls_in_window": 45,
+   "reasons": [],
+   "row_count": 701,
+   "seed": 45,
+   "valid": true
+  },
+  "new/s42": {
+   "arm": "new",
+   "final_hash_sealed_plain": "a415d2181d92b3cfe1002b4bba1da0c7017a90ffa1a58145f84ee0c6b82021a1",
+   "final_hash_spy": "a415d2181d92b3cfe1002b4bba1da0c7017a90ffa1a58145f84ee0c6b82021a1",
+   "legality_calls_in_window": 18,
+   "reasons": [
+    "VOID: NEW s42 subject 47 expected STARVATION at t3553, but the run's death record says None at tNone (first seen at t3553, passive cause STARVATION at t3553)"
+   ],
+   "row_count": 701,
+   "seed": 42,
+   "valid": false
+  },
+  "new/s45": {
+   "arm": "new",
+   "final_hash_sealed_plain": "a7230f5e3ec3945c10c2bf89c0646ec6b71fa2ddb6cd2d7e52e0d9c364141ee6",
+   "final_hash_spy": "a7230f5e3ec3945c10c2bf89c0646ec6b71fa2ddb6cd2d7e52e0d9c364141ee6",
+   "legality_calls_in_window": 20,
+   "reasons": [
+    "VOID: NEW s45 subject 49 expected STARVATION at t3969, but the run's death record says None at tNone (first seen at t3969, passive cause STARVATION at t3969)"
+   ],
+   "row_count": 701,
+   "seed": 45,
+   "valid": false
+  }
+ }
+}

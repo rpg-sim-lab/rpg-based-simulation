@@ -1,0 +1,30 @@
+dffe0a6e14e98369d272135108ead954a5e0a536: EQUAL
+TREE NEW dffe0a6e14e98369d272135108ead954a5e0a536 (/data/vboxuser/o3-trace-trees/dffe0a6e14e98369d272135108ead954a5e0a536): equal to git ls-tree, no data/runs
+67c65321996642fb9c8f98b06e740839fc5fbd11: EQUAL
+TREE BASE 67c65321996642fb9c8f98b06e740839fc5fbd11 (/data/vboxuser/o3-trace-trees/67c65321996642fb9c8f98b06e740839fc5fbd11): equal to git ls-tree, no data/runs
+{"computed": "53eebf2fe8955aeed574b8ba79b23366ddc784c1b807f28d88dcb61f53921218", "expected": "53eebf2fe8955aeed574b8ba79b23366ddc784c1b807f28d88dcb61f53921218", "ok": true, "recorded": "53eebf2fe8955aeed574b8ba79b23366ddc784c1b807f28d88dcb61f53921218"}
+PLAN sha256 53eebf2fe8955aeed574b8ba79b23366ddc784c1b807f28d88dcb61f53921218 (file 3f766ae9a813df5b554db49f0b4075709adbf5acfbdef8f6525cb120e829ccb8), copied to /data/vboxuser/o3-trace-runs/ecd6f8d8aba0c4a91e48888708bf101709f8d7f4/full/run/wolf/subjects.json before the first process
+CELLS for seeds with a subject: 42 45
+RUN START 21:48:00 go=7080806892 kind=wolf (sequential: one process per scope)
+START new__frontier_living_world__s42__plain 21:48:01
+END new__frontier_living_world__s42__plain rc=0 wall=216s 21:51:37
+START new__frontier_living_world__s42__spy 21:51:38
+END new__frontier_living_world__s42__spy rc=0 wall=207s 21:55:05
+START new__frontier_living_world__s45__plain 21:55:06
+END new__frontier_living_world__s45__plain rc=0 wall=228s 21:58:54
+START new__frontier_living_world__s45__spy 21:58:55
+END new__frontier_living_world__s45__spy rc=0 wall=239s 22:02:54
+START base__frontier_living_world__s42__plain 22:02:56
+END base__frontier_living_world__s42__plain rc=0 wall=184s 22:06:00
+START base__frontier_living_world__s42__spy 22:06:02
+END base__frontier_living_world__s42__spy rc=0 wall=187s 22:09:09
+START base__frontier_living_world__s45__plain 22:09:11
+END base__frontier_living_world__s45__plain rc=0 wall=240s 22:13:11
+START base__frontier_living_world__s45__spy 22:13:12
+END base__frontier_living_world__s45__spy rc=0 wall=244s 22:17:16
+{"all_valid": false}
+CHECK: at least one cell is void (see cell_validity.json)
+{"subjects": ["s42/47", "s45/49"]}
+RUN EXIT 1 status=COMPLETE_WITH_VOID_CELLS 22:17:16 (wall 1756s)
+TREE CLEAN: /data/vboxuser/o3-trace-trees/dffe0a6e14e98369d272135108ead954a5e0a536 has no data/runs
+TREE CLEAN: /data/vboxuser/o3-trace-trees/67c65321996642fb9c8f98b06e740839fc5fbd11 has no data/runs
