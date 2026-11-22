@@ -109,6 +109,13 @@ None. This is a read-only measure over the existing ledger keys, with no new dur
   - The per-group feeding counter (owner answer 7074520394) is ON HOLD and is not to be built.
   - Lane B's WIP on rpg-gate-o3-by-group is kept locally and not pushed.
   - This ticket's scope is rewritten when the redesign returns to the owner with numbers.
+  - Rescope inputs from testing-planner (2026-11-22). They apply once the motive redesign is approved:
+    (1) A motive in the ledger is a run_ledger key-layout change. Sealed ledgers, the V1 baselines and the 20 saved reports hold attacker|person|person|outcome. The rescope states the rule for old keys, and states whether the before/after table is computed from the 20 reports (old definition only) or from re-run NEW/BASE arms (both definitions).
+    (2) The classifier is deterministic and reads typed state only. No free-form reason string feeds it, and the ledger stays read-only on state.
+    (3) It states whether attacks_by_motive.<MOTIVE> is one row id per motive or one id with the motive in the key. This decides v3 row identity and the AC4a test.
+    (4) UNCLASSED is a tracked row, never a silent drop, and its size goes in the owner's table.
+    (5) The v3 diff carries the old O3/O6 ids as renames or removals, with a row count per world.
+  - Lane B's WIP: 645f9589f on rpg-gate-o3-by-group-wip (/mnt/data2/rpg-wt/gate-o3), not pushed. 52 targeted tests pass.
 
 ## Test Summary
 
