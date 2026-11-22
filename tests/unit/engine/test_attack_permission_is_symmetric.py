@@ -104,3 +104,50 @@ def test_the_legality_entry_point_agrees_both_ways(seed):
     state = AuthoritativeState(tick=5, seed=seed, entities={predator.id: predator, prey.id: prey})
     assert LegalityServiceV2.verify_attack_legality(predator, prey, state, night=False)[1] is not ReasonCode.FRIENDLY_FIRE_ILLEGAL
     assert LegalityServiceV2.verify_attack_legality(prey, predator, state, night=False)[1] is not ReasonCode.FRIENDLY_FIRE_ILLEGAL
+
+
+# ---- the engaged pair (either names the other as its target) and the real legality path, both ways
+def _legal(attacker, target, seed):
+    from src.core.enums import ReasonCode
+    from src.core.state import AuthoritativeState
+
+    state = AuthoritativeState(tick=5, seed=seed, entities={attacker.id: attacker, target.id: target})
+    return LegalityServiceV2.verify_attack_legality(attacker, target, state, night=False)[1] is not ReasonCode.FRIENDLY_FIRE_ILLEGAL
+
+
+def _targeting(entity, other):
+    from dataclasses import replace
+
+    return replace(entity, task=replace(entity.task, payload={**entity.task.payload, "target_id": other.id}))
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_a_fed_predator_that_still_targets_its_prey_is_engaged_and_both_may_strike(predator_kind, prey_kind, seed):
+    predator, prey = _pair(predator_kind, prey_kind, seed, predator_hunger=0.0)
+    predator = _targeting(predator, prey)
+    assert _legal(predator, prey, seed) and _legal(prey, predator, seed)
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_the_same_fed_pair_after_the_predator_drops_the_target_is_refused_both_ways(predator_kind, prey_kind, seed):
+    predator, prey = _pair(predator_kind, prey_kind, seed, predator_hunger=0.0)
+    assert not _legal(predator, prey, seed) and not _legal(prey, predator, seed)
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_a_hungry_predator_between_blows_may_be_struck_by_its_prey_on_the_real_legality_path(predator_kind, prey_kind, seed):
+    predator, prey = _pair(predator_kind, prey_kind, seed)
+    assert _legal(prey, predator, seed) and _legal(predator, prey, seed)
+
+
+@pytest.mark.parametrize("predator_kind,prey_kind", PAIRS)
+def test_b5_no_forced_reflex_the_prey_does_not_choose_its_predator_as_a_target(predator_kind, prey_kind):
+    """Permission is not choice: next to an idle, hunting predator the prey's own appraisal is WARY or THREATENING, never an attack relation, so its decision layer
+    emits no attack. Holds before and after the permission fix."""
+    from src.engine.hostility import perceived_hostile
+
+    predator, prey = _pair(predator_kind, prey_kind, 42)
+    assert not perceived_hostile(prey, predator, night=False, tick=None)

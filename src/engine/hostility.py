@@ -108,12 +108,12 @@ def is_feeding_kill(state: "AuthoritativeState", attacker_id: Optional[int], vic
 
 def attack_allowed(attacker: "EntityState", target: "EntityState", faction_verdict: bool, *, night: bool, tick: Optional[int]) -> bool:
     """Decisions 44 and 47, CONFLICT-03: permission to attack is a fact about the PAIR and holds both ways. An attack the factions refuse (``faction_verdict`` False) is still
-    permitted when EITHER party appraises the other as PREDATION: the hunter may strike what it hunts, and what is hunted may strike its hunter. The target's current task
+    permitted when the pair is engaged (either names the other as its target) or EITHER party appraises the other as PREDATION: the hunter may strike what it hunts, and what is hunted may strike its hunter. The target's current task
     never decides permission (a predator between blows carries no target, and its prey must still be allowed to hit back); whether the prey CHOOSES to strike is the decision
     layer's. ``night`` (the caller's ``is_night(state.world_time)``) and ``tick`` (the caller's tick, which dates the signals the perception gate reads: a body that just moved reads
     moving) are required, so the legality of an attack judges perception by the same clock as the decision."""
     if is_wild_creature(attacker) or is_wild_creature(target):
         faction_verdict = False  # decision 47: appraisal decides alone when a wild creature is on either side
-    if faction_verdict:
-        return True
+    if faction_verdict or is_engaged(attacker, target):
+        return True  # engaged: either names the other as its target, a fact about the pair and the same from both sides
     return Relation.PREDATION in (relation(attacker, target, night=night, tick=tick), relation(target, attacker, night=night, tick=tick))
