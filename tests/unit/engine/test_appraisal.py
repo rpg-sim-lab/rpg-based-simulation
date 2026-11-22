@@ -172,7 +172,7 @@ def test_prey_may_fight_back_against_what_is_hunting_it_but_not_start_a_fight():
     assert _attack_allowed(hunter, prey, context) is True
     assert _attack_allowed(prey, hunter, context) is True  # counter-attack against its hunter
     idle = replace(hunter, task=TaskComponent(work_kind="ENTITY_ACT", payload={}))
-    assert _attack_allowed(prey, idle, context) is False  # no un-engaged first strike
+    assert _attack_allowed(prey, idle, context) is True  # permitted, and not chosen: the decision layer does not start this fight (CONFLICT-03)
 
 
 def test_a_hungry_wolf_gets_predation_on_the_plant_eater_as_compiled_from_content():
