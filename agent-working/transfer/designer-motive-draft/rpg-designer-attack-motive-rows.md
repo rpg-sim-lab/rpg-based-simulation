@@ -91,3 +91,10 @@ Reasons for this design:
   - twin hash equality (plain == spy) in every cell;
   - a unit control showing that a relation() call leaves the state, entity and perception-gate caches unchanged (compared before and after);
   - smoke 1's FIRST check, which is the twin hash. If it differs, stop: nothing else is read.
+
+## 8. Clarifications (2026-11-22, after the owner's answer #715 7074629195)
+- §6.1 "marked retired at v3" means: the v3 PR description lists the removed old O3/O6 ids and the added motive keys (O3.attacks_by_motive / O6.kills_by_motive, keyed motive=<M>). There is no "retired" label in the baseline tooling and no tool change; the tooling's removed/added report is enough. "Never compared with motive rows" stands: an old id is removed, not mapped to a motive key.
+- Thresholds: NO per-motive floors now. Each motive key inherits its metric id's floor, so AC4a is per id: every id has a threshold.
+  - Why: no measured value yet supports a different tolerance for DEFEND vs HUNT. Choosing different floors before data would be a guess, and a lookup by (id, motive) would need config and code changes for no evidenced gain.
+  - Revisit only on evidence: if the trace or v3 numbers show a motive key whose baseline is so small that the id's floor would hide a real move (or so large that it fires on noise), that is a design change brought to the owner with the numbers. It is never a quiet config edit.
+  - UNCLASSED gets no special floor either. Its count and share are always shown (§6.4).
