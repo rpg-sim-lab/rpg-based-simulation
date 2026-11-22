@@ -98,20 +98,12 @@ def _no_hard_law_violation(caplog):
     assert not [r.getMessage() for r in caplog.records if "Hard Law Violation" in r.getMessage()]
 
 
-def test_a_starving_wounded_worker_hit_by_a_raider_that_fell_behind_walks_to_the_inn_and_eats(caplog):
-    assert _run("d1_hit_reach_cf") < 90.0
-    _no_hard_law_violation(caplog)
-
-
-def test_the_same_worker_with_the_old_ten_tick_hit_window_does_not_eat_in_the_same_ticks(monkeypatch, caplog):
-    import src.engine.tactical_threat as threat
-
-    def old_hit_acts_on(hostile, subject, tick):  # the predicate before the reach test: the hit acts for one brain cadence wherever the hitter is
-        hit_tick = subject.combat.last_hit_tick
-        return hit_tick is not None and hostile.id in subject.combat.last_hit_attackers and tick - hit_tick <= threat.NEED_WAKE_CADENCE
-
-    monkeypatch.setattr(threat, "_hit_acts_on", old_hit_acts_on)
-    assert _run("d1_hit_reach_cf_control") >= 90.0
+@pytest.mark.xfail(strict=True, reason="TCK-20261122-A-RESOLVED-OBJECTIVE-PULLS-A-FLEEING-SUBJECT-BACK-TOWARD-IT invariant A7: a need path yields to a present threat; today the gold-0 worker's forage walk leads it into the hitter it was avoiding (its `_preconditions` fail: the raider is within reach)")
+def test_a_starving_wounded_worker_with_no_gold_is_not_fed_and_does_not_walk_into_the_hitter_it_was_avoiding(caplog):
+    """Owner-approved claim (#715 answer 7080142180 to ask 7079540676, item ii): "A starving body with no gold beside an inn is NOT served a meal: there is no free relief (D73, #781). Its hunger pull goes to
+    its next open way (SURV-07: earn, or seek work), and it still weighs the threat as before. It does not eat for free, and it does not walk into a hitter it was already avoiding to get there."
+    `_run` asserts at every tick (`_preconditions`) that the raider stays beyond its reach of the worker; the final hunger must not fall below 90 (no free meal)."""
+    assert _run("d1_hit_reach_cf_broke") >= 90.0
     _no_hard_law_violation(caplog)
 
 

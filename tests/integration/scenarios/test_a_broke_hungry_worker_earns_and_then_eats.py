@@ -144,7 +144,7 @@ def test_a_present_threat_at_a_hiring_inn_never_makes_a_shift_that_ends_after_on
         monkeypatch.setattr(f"{module}.held_work_is_threatened", scripted)
     kernel = _kernel(monkeypatch, hunger=70.0)
     object.__setattr__(kernel._state, "buildings", {INN_ID: kernel._state.buildings[INN_ID]})
-    held, project_ids, paid_at = {}, set(), None  # shift_start -> ticks the shift was held
+    held, project_ids, paid_at, meal_at, hunger_order, peak = {}, set(), None, None, [], 0  # shift_start -> ticks the shift was held; hunger projects in the order they were first current
     try:
         for _ in range(window_end + SHIFT_TICKS + 40):
             kernel.tick_once()
@@ -155,10 +155,24 @@ def test_a_present_threat_at_a_hiring_inn_never_makes_a_shift_that_ends_after_on
                 held[started] = held.get(started, 0) + 1
             if paid_at is None and ent.inventory.gold >= WAGE_GOLD:
                 paid_at = kernel._state.tick
+            peak = max(peak, ent.inventory.gold)
+            if paid_at is not None and meal_at is None and ent.inventory.gold < peak and ent.inventory.gold >= peak - EAT_PRICE_GOLD:
+                meal_at = kernel._state.tick  # the wage was spent on the meal
+            cur = ent.strategic.current_project_id
+            proj = ent.strategic.projects.get(cur) if cur else None
+            if proj is not None and str(getattr(proj.kind, "value", proj.kind)) == "hunger" and cur not in [h[0] for h in hunger_order]:
+                obj = next((o for o in proj.objectives if o.id == proj.active_objective_id), None)
+                hunger_order.append((cur, tuple(obj.target_position) if obj is not None and obj.target_position else None))
     finally:
         kernel.shutdown()
     last = kernel._state.tick
     cut_off = {start: n for start, n in held.items() if n < SHIFT_TICKS - 2 and start <= last - SHIFT_TICKS}  # (a shift still running when the run stops is not cut off)
     assert not cut_off, f"a shift was started and cut off before its end (shift_start -> ticks held: {cut_off})"
     assert paid_at is not None and paid_at > window_end, "once the threat is gone the shift starts, finishes and pays"
-    assert len({p for p in project_ids if p and p.startswith("proj_hunger")}) == 1, f"no second hunger project was made (saw {project_ids})"
+    # Owner-approved claim (#715 answer 7080142180 to ask 7079540676, item i): "A broke hungry worker meets its hunger through at most TWO hunger projects in this order: the seek-work step
+    # (which ends when it reaches the centre), then the earn step (a shift, its wage, then the meal). No third hunger project opens before the meal."
+    centre = tuple(float(c) for c in kernel._state.town_center)
+    inn_pos = tuple(float(c) for c in kernel._state.buildings[INN_ID].position)
+    assert len(hunger_order) <= 2, f"a third hunger project opened (saw {hunger_order})"
+    assert [t for _, t in hunger_order][:1] == [centre] and (len(hunger_order) == 1 or hunger_order[1][1] == inn_pos), f"order: the seek-work project (the centre {centre}) then the earn project (the inn {inn_pos}); saw {hunger_order}"
+    assert meal_at is not None and paid_at is not None and meal_at > paid_at, f"the meal was reached after the wage (wage at {paid_at}, meal at {meal_at})"
