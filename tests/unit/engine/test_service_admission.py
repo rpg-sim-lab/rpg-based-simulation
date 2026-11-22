@@ -158,9 +158,15 @@ def test_a_broke_tired_subject_is_offered_the_inn_bed_iff_rest_would_deliver_it(
         assert score.target_pos is None
 
 
-def test_known_gap_admission_ignores_keeps_coin_while_the_service_refuses_a_non_coin_subject():
-    """Pinned, not xfail (designer ruling A, 2026-10-29): ``admits`` is True for a non-coin subject that ``service_building`` refuses. Tracked in
-    %s; when that ticket puts keeps_coin into admission this test is rewritten to assert agreement."""  % TICKET
-    state, ent = _world("small_plant_eater", gold=100)
-    assert admits(ent, "REST") is True
-    assert service_building(state, ent, "REST") is None
+def test_admission_and_the_service_agree_on_keeps_coin_in_both_directions():
+    """Was the pinned known gap (designer ruling A, 2026-10-29), rewritten as its docstring planned now that %s is closed (divergence 2.224): admission and the service
+    agree for a non-coin subject (neither admitted nor served, whatever it holds) and for a coin-keeping one (both)."""  % TICKET
+    state, plant_eater = _world("small_plant_eater", gold=100)
+    for action in ("EAT", "REST"):
+        assert admits(plant_eater, action) is False
+    assert service_building(state, plant_eater, "REST") is None  # the service refuses it, and admission now says so too
+    state, person = _world("human", gold=100)
+    for action in ("EAT", "REST"):
+        assert admits(person, action) is True
+    assert service_building(state, person, "REST") is not None
+    assert service_delta(state, person, "REST", 1) is not None  # admitted and served
