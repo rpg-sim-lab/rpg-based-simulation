@@ -59,11 +59,35 @@ def test_the_rule_reads_the_records_own_anchor_not_another():
     assert not giveup_clear_beats_target((60.0, 61.0), GiveUpRecord(P, 10)) and giveup_clear_beats_target((60.0, 61.0), GiveUpRecord(Q, 10))
 
 
+def _chebyshev_literals(path):
+    """Every comparison of a `max(abs(..), abs(..))` against the literal 1 (`<= 1`, `< 2`) in a module: a second copy of the radius."""
+    import ast
+    tree = ast.parse(open(path).read())
+    found = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Compare) and isinstance(node.left, ast.Call) and getattr(node.left.func, "id", None) == "max" and len(node.ops) == 1:
+            op, comp = node.ops[0], node.comparators[0]
+            if isinstance(comp, ast.Constant) and ((isinstance(op, ast.LtE) and comp.value == 1) or (isinstance(op, ast.Lt) and comp.value == 2)):
+                found.append(node.lineno)
+    return found
+
+
 def test_the_near_radius_is_one_constant_shared_by_the_suppression_and_the_rule():
     assert GIVEUP_NEAR_RADIUS == 1 and near_anchor((21, 21), (20, 20)) and not near_anchor((22, 20), (20, 20))
-    import inspect
-    src = inspect.getsource(destination_suppression)
-    assert "near_anchor" in src and "<= 1" not in src  # the radius is not written a second time in the suppression module
+    for path in ("src/strategy/destination_suppression.py", "src/systems/strategic_systems/blocker_lifecycle.py"):
+        assert _chebyshev_literals(path) == [], path  # the radius is not written a second time
+
+
+def test_control_the_literal_check_finds_a_planted_second_copy(tmp_path):
+    p = tmp_path / "m.py"
+    p.write_text("def f(a, b):\n    return max(abs(a[0] - b[0]), abs(a[1] - b[1])) <= 1\n\ndef g(a, b):\n    return max(abs(a[0] - b[0]), abs(a[1] - b[1])) < 2\n")
+    assert _chebyshev_literals(str(p)) == [2, 5]
+
+
+def test_a_set_at_exactly_chebyshev_two_stands_and_at_one_loses():
+    assert _applied_target(_giveup(target_set=(22.0, 20.0)))[0] == (22.0, 20.0)
+    assert _applied_target(_giveup(target_set=(22.0, 22.0)))[0] == (22.0, 22.0)
+    assert _applied_target(_giveup(target_set=(21.0, 21.0)))[0] is None
 
 
 def test_control_the_same_scene_without_the_rule_keeps_the_set(monkeypatch):
