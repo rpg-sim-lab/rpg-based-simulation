@@ -70,6 +70,13 @@ def shift_takeable(entity: Any, state: Any, work_pos: Any) -> bool:
     return not held_work_is_threatened(entity, state)
 
 
+def shift_startable(state: Any, entity: Any, building: Any) -> bool:
+    """True when `entity` can start a paid shift at `building` now: it offers a shift, can pay one wage, serves the subject (owner decision 43) and the subject can finish the shift
+    before the starvation line with no threat present (:func:`shift_takeable`). The ONE predicate for the open earn step (`work_in_reach`), the arrival action
+    (`building_arrival`) and the held shift's own checks; no occupancy test, a tile in reach is a separate matter."""
+    return offers_work(building) and _can_pay_shift(state, building) and serves(state, entity, building) and shift_takeable(entity, state, building.position)
+
+
 def nearest_work(state: Any, entity: Any) -> Optional[Any]:
     """The nearest functional building that offers `entity` a shift (it serves it, owner decision 43) and can pay one wage, or None. Ties keep the lower id."""
     px, py = entity.navigation.position

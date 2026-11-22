@@ -39,7 +39,7 @@ from src.engine.work_shift import (
     SHIFT_TICKS,
     meal_position_after,
     nearest_work,
-    shift_takeable,
+    shift_startable,
 )
 
 
@@ -147,9 +147,9 @@ def shop_sale_in_reach(entity: EntityState, state: AuthoritativeState) -> Option
 
 def work_in_reach(entity: EntityState, state: AuthoritativeState) -> Optional[BuildingState]:
     """The nearest building that can pay the subject a wage for a shift, inside its range, that the subject can finish a shift at before the
-    starvation line (``work_shift.shift_takeable``), or None. One test for the pull, the V3 record and the arrival action."""
+    starvation line (``work_shift.shift_startable``), or None. One test for the pull, the V3 record and the arrival action."""
     inn = nearest_work(state, entity)
-    if inn is not None and not (LeashService.way_in_range(entity, tuple(inn.position)) and shift_takeable(entity, state, inn.position)):
+    if inn is not None and not (LeashService.way_in_range(entity, tuple(inn.position)) and shift_startable(state, entity, inn)):
         return None
     return inn
 

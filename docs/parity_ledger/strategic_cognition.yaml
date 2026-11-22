@@ -4648,7 +4648,7 @@
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: 'src/engine/work_shift.py (shift_takeable, meal_position_after), src/engine/need_pull.py (step_travel_tiles), src/engine/building_arrival.py, src/ai/goals/opening_steps.py (work_in_reach), src/ai/goals/scorers.py, src/engine/scheduler.py (_is_need_woken); docs/guidelines/intentional_divergences.md section 2.151'
+  v2_evidence: 'src/engine/work_shift.py (shift_startable, shift_takeable, meal_position_after), src/engine/need_pull.py (step_travel_tiles), src/engine/building_arrival.py, src/ai/goals/opening_steps.py (work_in_reach), src/ai/goals/scorers.py, src/engine/scheduler.py (_is_need_woken); docs/guidelines/intentional_divergences.md sections 2.151 and 2.223 (a shop arrival with nothing to sell gives the shift, tests/unit/engine/test_hunger_arrival_at_a_shop.py)'
   proof_type: regression
   test_path: tests/integration/scenarios/test_a_broke_hungry_worker_earns_and_then_eats.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.151.
