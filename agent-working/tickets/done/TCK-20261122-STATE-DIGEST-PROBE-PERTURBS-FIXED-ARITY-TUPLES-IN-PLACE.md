@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261122-STATE-DIGEST-PROBE-PERTURBS-FIXED-ARITY-TUPLES-IN-PLACE
-phase: open
+phase: done
 date: 2026-11-22
 tags: [testing]
 ---
@@ -15,7 +15,7 @@ tags: [testing]
 The state-digest probe changes an element of a fixed-arity tuple field instead of appending one, so an in-type field that is hashed is no longer reported unhashed
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -69,10 +69,10 @@ None. Test-only change.
 Pytest on `taskset -c 0-3`, --basetemp on /data, no `uv sync` on the shared .venv.
 
 ## Test Summary
-Not run yet.
+New tests/architecture/test_state_digest_probe_perturb.py: 7 pass; against the old append 3 of them fail (fixed-arity length, optional fixed-arity, no-changeable-position). tests/architecture/test_state_digest_covers_every_field.py: 11 passed on origin/main 67c653219 plus this change (taskset -c 0-3). No allowlist row changed verdict: none. #996's anchor field is not on origin/main, so AC1's #996-head half is not checked here.
 
 ## Files Changed
-None yet.
+tests/architecture/state_digest_probe.py (`_perturb_fixed_arity`, called from `perturb`), tests/architecture/test_state_digest_probe_perturb.py (new), this ticket.
 
 ## Completion Summary
-Open.
+`perturb` changes one element in place for a fixed-arity tuple hint (Optional stripped, no Ellipsis, hint length equals value length) using that position's own hint; variadic, bare and mismatched-length tuples keep the append.
