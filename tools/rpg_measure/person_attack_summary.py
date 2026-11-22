@@ -74,7 +74,10 @@ PERIODS: Dict[str, str] = {
     **{species: ANY_HOUR for species in ("slime", "spirit")},
 }
 DECISION_MODES = ("RETREAT", "PURSUE")
-MOTIVES = ("DEFEND", "OBJECTIVE", "HUNT", "HOSTILE", "UNCLASSED")  # first match wins; rpg-designer's provisional motive draft (seat commit 6e79140c6, section 2)
+MOTIVES = ("DEFEND", "HUNT", "HOSTILE", "OBJECTIVE", "UNCLASSED")  # first match wins (M3, final draft section 9: the engine's own BASIS for a fight, PREDATION or FACTION_HOSTILE, before a goal-carried OBJECTIVE)
+NO_INPUTS = "NO_INPUTS"                                              # never a motive: the first row has no motive inputs (or prior_bodies_present is False); counted separately, never folded into UNCLASSED
+MOTIVE_KEYS = MOTIVES + (NO_INPUTS,)
+NO_INPUTS_NOT_ASSESSABLE_SHARE = 0.10                                # R1: at >= 10% of a cell's judged engagements R1 reads NOT_CLEARED (held), mirroring R5
 RULE_NAMES = ("R1", "R2", "R3", "R4", "R5", "R6", "R7")
 
 
@@ -98,26 +101,30 @@ def inside_period(species: str, night: bool) -> Optional[bool]:
 def engagement_motive(first_row: Dict[str, Any]) -> Dict[str, Any]:
     """PURE. The motive class of an engagement from its FIRST attack's row (the inputs were read on that attack's PRIOR state). It reads ONLY three typed values: the Relation VALUE of
     relation(attacker, victim) (``relation_attacker_to_victim``), the bool ``attacked_me_recently_victim_on_attacker`` (the victim hit the attacker recently) and whether the attacker's active objective
-    ``target_entity_id`` equals the victim's id. First match: DEFEND, OBJECTIVE, HUNT (PREDATION), HOSTILE (FACTION_HOSTILE), else UNCLASSED. The payload reason, the objective kind, the project kind, the mode and every
-    other recorded input are INFORMATION: they are returned under ``info`` and never change the class (control). A row with no motive inputs is UNCLASSED (``inputs_missing``)."""
+    ``target_entity_id`` equals the victim's id. First match (M3): DEFEND, HUNT (PREDATION), HOSTILE (FACTION_HOSTILE), OBJECTIVE, else UNCLASSED: the engine's own basis for a fight (PREDATION, FACTION_HOSTILE) comes before a
+    goal-carried OBJECTIVE, because combat_engage / defeat_enemy and a hunger hunt both set the objective target to the victim; ``objective_target_is_victim`` stays a typed input, reported per motive as information.
+    M4: a first row with no motive inputs, or with ``prior_bodies_present`` False, is ``NO_INPUTS``, never a motive. The payload reason, the objective kind, the project kind, the mode and every other recorded input are INFORMATION:
+    they are returned under ``info`` and never change the class (control)."""
     mi = first_row.get("motive_inputs") or {}
     objective = mi.get("attacker_objective") or {}
     typed = {"relation_attacker_to_victim": mi.get("relation_attacker_to_victim"), "attacked_me_recently_victim_on_attacker": mi.get("attacked_me_recently_victim_on_attacker"),
              "objective_target_is_victim": objective.get("target_entity_id") is not None and objective.get("target_entity_id") == first_row.get("victim_id")}
-    if typed["attacked_me_recently_victim_on_attacker"] is True:
+    if not mi or mi.get("prior_bodies_present") is False:
+        motive = NO_INPUTS
+    elif typed["attacked_me_recently_victim_on_attacker"] is True:
         motive = "DEFEND"
-    elif typed["objective_target_is_victim"]:
-        motive = "OBJECTIVE"
     elif typed["relation_attacker_to_victim"] == "PREDATION":
         motive = "HUNT"
     elif typed["relation_attacker_to_victim"] == "FACTION_HOSTILE":
         motive = "HOSTILE"
+    elif typed["objective_target_is_victim"]:
+        motive = "OBJECTIVE"
     else:
         motive = "UNCLASSED"
     info = {"task_reason": mi.get("task_reason"), "task_action": mi.get("task_action"), "objective_kind": objective.get("kind"), "project_kind": objective.get("project_kind"),
             "attacker_mode_before": mi.get("attacker_mode_before"), "relation_victim_to_attacker": mi.get("relation_victim_to_attacker"), "relation_call_form": mi.get("relation_call_form"),
             "attacker_can_eat_victim": mi.get("attacker_can_eat_victim"), "relation_form": mi.get("relation_form"), "relation_source_default": mi.get("relation_source_default"),
-            "own_relation_value": mi.get("relation_attacker_to_victim"), "inputs_missing": not mi}
+            "own_relation_value": mi.get("relation_attacker_to_victim"), "inputs_missing": not mi, "prior_bodies_present": mi.get("prior_bodies_present")}
     return {"motive": motive, "typed_inputs": typed, "info": info}
 
 
@@ -266,12 +273,18 @@ def rules_for_cell(rows: List[Dict[str, Any]], mode_rows: List[Dict[str, Any]], 
     total = len(engagements)
     out: Dict[str, Dict[str, Any]] = {}
     unclassed = [e for e in engagements if e["motive"] == "UNCLASSED"]
+    no_inputs = [e for e in engagements if e["motive"] == NO_INPUTS]
     non_edible_hunt = [e for e in engagements if e["motive"] == "HUNT" and e.get("attacker_can_eat_victim") is not True]
     bad = sorted({e["attacker_id"] for e in unclassed + non_edible_hunt})
-    out["R1"] = _result(True, "FAIL" if bad else "PASS", attacker_ids=bad, rule="MOTIVE CONSISTENCY: every judged engagement has a motive, and a HUNT needs the attacker's declared diet to be able to eat the victim's body",
-                        unclassed=[{"attacker_id": e["attacker_id"], "victim_id": e["victim_id"], "start_tick": e["start_tick"], "typed_inputs": e["typed_inputs"], "info": e["info"]} for e in unclassed],
-                        non_edible_hunt=[{"attacker_id": e["attacker_id"], "victim_id": e["victim_id"], "start_tick": e["start_tick"], "attacker_can_eat_victim": e.get("attacker_can_eat_victim")} for e in non_edible_hunt],
-                        unclassed_share=(len(unclassed) / total) if total else 0.0, note="a miss is a defect for testing and this seed is no evidence" if bad else "")
+    no_inputs_share = (len(no_inputs) / total) if total else 0.0
+    r1_detail = dict(rule="MOTIVE CONSISTENCY: every judged engagement has a motive (UNCLASSED fails), and a HUNT needs the attacker's declared diet to be able to eat the victim's body; a NO_INPUTS engagement is not assessable",
+                     unclassed=[{"attacker_id": e["attacker_id"], "victim_id": e["victim_id"], "start_tick": e["start_tick"], "typed_inputs": e["typed_inputs"], "info": e["info"]} for e in unclassed],
+                     non_edible_hunt=[{"attacker_id": e["attacker_id"], "victim_id": e["victim_id"], "start_tick": e["start_tick"], "attacker_can_eat_victim": e.get("attacker_can_eat_victim")} for e in non_edible_hunt],
+                     unclassed_share=(len(unclassed) / total) if total else 0.0, no_inputs=len(no_inputs), no_inputs_share=no_inputs_share)
+    if no_inputs_share >= NO_INPUTS_NOT_ASSESSABLE_SHARE:
+        out["R1"] = _result(True, "NOT_CLEARED", attacker_ids=sorted({e["attacker_id"] for e in no_inputs}), note="R1 not assessable: NO_INPUTS engagements are >= 10% of the judged engagements (held)", would_fail_on_the_rest=bool(bad), **r1_detail)
+    else:
+        out["R1"] = _result(True, "FAIL" if bad else "PASS", attacker_ids=bad, note="a miss is a defect for testing and this seed is no evidence" if bad else "", **r1_detail)
     top = max(attackers, key=lambda a: a["engagements"], default=None)
     share = (top["engagements"] / total) if top and total else 0.0
     out["R2"] = _result(share_rules_apply, "FAIL" if share > 0.5 else "PASS", NOT_EVALUATED, max_share=share, attacker_ids=[top["attacker_id"]] if top and share > 0.5 else [], top_attacker=top["attacker_id"] if top else None)
@@ -336,12 +349,13 @@ def rows_of(rows: List[Dict[str, Any]], engagements: List[Dict[str, Any]]) -> Li
 
 
 def motive_stats(engagements: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
-    """Per motive: engagements, hits, kills; for HUNT also ``edible_kill_share`` (the share of its kills whose attacker's declared diet could eat the victim's body at the first attack) as INFORMATION. ``eaten_share``
-    needs a consumption signal this kit does not observe, so it is reported as null with its basis (the designer's HUNT eaten_share is info only)."""
+    """Per motive key (the five classes and NO_INPUTS, separate from UNCLASSED): engagements, hits, kills and ``objective_target_is_victim`` (how many of them were goal-carried, information); for HUNT also
+    ``edible_kill_share`` (the share of its kills whose attacker's declared diet could eat the victim's body at the first attack) as INFORMATION. ``eaten_share`` needs a consumption signal this kit does not observe, so it is
+    reported as null with its basis (the designer's HUNT eaten_share is info only)."""
     out: Dict[str, Dict[str, Any]] = {}
-    for motive in MOTIVES:
+    for motive in MOTIVE_KEYS:
         engs = [e for e in engagements if e["motive"] == motive]
-        entry: Dict[str, Any] = {"engagements": len(engs), "hits": sum(e["hits"] for e in engs), "kills": sum(e["kills"] for e in engs)}
+        entry: Dict[str, Any] = {"engagements": len(engs), "hits": sum(e["hits"] for e in engs), "kills": sum(e["kills"] for e in engs), "objective_target_is_victim": sum(1 for e in engs if e["typed_inputs"]["objective_target_is_victim"])}
         if motive == "HUNT":
             killing = [e for e in engs if e["kills"] > 0]
             entry["edible_kill_share"] = (sum(1 for e in killing if e.get("attacker_can_eat_victim") is True) / len(killing)) if killing else None
@@ -405,7 +419,7 @@ def group_cell_view(group_rows: List[Dict[str, Any]], mode_rows: List[Dict[str, 
 def summarize(cells: Dict[Tuple[str, str, int], Dict[str, Optional[Dict[str, Any]]]], is_night: Callable[[int], bool]) -> Dict[str, Any]:
     """Per tied group: R1-R7 and its verdict; per untied O3 group: the same views and rules as context with no verdict (module docstring, choices 10 and 11)."""
     out: Dict[str, Any] = {"measurement_labels": MEASUREMENT_LABELS, "tied_groups": list(TIED_GROUPS), "cells": {}, "groups": {}, "engagement_gap": ENGAGEMENT_GAP,
-                           "motive": {"classes": list(MOTIVES), "label": "motive read by each arm's own engine", "forms_by_arm": {}, "cell_meta": {}, "note": "per motive, every group (including 'none') and every victim, both arms: engagements, hits, kills (context, no verdict); the motive x group table is by_arm", "cells": {}, "by_arm": {}}}
+                           "motive": {"classes": list(MOTIVES), "no_inputs_key": NO_INPUTS, "label": "motive read by each arm's own engine", "forms_by_arm": {}, "cell_meta": {}, "note": "per motive, every group (including 'none') and every victim, both arms: engagements, hits, kills (context, no verdict); the motive x group table is by_arm", "cells": {}, "by_arm": {}}}
     engagements: Dict[Tuple[str, str, str, int], List[Dict[str, Any]]] = {}   # (group, arm, world, seed)
     group_names = set(TIED_GROUPS)
     for key, pair in sorted(cells.items()):
@@ -431,10 +445,10 @@ def summarize(cells: Dict[Tuple[str, str, int], Dict[str, Optional[Dict[str, Any
         for any_group in sorted({r["attacker_group"] for r in spy["rows"]}):          # EVERY group (including 'none'), every victim: context, never a verdict
             all_eng = build_engagements([r for r in spy["rows"] if r["attacker_group"] == any_group], spy["mode_rows"], spy["final_tick"], is_night, only_o3=False)
             stats = motive_stats(all_eng)
-            cell_motive[any_group] = {"motives": stats, "engagements": len(all_eng), "unclassed_share": (stats["UNCLASSED"]["engagements"] / len(all_eng)) if all_eng else 0.0}
-            arm_total = out["motive"]["by_arm"].setdefault(arm, {}).setdefault(any_group, {m: {"engagements": 0, "hits": 0, "kills": 0} for m in MOTIVES})
-            for m in MOTIVES:
-                for k in ("engagements", "hits", "kills"):
+            cell_motive[any_group] = {"motives": stats, "engagements": len(all_eng), "unclassed_share": (stats["UNCLASSED"]["engagements"] / len(all_eng)) if all_eng else 0.0, "no_inputs_share": (stats[NO_INPUTS]["engagements"] / len(all_eng)) if all_eng else 0.0}
+            arm_total = out["motive"]["by_arm"].setdefault(arm, {}).setdefault(any_group, {m: {"engagements": 0, "hits": 0, "kills": 0, "objective_target_is_victim": 0} for m in MOTIVE_KEYS})
+            for m in MOTIVE_KEYS:
+                for k in ("engagements", "hits", "kills", "objective_target_is_victim"):
                     arm_total[m][k] += stats[m][k]
         present = {r["attacker_group"] for r in spy["rows"] if r["in_o3_group"]}
         group_names |= present
@@ -449,7 +463,7 @@ def summarize(cells: Dict[Tuple[str, str, int], Dict[str, Optional[Dict[str, Any
                 g["cells"][label] = view
                 for name, value in rules.items():
                     g["rules"][name].setdefault(world, {}).setdefault(arm, {})[f"s{seed}"] = value
-                for motive in MOTIVES:                       # every rule result split by motive
+                for motive in MOTIVE_KEYS:                   # every rule result split by motive
                     engs_m = [e for e in eng if e["motive"] == motive]
                     if engs_m:
                         for name, value in rules_for_cell(rows_of(group_rows, engs_m), spy["mode_rows"], engs_m, spy["rows"], group, spy.get("attack_rows")).items():
@@ -467,7 +481,7 @@ def summarize(cells: Dict[Tuple[str, str, int], Dict[str, Optional[Dict[str, Any
             base = engagements.get((group, "base", world, seed))
             if grp != group or arm != "new" or base is None:
                 continue
-            for motive in MOTIVES:
+            for motive in MOTIVE_KEYS:
                 new_m, base_m = [e for e in eng if e["motive"] == motive], [e for e in base if e["motive"] == motive]
                 if new_m:
                     g.setdefault("rules_by_motive", {}).setdefault(motive, {}).setdefault("R6", {}).setdefault(world, {}).setdefault("new_vs_base", {})[f"s{seed}"] = rule_r6(new_m, base_m)

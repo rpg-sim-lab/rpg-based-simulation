@@ -106,7 +106,7 @@ def test_R1_is_motive_consistency_it_fires_on_an_unclassed_engagement_and_on_a_h
     assert rules(spaced(10))["R1"]["result"] == "PASS"                                                                       # HUNT that can eat
     for ok in (motive_inputs(defended=True, can_eat=False), motive_inputs(relation="FACTION_HOSTILE", can_eat=False), motive_inputs(relation="NONE", objective_target=100)):
         assert rules(spaced(1, victims=False, motive_inputs=ok))["R1"]["result"] == "PASS"      # DEFEND, HOSTILE and OBJECTIVE need no diet
-    assert rules(spaced(10, motive_inputs=None))["R1"]["result"] == "FAIL"                       # no inputs recorded: UNCLASSED (inputs_missing)
+    assert rules(spaced(10, motive_inputs=None))["R1"]["result"] == "NOT_CLEARED"                # CHANGED (M4): no inputs recorded is NO_INPUTS, not assessable: 100% of the engagements, so held
 
 
 def test_R2_fires_above_half_of_the_engagements_and_passes_at_exactly_half() -> None:
@@ -970,14 +970,22 @@ def test_each_motive_class_fires_on_a_planted_row_and_unclassed_reports_its_inpu
     assert classed(relation="FACTION_HOSTILE")["motive"] == "HOSTILE"
     unclassed = classed(relation="WARY")
     assert unclassed["motive"] == "UNCLASSED" and unclassed["typed_inputs"] == {"relation_attacker_to_victim": "WARY", "attacked_me_recently_victim_on_attacker": False, "objective_target_is_victim": False}
-    assert summary.engagement_motive(row(100, motive_inputs=None))["motive"] == "UNCLASSED" and summary.engagement_motive(row(100, motive_inputs=None))["info"]["inputs_missing"] is True
+    assert summary.engagement_motive(row(100, motive_inputs=None))["motive"] == "NO_INPUTS" and summary.engagement_motive(row(100, motive_inputs=None))["info"]["inputs_missing"] is True      # CHANGED (M4): was UNCLASSED
 
 
-def test_the_motive_order_is_defend_then_objective_then_hunt_then_hostile() -> None:     # NEW (M2)
-    assert classed(defended=True, objective_target=100, relation="PREDATION")["motive"] == "DEFEND"
-    assert classed(objective_target=100, relation="PREDATION")["motive"] == "OBJECTIVE"
-    assert classed(objective_target=999, relation="PREDATION")["motive"] == "HUNT"            # an objective on someone else is not this victim's
-    assert classed(relation="FACTION_HOSTILE", objective_target=None)["motive"] == "HOSTILE"
+def test_the_motive_order_is_defend_then_hunt_then_hostile_then_objective() -> None:     # CHANGED (M3): was DEFEND > OBJECTIVE > HUNT > HOSTILE
+    assert classed(defended=True, objective_target=100, relation="PREDATION")["motive"] == "DEFEND"        # DEFEND beats everything
+    assert classed(defended=True, objective_target=100, relation="FACTION_HOSTILE")["motive"] == "DEFEND"
+    assert classed(objective_target=100, relation="PREDATION")["motive"] == "HUNT"                          # a hunger hunt on its prey (the hunt step sets the objective target to the prey): HUNT
+    assert classed(objective_target=100, relation="FACTION_HOSTILE")["motive"] == "HOSTILE"                 # combat_engage / defeat_enemy on a FACTION_HOSTILE target: HOSTILE
+    assert classed(objective_target=100, relation="NONE")["motive"] == "OBJECTIVE"                          # an objective target with no engine basis (relation NONE): OBJECTIVE
+    assert classed(objective_target=999, relation="NONE")["motive"] == "UNCLASSED"                          # an objective on someone else is not this victim's
+
+
+def test_the_objective_target_is_a_per_motive_cross_tab_and_never_the_class() -> None:     # NEW (M3)
+    hunts = [row(i * 3000, victim=100 + i, motive_inputs=motive_inputs(relation="PREDATION", objective_target=100 + i)) for i in range(4)] + [row(20_000 + i * 3000, victim=300 + i, motive_inputs=motive_inputs(relation="PREDATION")) for i in range(2)]
+    stats = summary.motive_stats(engagements_of(hunts))
+    assert (stats["HUNT"]["engagements"], stats["HUNT"]["objective_target_is_victim"], stats["OBJECTIVE"]["engagements"]) == (6, 4, 0)
 
 
 def test_a_prey_that_struck_first_gives_defend_and_one_that_only_struck_back_later_stays_hunt() -> None:     # NEW (M2)
@@ -1129,7 +1137,7 @@ def test_the_summary_reports_motive_per_group_and_arm_splits_every_rule_by_motiv
     by_motive = out["groups"]["meat"]["rules_by_motive"]
     assert set(by_motive) == {"DEFEND", "HUNT"} and set(by_motive["DEFEND"]) >= {"R1", "R2", "R3", "R4", "R5", "R7"} and "new_vs_base" in by_motive["HUNT"]["R6"]["w"]
     stats = summary.motive_stats(engagements_of(defend + hunt))
-    assert stats["HUNT"]["eaten_share"] is None and stats["HUNT"]["edible_kill_share"] is None and stats["DEFEND"]["hits"] == 5 and set(stats) == set(summary.MOTIVES)
+    assert stats["HUNT"]["eaten_share"] is None and stats["HUNT"]["edible_kill_share"] is None and stats["DEFEND"]["hits"] == 5 and set(stats) == set(summary.MOTIVE_KEYS) and "NO_INPUTS" not in summary.MOTIVES
 
 
 def test_a_motive_read_error_alone_voids_an_otherwise_consistent_cell() -> None:     # NEW (M1)
@@ -1145,3 +1153,29 @@ def test_a_motive_read_error_alone_voids_an_otherwise_consistent_cell() -> None:
     clean_doc, errored = report(False), report(True)
     assert (clean_doc["wiring"], clean_doc["cell_valid"]) == ("OK", True)
     assert (errored["wiring"], errored["cell_valid"], errored["per_key_counts_equal"], errored["per_group_counts_equal"]) == ("WIRING_MISMATCH", False, True, True)
+
+
+# --------------------------------------------------------------------------------------------- M4: NO_INPUTS
+def test_an_empty_dict_a_missing_field_and_prior_bodies_absent_give_no_inputs_never_unclassed() -> None:     # NEW (M4)
+    for planted in (None, {}, {"prior_bodies_present": False}):
+        out = summary.engagement_motive(row(100, motive_inputs=planted))
+        assert out["motive"] == "NO_INPUTS" and "NO_INPUTS" not in summary.MOTIVES and "NO_INPUTS" in summary.MOTIVE_KEYS
+    assert summary.engagement_motive(row(100, motive_inputs=motive_inputs(relation="WARY")))["motive"] == "UNCLASSED"      # inputs present, none apply: UNCLASSED
+    stats = summary.motive_stats(engagements_of(spaced(3, motive_inputs=None) + spaced(2, attacker=2, motive_inputs=motive_inputs(relation="WARY"))))
+    assert (stats["NO_INPUTS"]["engagements"], stats["UNCLASSED"]["engagements"]) == (3, 2)                                  # counted separately
+
+
+def test_r1_decides_on_the_rest_at_9_percent_no_inputs_and_is_not_cleared_at_10_percent() -> None:     # NEW (M4)
+    nine = spaced(91, attacker=1) + spaced(9, attacker=2, motive_inputs=None)
+    ten = spaced(90, attacker=1) + spaced(10, attacker=2, motive_inputs=None)
+    r9, r10 = rules(nine)["R1"], rules(ten)["R1"]
+    assert (r9["result"], r9["no_inputs"], r9["no_inputs_share"]) == ("PASS", 9, 0.09)                      # 9%: R1 decides on the 91 it can assess
+    assert (r10["result"], r10["no_inputs"], r10["no_inputs_share"]) == ("NOT_CLEARED", 10, 0.1) and r10["attacker_ids"] == [2]
+    failing_rest = spaced(91, attacker=1, motive_inputs=motive_inputs(relation="NONE")) + spaced(9, attacker=2, motive_inputs=None)
+    assert rules(failing_rest)["R1"]["result"] == "FAIL"                                                      # below 10% the rest still fails R1 on its own UNCLASSED engagements
+
+
+def test_a_not_cleared_r1_holds_the_verdict() -> None:     # NEW (M4)
+    held = verdict_of(clean(motive_inputs=None), clean())
+    assert held["verdict"] == "HELD" and any(h["rule"] == "R1" and h["result"] == "NOT_CLEARED" for h in held["verdict_detail"]["held"])
+    assert held["motive"]["by_arm"]["new"]["meat"]["NO_INPUTS"]["engagements"] == 10 and held["motive"]["cells"]["new/w/s42"]["meat"]["no_inputs_share"] == 1.0
