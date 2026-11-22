@@ -38,7 +38,8 @@ BLOCKED on TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS
    - B3 outmatched with an escape;
    - B4 caught again and again (3 is the test parameter, kept in data if adopted);
    - B5 no forced reflex.
-   B0 permission lives in the dependency ticket.
+   B0 permission lives in the dependency ticket (PR #992).
+   - B6 NO FIRST STRIKE, FULL TICK (lead-planner-u24, #715 7076325384): a prey beside an idle hunting predator emits NO attack action over a full scheduler tick and a 50-tick window, run through the real kernel. #992's B5 pins only the appraisal that feeds the decision.
 3. AGENCY-07 amendment evidence updated to SUPPORTED; Bible, divergence and parity.
 4. A re-trace for points 5 and 6 on top of Step A (R7 and R6), with its own S9.
 
