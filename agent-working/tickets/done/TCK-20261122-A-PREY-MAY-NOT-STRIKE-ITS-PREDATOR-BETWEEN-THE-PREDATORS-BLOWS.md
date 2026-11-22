@@ -80,6 +80,7 @@ None.
 - OWNER-APPROVED flip (#715 7076293921, answering ask 7076211055): tests/unit/engine/test_appraisal.py:175 (prey strike on an idle hunter) False -> True, comment 'permitted, and not chosen'. The required no-first-strike decision test is test_b5_no_forced_reflex in test_attack_permission_is_symmetric.py (the prey's perceived_hostile of an idle hunting predator is False, so no attack is chosen). Parity entry is COMB-360 (COMB-359 is held by the unmerged rpg-stalemate-nav).
 
 ## Test Summary
+OWNER-APPROVED test_9 scene change (#715 7076604215, answering ask 7076496297): tests/unit/tactical/test_flight_weighs_free_swing.py::test_9 now uses a fed wolf whose hit was 11 ticks ago (outside the recent-hit window), asserts FRIENDLY_FIRE_ILLEGAL and no PREDATION either way, asserts unchanged; test_9b (fresh-hit strike-back) added. The test pins today's behaviour; Step B will change it with its own owner ask. The earlier CI failure on PR #992 was this test.
 test_attack_permission_is_symmetric.py 111 passed, test_appraisal.py 12 passed (executed, single runs); the other legality test files passed one at a time before the final rule (re-run deferred, host held). Scoped not-slow suite and knowledge-index-update deferred to a host gap.
 
 ## Files Changed

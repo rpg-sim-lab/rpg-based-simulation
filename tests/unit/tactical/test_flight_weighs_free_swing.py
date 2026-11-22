@@ -97,7 +97,18 @@ def test_6_only_the_felt_hostile_counts_among_several_engaged():
 
 
 def test_9_when_the_attack_is_illegal_for_another_reason_the_subject_holds_its_tile():
-    state, m = _scene(hp=15, damage=17, hostile=45)  # a wolf the merchant may not attack (FRIENDLY_FIRE_ILLEGAL)
+    from src.core.enums import ReasonCode
+    from src.engine.hostility import Relation, relation
+    from src.engine.legality import LegalityServiceV2
+
+    # An attacker that hit 11+ ticks ago, outside the recent-hit window, and that neither party hunts, may not be struck (FRIENDLY_FIRE_ILLEGAL). This pins today's
+    # behaviour; Step B (TCK-20261122-AN-ATTACKED-SUBJECT-CHOOSES-TO-FIGHT-BACK-WHEN-FLIGHT-FAILS-OR-IT-CAN-WIN) will change it (no stale fear), with its own owner ask.
+    state, m = _scene(hp=15, damage=17, hostile=45)
+    m = replace(m, combat=replace(m.combat, last_hit_tick=state.tick - 11))
+    object.__setattr__(state, "entities", {**state.entities, MERCHANT: m})
+    wolf = state.entities[45]
+    assert LegalityServiceV2.verify_attack_legality(m, wolf, state)[1] is ReasonCode.FRIENDLY_FIRE_ILLEGAL
+    assert relation(m, wolf, night=False, tick=state.tick) is not Relation.PREDATION and relation(wolf, m, night=False, tick=state.tick) is not Relation.PREDATION  # the wolf is fed
     up = _decide(state, m)
     assert up.task is None and up.navigation.target_set == HERE and up.navigation.movement_mode_set is MovementMode.RETREAT
 
