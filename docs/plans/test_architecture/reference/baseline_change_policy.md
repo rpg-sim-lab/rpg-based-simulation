@@ -71,6 +71,10 @@ disagree, this page holds until the testing planner and that domain's planner ag
    `stale` state, never `pass`. Where staleness is a report state (mutation), the test does not fail on it but the report shows it.
 10. **Drift guard.** A report compares a run with the latest version and also with a fixed earlier reference: the first version of the current
     milestone, or the version a milestone owner names. Successive small re-baselines cannot then hide a slow drift.
+    The owner names a version by the `milestone_reference: true` field on a baseline of that milestone. Only `rebaseline --milestone-reference` writes it, and
+    only citing an owner-ruling comment on issue #715 (`owner_ruling {ref: "#715 <comment id>", date}`); a ref that is not a #715 comment is refused, and
+    the field is never set by hand on an existing file. Where several baselines of the milestone carry it, the highest version is the reference; a marker on another
+    milestone has no effect. Staleness is unchanged: a stale named reference still yields `stale`, never a pass. The report prints which baseline is the reference and why.
 11. **Evidence-only runs cannot record.** A run of a non-main ref, a dirty tree or a non-nominal runtime mode (a perf record that left `NORMAL`,
     for example) can be shown as evidence, but the writer refuses it as a baseline.
 12. **Review.** A baseline change is its own reviewed change of evidence. Its PR names the baseline, the cause, the moved rows and the ruling.

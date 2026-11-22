@@ -96,6 +96,8 @@ CLASSES = ("outcome", "validity")
 VALIDITY_ID_RE = re.compile(r"^V\d+$")
 MAIN_REF = "refs/heads/main"
 CI_FIELDS = ("run_id", "run_attempt", "event_name", "ref")
+MILESTONE_RULING_REF_RE = re.compile(r"#715 \d+")  # an owner-ruling comment on issue #715, as v2 records it: "#715 6920465555"
+REASON_FIRST_OF_MILESTONE = "first of milestone"
 PROVENANCE_FIELDS = ("commit_sha", "harness_hash", "worlds", "seeds", "ticks", "recorded_at", "stale_after", "cites")
 SCOPES = ("run", "pooled")
 
@@ -275,6 +277,7 @@ def lint_baseline(doc: Any, filename: Optional[str] = None) -> List[str]:
     problems.extend(_lint_omitted_validity(doc.get("omitted_validity"), doc.get("metrics")))
     problems.extend(_lint_undefined_rows(doc.get("undefined_rows"), doc.get("metrics")))
     problems.extend(_lint_rebaseline(doc.get("rebaseline"), version, (doc.get("provenance") or {}).get("cites")))
+    problems.extend(_lint_milestone_reference(doc))
     return problems
 
 
@@ -436,6 +439,35 @@ def _ruling_problem(ruling: Any) -> Optional[str]:
     return None
 
 
+def _milestone_ruling_problem(ruling: Any) -> Optional[str]:
+    """A ruling that names a baseline its milestone's reference must be an owner ruling that is a comment on issue #715 (``#715 <comment id>``)."""
+    problem = _ruling_problem(ruling)
+    if problem:
+        return problem
+    if not MILESTONE_RULING_REF_RE.fullmatch(str(ruling["ref"])):
+        return f"owner_ruling ref {ruling['ref']!r} is not a comment on issue #715 (expected '#715 <comment id>')"
+    return None
+
+
+def _recorded_ruling(doc: Mapping[str, Any]) -> Any:
+    """The owner ruling a baseline records: version 1 holds it at the top level, a later version in its rebaseline record."""
+    record = doc.get("rebaseline")
+    return record.get("owner_ruling") if isinstance(record, dict) and "owner_ruling" in record else doc.get("owner_ruling")
+
+
+def _lint_milestone_reference(doc: Mapping[str, Any]) -> List[str]:
+    """``milestone_reference`` is optional and boolean; true needs the owner ruling recorded on this baseline, a comment on #715 (baseline_change_policy.md rule 10)."""
+    if "milestone_reference" not in doc:
+        return []
+    marker = doc["milestone_reference"]
+    if not isinstance(marker, bool):
+        return [f"milestone_reference must be a boolean, got {marker!r}"]
+    if not marker:
+        return []
+    problem = _milestone_ruling_problem(_recorded_ruling(doc))
+    return [f"milestone_reference: needs an owner ruling recorded on this baseline, a comment on #715 ({problem}; baseline_change_policy.md rule 10)"] if problem else []
+
+
 def _lint_rebaseline(record: Any, version: Any, cites: Any = None) -> List[str]:
     if version == 1:
         return [] if record is None else ["version 1 must have rebaseline null"]
@@ -506,16 +538,23 @@ class References:
 
     last: dict
     milestone_first: dict
+    milestone_reason: str = REASON_FIRST_OF_MILESTONE
 
 
 def resolve_references(baselines: Sequence[dict]) -> Optional[References]:
-    """The last baseline and the first baseline of the last one's milestone; ``None`` when there is no baseline (the report's no-data state)."""
+    """The last baseline and the reference of the last one's milestone; ``None`` when there is no baseline (the report's no-data state).
+    The milestone reference is the highest-versioned baseline of that milestone that carries ``milestone_reference: true`` (named by an owner ruling), else the first
+    of the milestone. A marker on a baseline of another milestone has no effect."""
     if not baselines:
         return None
     ordered = sorted(baselines, key=lambda d: d["version"])
     last = ordered[-1]
-    first = next(d for d in ordered if d["milestone"] == last["milestone"])
-    return References(last=last, milestone_first=first)
+    in_milestone = [d for d in ordered if d["milestone"] == last["milestone"]]
+    named = [d for d in in_milestone if d.get("milestone_reference") is True]
+    if named:
+        ruling = _recorded_ruling(named[-1]) or {}
+        return References(last=last, milestone_first=named[-1], milestone_reason=f"named by owner ruling {ruling.get('ref')}")
+    return References(last=last, milestone_first=in_milestone[0])
 
 
 # ---------------------------------------------------------------- staleness
@@ -605,12 +644,19 @@ def rebaseline(
     milestone: Optional[str] = None,
     known: Optional[Sequence[dict]] = None,
     today: Optional[dt.date] = None,
+    milestone_reference: bool = False,
 ) -> Path:
     """Write the next version from ``candidate`` and return its path, or raise :class:`RebaselineRefused`. Never modifies an existing file.
     A candidate marked ``evidence_only`` (from a branch-ref dispatch) is refused, and so is one whose ``provenance.ci`` is null or missing, whose ``ci.ref`` is not
     ``refs/heads/main``, or with a missing or malformed ``provenance.known_file_sha256`` (the same check as the lint, ``_lint_ci_provenance``): only a main CI run's own candidate is a baseline source. There is no override; ``milestone`` overrides the candidate's. A candidate that omitted owned validity
     fails needs ``known`` (the current ``rpg_gate_known.yaml`` entries): each omission's ``known_match`` must still be a ``state: fail`` entry and not expired."""
     directory = Path(directory)
+    if milestone_reference:  # rule 10: only an owner ruling that is a comment on #715 names a milestone's reference
+        if not owner_ruling:
+            raise RebaselineRefused("baseline_change_policy.md rule 10: naming a baseline its milestone's reference needs an owner ruling {ref, date} (--owner-ruling-ref '#715 <comment id>' --owner-ruling-date)")
+        ruling_problem = _milestone_ruling_problem(owner_ruling)
+        if ruling_problem:
+            raise RebaselineRefused(f"baseline_change_policy.md rule 10: {ruling_problem}")
     if candidate.get("evidence_only"):
         raise RebaselineRefused("this candidate is evidence only (a branch-ref dispatch); a baseline is recorded from a main run's candidate")
     ci_problems = _lint_ci_provenance(candidate.get("provenance") or {})  # the one rule, shared with the lint of the written file
@@ -671,6 +717,8 @@ def rebaseline(
             **({"owner_ruling": dict(owner_ruling)} if owner_ruling else {}),
             **({"undecided_world_semantic_change": True} if undecided_world_semantic_change else {}),
         }
+    if milestone_reference:
+        doc["milestone_reference"] = True
     problems = lint_baseline(doc, f"rpg_gate_v{version}.json")
     if problems:
         raise BaselineError("; ".join(problems))
@@ -703,6 +751,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     reb.add_argument("--owner-ruling-ref")
     reb.add_argument("--owner-ruling-date")
     reb.add_argument("--undecided-world-semantic-change", action="store_true")
+    reb.add_argument("--milestone-reference", action="store_true", help="name this baseline its milestone's reference (policy rule 10); needs --owner-ruling-ref '#715 <comment id>' and --owner-ruling-date")
     args = parser.parse_args(argv)
     if args.cmd == "lint":
         problems = lint_dir(args.dir)
@@ -722,6 +771,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             undecided_world_semantic_change=args.undecided_world_semantic_change,
             milestone=args.milestone,
             known=known_reds.load_known_reds(args.known, known_reds.RPG_GATE_SPEC) if args.known else None,
+            milestone_reference=args.milestone_reference,
         )
     except BaselineError as exc:
         print(f"REFUSED: {exc}" if isinstance(exc, RebaselineRefused) else f"ERROR: {exc}", file=sys.stderr)
