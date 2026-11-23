@@ -7996,6 +7996,21 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261123-FOUR-CORPUS-GRADE-STABILITY-GUARDS-PASS-AND-FAIL-ON-THE-SAME-SHA-GET-FLAKY-ENTRIES.md
+  ticket_id: TCK-20261123-FOUR-CORPUS-GRADE-STABILITY-GUARDS-PASS-AND-FAIL-ON-THE-SAME-SHA-GET-FLAKY-ENTRIES
+  title: Four corpus grade-stability guards that pass and fail on the same sha in
+    the scheduled slow run are owned as flaky known reds, and the re-anchor pin test
+    accepts only a flaky owner
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-23'
+  related_code_areas:
+  - tools/test_architecture/slow_known_reds.yaml
+  - tests/unit/tools/test_slow_regression_report.py
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
   path: agent-working/tickets/inprogress/TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON.md
   ticket_id: TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON
   title: 'A subject remembers why a place failed it, for what purpose, and reconsiders
@@ -8009,6 +8024,33 @@
     src/engine/legality.py
   - src/systems/strategic_systems/blocker_lifecycle.py, intelligence.py, work_queue.py
   - src/core/state.py (NavigationState, MemoryModel), checkpoint FIELD_RULES
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON/external_review_architecture_v2.md
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261123-A-BROKE-BODY-CAN-EARN-BY-TAKING-A-QUEST.md
+  ticket_id: TCK-20261123-A-BROKE-BODY-CAN-EARN-BY-TAKING-A-QUEST
+  title: A broke body that can take quests earns money by taking one at a guild or
+    similar building, not only by a work shift
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-23'
+  related_code_areas:
+  - src/ai/goals/ways.py, src/ai/goals/opening_steps.py, src/ai/goals/scorers.py,
+    src/quests/,
+  - src/engine/quests.py, src/engine/service_admission.py (keeps_coin)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261122-A-FLEEING-SUBJECT-KEEPS-FLEEING-AND-AN-ATTACKED-ONE-WEIGHS-FIGHTING-BACK.md
+  ticket_id: TCK-20261122-A-FLEEING-SUBJECT-KEEPS-FLEEING-AND-AN-ATTACKED-ONE-WEIGHS-FIGHTING-BACK
+  title: 'World rules: a subject that decides to flee keeps fleeing while its threat
+    holds, and a subject under attack weighs fighting back (AGENCY-07 amendment and
+    companion)'
+  tier: hotfix
+  ticket_type: feature
+  date: '2026-11-22'
+  related_code_areas: []
   artifact_files: []
   tags: []
 - type: ticket
@@ -8097,6 +8139,21 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-A-RESOLVED-OBJECTIVE-PULLS-A-FLEEING-SUBJECT-BACK-TOWARD-IT.md
+  ticket_id: TCK-20261122-A-RESOLVED-OBJECTIVE-PULLS-A-FLEEING-SUBJECT-BACK-TOWARD-IT
+  title: 'Step A of the goblin-30 fix: a RESOLVED objective keeps pulling a subject,
+    so a decided flight is pulled back toward the finished goal again and again; flight
+    must hold while its threat holds'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-22'
+  related_code_areas:
+  - the strategic project/objective lifecycle (src/systems/strategic_systems/intelligence.py,
+    src/core/strategic.py)
+  - tactical flight (src/engine/tactical.py, src/engine/tactical_threat.py)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261122-A-STARVING-PREDATOR-HAS-NO-FALLBACK-WAY-TO-EAT.md
   ticket_id: TCK-20261122-A-STARVING-PREDATOR-HAS-NO-FALLBACK-WAY-TO-EAT
   title: A starving predator has no fallback way to eat (no carcass, no food node,
@@ -8107,6 +8164,55 @@
   related_code_areas:
   - src/ai/goals/opening_steps.py (HUNT, SCAVENGE, HUNT_EAT_RAW steps); src/engine/appraisal.py
     (can_overcome)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-AN-ARENA-OF-PREDATORS-AND-PREY-SHOWS-HOW-ATTACKED-BODIES-REACT.md
+  ticket_id: TCK-20261122-AN-ARENA-OF-PREDATORS-AND-PREY-SHOWS-HOW-ATTACKED-BODIES-REACT
+  title: 'Report-only arena observation: many meat-eaters against many prey, over
+    several seeds, to see how attacked bodies react (flee, fight, die) as a distribution'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-22'
+  related_code_areas:
+  - tools/rpg_measure/ (the person_attack kit as a base)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-AN-ATTACKED-SUBJECT-CHOOSES-TO-FIGHT-BACK-WHEN-FLIGHT-FAILS-OR-IT-CAN-WIN.md
+  ticket_id: TCK-20261122-AN-ATTACKED-SUBJECT-CHOOSES-TO-FIGHT-BACK-WHEN-FLIGHT-FAILS-OR-IT-CAN-WIN
+  title: 'Step B of the goblin-30 fix: an attacked subject chooses to fight back when
+    its flight fails or it judges it can win (AGENCY-07 amendment "when to fight back")'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-22'
+  related_code_areas:
+  - src/engine/tactical.py, src/engine/tactical_flight_guard.py, src/engine/tactical_threat.py,
+    the appraisal
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-EVERY-CAN-I-WIN-JUDGEMENT-GOES-THROUGH-ONE-POWER-SEAM.md
+  ticket_id: TCK-20261122-EVERY-CAN-I-WIN-JUDGEMENT-GOES-THROUGH-ONE-POWER-SEAM
+  title: Every "can I win" judgement goes through one power-judgement seam
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-22'
+  related_code_areas:
+  - src/engine/appraisal.py; tactical_threat.py:93-94; src/domains/combat_engagement/perception.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-THE-GATE-ATTACK-AND-UNEATEN-KILL-ROWS-SPLIT-VICTIMS-INTO-PEOPLE-AND-NON-PEOPLE.md
+  ticket_id: TCK-20261122-THE-GATE-ATTACK-AND-UNEATEN-KILL-ROWS-SPLIT-VICTIMS-INTO-PEOPLE-AND-NON-PEOPLE
+  title: 'The gate''s O3 attack row and O6 uneaten-kill row split attackers and victims
+    into people and non-people: redefine both by attacker diet group, over any living
+    victim'
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-22'
+  related_code_areas:
+  - is_person
   artifact_files: []
   tags: []
 - type: ticket
@@ -8226,6 +8332,31 @@
   related_code_areas:
   - tools/test_architecture/rpg_gate_baseline.py
   - tests/simulation_quality/rpg_gate/baselines/
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261121-THE-BLOCKER-BACKOFF-WINDOW-IS-HARD-CODED-IN-CORE-NOT-DECLARED-IN-DATA.md
+  ticket_id: TCK-20261121-THE-BLOCKER-BACKOFF-WINDOW-IS-HARD-CODED-IN-CORE-NOT-DECLARED-IN-DATA
+  title: The blocker backoff window (100 ticks, doubling, capped at 800) is hard-coded
+    in src/core/strategic.py, not declared in data
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-21'
+  related_code_areas:
+  - src/core/strategic.py (BLOCKER_BACKOFF_BASE_TICKS, BLOCKER_BACKOFF_CAP_TICKS)
+  - src/content/ (the loader), data/content/strategy/
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261121-THE-GATE-PERSON-FLAG-CHECK-SILENTLY-TREATS-A-NON-STRING-FLAG-AS-A-NON-PERSON.md
+  ticket_id: TCK-20261121-THE-GATE-PERSON-FLAG-CHECK-SILENTLY-TREATS-A-NON-STRING-FLAG-AS-A-NON-PERSON
+  title: The rpg gate's person-flag check (`_is_wild_meat_eater`) silently treats
+    a non-string flag as a non-person; it should refuse one
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-21'
+  related_code_areas:
+  - src/observability/rpg_gate_metrics.py (_is_wild_meat_eater, _combat_rows, _split)
   artifact_files: []
   tags: []
 - type: ticket
