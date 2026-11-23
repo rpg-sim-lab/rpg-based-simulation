@@ -15,7 +15,13 @@ from src.engine.building_services import SERVICE_KINDS, offers_work
 from src.engine.lodging import finds_no_bed
 from src.engine.service_admission import admits
 from src.engine.shop_sale import plan_sale
-from src.engine.work_shift import SHIFT_START, inn_in_reach, meal_in_reach, repoint_to_consume, shift_startable
+from src.engine.work_shift import (
+    SHIFT_START,
+    inn_in_reach,
+    meal_in_reach,
+    repoint_to_consume,
+    shift_startable,
+)
 from src.engine.work_wake import held_work_is_threatened
 
 
@@ -45,6 +51,24 @@ def _meal_in_reach(state: Any, entity: Any) -> bool:
     return meal_in_reach(state, entity)
 
 
+def _work_building_arrival(state: Any, entity: Any, project: Any, building: Any, building_id: int) -> Optional[EntityUpdate]:
+    """The hunger project's action at a building that offers a shift, or None (nothing to do here: the project ends).
+
+    No NEW shift while a meal is affordable and admitted in reach (the earn step has done its work: the coin is in hand): the same predicate the strategic re-point reads
+    (`work_shift.meal_in_reach`), so the guarantee does not depend on when the next strategic pass runs. The SAME project is re-pointed to the meal (the one helper,
+    `work_shift.repoint_to_consume`, also called by the route): not ended, which would write COMPLETED while the subject is still hungry and leave a gap up to the strategic cadence."""
+    if _meal_in_reach(state, entity):
+        inn = inn_in_reach(state, entity)
+        return EntityUpdate(entity_id=entity.id, strategic=repoint_to_consume(project, "hunger", str(inn.id), (inn.position[0], inn.position[1])))
+    if shift_startable(state, entity, building):
+        return _act(entity, "WORK", building_id, **{SHIFT_START: state.tick})
+    if held_work_is_threatened(entity, state):
+        # Not takeable NOW because of a present threat (designer ruling 2026-10-30): the hunger project stays current, nothing is dispatched, and the
+        # tactical answer to the threat takes over through the normal switch; the next decision judges again. The project is not ended or abandoned.
+        return EntityUpdate(entity_id=entity.id)
+    return None
+
+
 def _hunger_arrival(state: Any, entity: Any, project: Any, building_id: int) -> EntityUpdate:
     """The hunger project's action at the building it reached: a sale at a shop while one remains, else a meal, a shift or the end.
 
@@ -66,18 +90,9 @@ def _hunger_arrival(state: Any, entity: Any, project: Any, building_id: int) -> 
     if getattr(building, "kind", None) in SERVICE_KINDS["EAT"] and admits(entity, "EAT"):
         return _act(entity, "EAT", building_id)
     if building is not None and offers_work(building):
-        # No NEW shift while a meal is affordable and admitted in reach (the earn step has done its work: the coin is in hand): the same predicate the strategic re-point reads
-        # (`work_shift.meal_in_reach`), so the guarantee does not depend on when the next strategic pass runs. The SAME project is re-pointed to the meal (the one helper,
-        # `work_shift.repoint_to_consume`, also called by the route): not ended, which would write COMPLETED while the subject is still hungry and leave a gap up to the strategic cadence.
-        if _meal_in_reach(state, entity):
-            inn = inn_in_reach(state, entity)
-            return EntityUpdate(entity_id=entity.id, strategic=repoint_to_consume(project, "hunger", str(inn.id), (inn.position[0], inn.position[1])))
-        if shift_startable(state, entity, building):
-            return _act(entity, "WORK", building_id, **{SHIFT_START: state.tick})
-        if held_work_is_threatened(entity, state):
-            # Not takeable NOW because of a present threat (designer ruling 2026-10-30): the hunger project stays current, nothing is dispatched, and the
-            # tactical answer to the threat takes over through the normal switch; the next decision judges again. The project is not ended or abandoned.
-            return EntityUpdate(entity_id=entity.id)
+        update = _work_building_arrival(state, entity, project, building, building_id)
+        if update is not None:
+            return update
     return _end_project(entity, project)  # nothing this building can do for the subject now: the project ends
 
 

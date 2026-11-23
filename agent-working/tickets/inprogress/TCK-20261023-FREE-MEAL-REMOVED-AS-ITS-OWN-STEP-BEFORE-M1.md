@@ -149,6 +149,8 @@ Known, non-blocking (rpg-planner review 2026-10-28): `_survival_action` calls `s
 
 ## Test Summary
 
+- Known gap: TCK-20261123-A-NEED-PROJECT-ENDED-AT-A-BUILDING-THAT-CANNOT-SERVE-IT-IS-RECORDED-AS-COMPLETED: a need project ended at a building that cannot serve it (the shop path of divergence 2.223, and `_end_project` at a work building with no affordable meal and no startable shift) is still recorded as COMPLETED while the subject is still hungry; #995 re-points the work-building case with a meal in reach (case c) and leaves the shop path to that ticket.
+
 ## Files Changed
 
 ## Completion Summary

@@ -11,6 +11,8 @@ from typing import Any, Callable, Mapping, Optional
 
 from src.core.state import EntityState
 from src.core.strategic import (
+    NEED_PROJECT_KINDS,
+    SEEK_WORK_TARGET_ID,
     BlockerState,
     ProjectState,
     ProjectStatus,
@@ -21,6 +23,8 @@ from src.core.strategic import (
     supersede_record,
 )
 from src.core.updates import StrategicUpdate
+from src.engine.building_services import SERVICE_KINDS, offers_work
+from src.engine.work_shift import meal_in_reach, repoint_to_consume, shift_held
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,8 +43,6 @@ def _earn_objective(state: Any, objective: Any, candidate_target_id: Any) -> boo
     """True when the objective is an EARN step toward a way the candidate no longer needs: it targets the seek-work town centre (`SEEK_WORK_TARGET_ID`), or a building (not the candidate's own
     target) the subject earns at: one that buys goods (a kind in `SERVICE_KINDS["SELL"]`) or offers a shift (`building_services.offers_work`). No typed marker exists on an objective, so it is
     read from the building the target names, with the predicates the sale and shift steps use."""
-    from src.core.strategic import SEEK_WORK_TARGET_ID
-    from src.engine.building_services import SERVICE_KINDS, offers_work
     target = getattr(objective, "target", None)
     if target is None or str(target) == str(candidate_target_id):
         return False
@@ -57,7 +59,6 @@ def _consume_way_open(entity: EntityState, state: Any, best_candidate: Any) -> b
     """True when the candidate IS the direct way to meet the need, open now and ADMITTED to this subject (the one admission rule, which carries the coin trait): hunger: a candidate that
     names its target with no opening step while `work_shift.meal_in_reach` holds (the INN_MEAL way's own test, the one the arrival also reads); fatigue: a candidate that carries a target
     (SleepScorer targets only a bed `admits_at(entity, inn, "REST", state)` delivers to this subject: a paid bed, or a free home's, as the scorer reads it)."""
-    from src.engine.work_shift import meal_in_reach
     if best_candidate.target_id is None:
         return False
     if str(getattr(best_candidate.kind, "value", best_candidate.kind)) == "hunger":
@@ -71,8 +72,6 @@ def repoint_earn_to_consume(entity: EntityState, state: Any, existing: ProjectSt
     its active objective is an EARN step (`_earn_objective`), the candidate is the direct consume way open now (`_consume_way_open`) and no shift is running, return an update that
     RE-POINTS the same project's active objective to the candidate's target (same project id, no new project, no switch check). A shift already held is not cut: the re-point comes at the
     next decision after it ends (`work_shift.shift_held`). Otherwise None (behaviour unchanged)."""
-    from src.core.strategic import NEED_PROJECT_KINDS
-    from src.engine.work_shift import repoint_to_consume, shift_held
     if existing.id != entity.strategic.current_project_id or str(getattr(existing.kind, "value", existing.kind)) not in NEED_PROJECT_KINDS:
         return None
     active = next((o for o in existing.objectives if o.id == existing.active_objective_id), None)
