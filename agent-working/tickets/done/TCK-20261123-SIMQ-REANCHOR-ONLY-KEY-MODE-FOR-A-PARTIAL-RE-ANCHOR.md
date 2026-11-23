@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261123-SIMQ-REANCHOR-ONLY-KEY-MODE-FOR-A-PARTIAL-RE-ANCHOR
-phase: open
+phase: done
 date: 2026-11-23
 tags: [testing]
 ---
@@ -15,7 +15,7 @@ tags: [testing]
 simq_reanchor gets an `--only <key>` partial mode so two grade anchors can be re-pinned from their own two audit-mode runs without a measurement of all 81 keys
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -75,10 +75,10 @@ None. The tool writes a fixture and a table.
 Pytest on taskset -c 0-3, --basetemp on /data, no uv sync, no simulation run. No bare git stash.
 
 ## Test Summary
-Not run yet.
+tests/unit/tools/test_simq_reanchor.py: 37 passed (taskset -c 0-3), 10 new for items 1-6 and 8 (named-only change, unnamed byte identity, unknown key, one-run named key, full audit-mode pair, exclusion inside and on an unnamed key, prior rows, no --only unchanged, CLI repeatable flag, real fixture). Four mutations (drop the unnamed copy, the unnamed-exclusion refusal, the unknown-key refusal, the meta-key guard) each fail a test. One-off on the real fixture (not committed, synthetic rows for the two keys of AC3's command, no simulation): 81 keys; the other 79 keys' values and their text blocks in the written file are byte-identical, line count 3752 unchanged, table rows only for the two named keys.
 
 ## Files Changed
-None yet.
+tools/test_architecture/simq_reanchor.py, tests/unit/tools/test_simq_reanchor.py, docs/plans/test_architecture/reference/baseline_change_policy.md (rule 7), this ticket and its stored artifacts.
 
 ## Completion Summary
-Open.
+`--only <run_key>` (repeatable) and `reanchor(only=...)` re-pin only the named keys from their own full audit_mode pairs; unnamed keys are copied unchanged with no rows or table lines. The default is unchanged. The partial re-anchor is recorded as docstring and policy rule 7 say. The re-pin itself is #995's.

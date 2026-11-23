@@ -8001,6 +8001,24 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261123-SIMQ-REANCHOR-ONLY-KEY-MODE-FOR-A-PARTIAL-RE-ANCHOR.md
+  ticket_id: TCK-20261123-SIMQ-REANCHOR-ONLY-KEY-MODE-FOR-A-PARTIAL-RE-ANCHOR
+  title: simq_reanchor gets an `--only <key>` partial mode so two grade anchors can
+    be re-pinned from their own two audit-mode runs without a measurement of all 81
+    keys
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-23'
+  related_code_areas:
+  - tools/test_architecture/simq_reanchor.py
+  - tests/unit/tools/test_simq_reanchor.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261123-SIMQ-REANCHOR-ONLY-KEY-MODE-FOR-A-PARTIAL-RE-ANCHOR/investigation.md
+  - agent-working/stored_artifacts/TCK-20261123-SIMQ-REANCHOR-ONLY-KEY-MODE-FOR-A-PARTIAL-RE-ANCHOR/plan.md
+  - agent-working/stored_artifacts/TCK-20261123-SIMQ-REANCHOR-ONLY-KEY-MODE-FOR-A-PARTIAL-RE-ANCHOR/test_plan.md
+  tags:
+  - testing
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261123-A-BROKE-BODY-CAN-EARN-BY-TAKING-A-QUEST.md
   ticket_id: TCK-20261123-A-BROKE-BODY-CAN-EARN-BY-TAKING-A-QUEST
   title: A broke body that can take quests earns money by taking one at a guild or
