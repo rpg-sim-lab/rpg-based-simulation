@@ -41,15 +41,13 @@ class GiveUpRecord:
     purpose: Optional[TargetPurpose] = None
 
     def to_canonical(self) -> Dict[str, object]:
-        """The canonical-dict form: the anchor as a list and the tick; the evidence only on a record that carries it (``from_position`` set), so a bare record keeps its older form."""
-        res: Dict[str, object] = {"anchor": [int(self.anchor[0]), int(self.anchor[1])], "tick": int(self.tick)}
-        if self.from_position is not None:
-            res["cause"] = self.cause.value
-            res["ring_evidence"] = [e.value for e in self.ring_evidence]
-            res["from_position"] = [int(self.from_position[0]), int(self.from_position[1])]
-            res["target_tile"] = None if self.target_tile is None else [int(self.target_tile[0]), int(self.target_tile[1])]
-            res["purpose"] = None if self.purpose is None else self.purpose.to_canonical()
-        return res
+        """The canonical-dict form: EVERY field, always (the digest hashes the whole record: a record built with only an anchor and a tick carries the defaults, cause "oscillation", no evidence, no position)."""
+        return {
+            "anchor": [int(self.anchor[0]), int(self.anchor[1])], "tick": int(self.tick), "cause": self.cause.value, "ring_evidence": [e.value for e in self.ring_evidence],
+            "from_position": None if self.from_position is None else [int(self.from_position[0]), int(self.from_position[1])],
+            "target_tile": None if self.target_tile is None else [int(self.target_tile[0]), int(self.target_tile[1])],
+            "purpose": None if self.purpose is None else self.purpose.to_canonical(),
+        }
 
 
 def giveup_canonical(records: Tuple[GiveUpRecord, ...]) -> Dict[str, object]:
