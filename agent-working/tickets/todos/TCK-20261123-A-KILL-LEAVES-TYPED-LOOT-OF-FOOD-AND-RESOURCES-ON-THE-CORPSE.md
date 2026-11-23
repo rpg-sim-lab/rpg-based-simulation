@@ -45,6 +45,19 @@ CORRECTED by rpg-designer, 2026-11-23: the loot already EXISTS. It is the corpse
 7. Owner questions, from the designer's draft at main-checkout .claude/handover/drafts/rpg-designer-kill-loot-design-questions.md (dbae3e67), through the lead:
    - 4 design questions: which kinds yield in slice 1; whether to use hide and bone; whether yield is independent of the cause of death; whether resources rot with the corpse.
    - 3 data values, as numbers: hide 0/1/2 by size, bone 0/1/2, and the values (hide 2, bone 1, kept below a meal).
+   OWNER-APPROVED, #715 7097645868, all as recommended:
+   - Which bodies: the kinds in current worlds, by declared size band.
+   - Items: hide and bone.
+   - Cause: none; every death yields the same.
+   - Rotting: with the corpse at death + 100.
+   - Hide: small 0 / medium 1 / large 2.
+   - Bone: small 0 / medium 1 / large 2.
+   - Base value: hide 2 gold, bone 1 gold. A large body yields 6 gold, about one shift; the owner saw this before choosing.
+   OWNER CORRECTION AND DIRECTION, #715 7097661739 and 7097668921. These WIDEN the "which bodies" and "items" answers above:
+   - Yields depend on what a body is MADE OF, not on size alone. Each body model declares its items (meat, hide, bone or none). Size sets only the quantity, using the approved numbers. A body with no flesh yields no meat and no hide.
+   - Drops differ BY KIND, as fits a fantasy world. Examples only, not values: a skeleton gives bone and no meat; a spirit gives nothing, or a spirit-only item; a winged reptile gives scale; a spider gives silk. Kinds have their own origins, not only natural species.
+   - The mechanism is rpg-designer's choice, from data, never from name checks. One option is a per-species `yields` override of the body model's default, which also solves undead sharing `spirit_body` with true spirits (inspected at main).
+   - rpg-designer drafts a PER-KIND TABLE (item, quantity by size, base value). It goes to the owner as numbers BEFORE data. The approved values (hide 0/1/2, bone 0/1/2, hide 2 g, bone 1 g) stand wherever those items appear.
 8. Bible ch03 and ch05, world rules and parity, updated in the same change.
 
 ## Out of Scope
@@ -52,7 +65,7 @@ CORRECTED by rpg-designer, 2026-11-23: the loot already EXISTS. It is the corpse
 - Prices for resources.
 
 ## Acceptance Criteria
-1. The owner's answers (the 4 design questions and 3 values) are recorded with their #715 ids before data.
+1. The owner's answers are recorded (#715 7097645868), and data matches them exactly: the per-kind table (owner-approved, #715 id to be recorded) by what each body is made of; quantities by size band; hide and bone at 0/1/2 with values 2 and 1 wherever they appear. No name checks in code.
 2. A kill's corpse inventory gains its RESOURCE items from body properties beside unchanged meat. With all yields empty, the run hash equals the base (tests, plus a failing control).
 3. Resources decay with the corpse (RESOURCE_DECAYED). QUEST_EVIDENCE is refused by the shop law. No kind name appears in the logic (a static or unit check).
 4. Measurement: a W cell pair (hunger kit) with P2 HARD on food, plus kills → loot → taken counts grouped by MOTIVE, not diet (the owner's combat-motive rule). rpg-designer reads it.
