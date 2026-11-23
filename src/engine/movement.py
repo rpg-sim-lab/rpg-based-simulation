@@ -31,6 +31,14 @@ if TYPE_CHECKING:
 _UNENTERABLE_TILE_REASONS = (ReasonCode.PATH_NOT_FOUND, ReasonCode.BUILDING_OBSTRUCTION)
 
 
+@dataclass(frozen=True, slots=True)
+class StepQuery:
+    """What the sidestep and way-round search asks about: the ``step`` that was rejected (or the looped step), the ``target_pos`` it was walking to, and the ``move_speed_mult`` the legality check uses. Read only."""
+    step: Tuple[float, float]
+    target_pos: Tuple[float, float]
+    move_speed_mult: float
+
+
 def is_evasive_flight(mode: MovementMode, style: int) -> bool:
     """A retreat by an EVASIVE (style 2) mover is a disengagement the free swing (COMB-009) cannot reach. The one predicate movement and the flight guard share."""
     return mode == MovementMode.RETREAT and style == 2
@@ -136,13 +144,12 @@ class MovementSystem:
     @staticmethod
     def _find_sidestep(
         entity: EntityState,
-        effective_target: Tuple[float, float],
-        target_pos: Tuple[float, float],
+        query: StepQuery,
         state_or_context: Any,
-        move_speed_mult: float,
         refusals: Optional[List[ReasonCode]] = None,
     ) -> Optional[Tuple[float, float]]:
         """The first legal orthogonal sidestep around a rejected step (3.1 of the congestion ladder), or None."""
+        effective_target, target_pos, move_speed_mult = query.step, query.target_pos, query.move_speed_mult
         x, y = entity.navigation.position
         dx = effective_target[0] - x
         dy = effective_target[1] - y
@@ -170,16 +177,15 @@ class MovementSystem:
     @staticmethod
     def _find_way_round_loop(
         entity: EntityState,
-        looped_step: Tuple[float, float],
-        target_pos: Tuple[float, float],
+        query: StepQuery,
         state_or_context: Any,
-        move_speed_mult: float,
         refusals: Optional[List[ReasonCode]] = None,
     ) -> Optional[Tuple[float, float]]:
         """The legal tile that gets an A-B oscillation out of the loop, or None: the sidestep around the looped step (3.1), else the nearest legal orthogonal
-        neighbour to the target (3.3), never the tile just left (`looped_step`) and never the current tile."""
+        neighbour to the target (3.3), never the tile just left (``query.step``, the looped step) and never the current tile."""
+        looped_step, target_pos, move_speed_mult = query.step, query.target_pos, query.move_speed_mult
         here = (int(entity.navigation.position[0]), int(entity.navigation.position[1]))
-        side_tile = MovementSystem._find_sidestep(entity, looped_step, target_pos, state_or_context, move_speed_mult, refusals)
+        side_tile = MovementSystem._find_sidestep(entity, query, state_or_context, refusals)
         if side_tile is not None and (int(side_tile[0]), int(side_tile[1])) != (int(looped_step[0]), int(looped_step[1])):
             return side_tile
         x, y = entity.navigation.position
@@ -210,7 +216,7 @@ class MovementSystem:
         target_tile = (int(target_pos[0]), int(target_pos[1]))
         current_tick = state_or_context.tick  # the kernel's tick, explicitly: a context with none raises, it never stamps 0 (the #996 rework)
         refusals: List[ReasonCode] = []
-        way_round = MovementSystem._find_way_round_loop(entity, effective_target, target_pos, state_or_context, move_speed_mult, refusals)
+        way_round = MovementSystem._find_way_round_loop(entity, StepQuery(effective_target, target_pos, move_speed_mult), state_or_context, refusals)
         osc_delta = -entity.navigation.oscillation_count
         wait_delta = -entity.navigation.wait_count
         dist_now = int(abs(target_pos[0] - entity.navigation.position[0]) + abs(target_pos[1] - entity.navigation.position[1]))
@@ -392,7 +398,7 @@ class MovementSystem:
 
         if not success:
             # 3.1 Sidestepping (Orthogonal)
-            side_tile = MovementSystem._find_sidestep(entity, effective_target, target_pos, state_or_context, move_speed_mult)
+            side_tile = MovementSystem._find_sidestep(entity, StepQuery(effective_target, target_pos, move_speed_mult), state_or_context)
             if side_tile is not None:
                 effective_target = side_tile
                 success = True; reason_code = None
