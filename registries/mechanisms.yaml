@@ -1901,6 +1901,8 @@ mechanisms:
       - src/systems/strategic_systems/blocker_lifecycle.py::reinferred_blockers_update
       - src/strategy/destination_suppression.py::propose_target
       - src/strategy/destination_suppression.py::destination_open
+      - src/systems/strategic_systems/navigation_experience_step.py::navigation_experience_update
+      - src/core/navigation_experience.py
       - src/engine/domain/lead_routing.py::LeadRoutingSystem
       - src/ai/score_modifiers.py::ScoreModifierSystem
       - src/systems/strategic_systems/detour.py::DetourSuggestionSystem
@@ -1962,6 +1964,7 @@ mechanisms:
         (TCK-20261121-TWO-ANCHOR-TILES-ARE-GIVEN-UP-ON-BY-MANY-SUBJECTS-FOR-THOUSANDS-OF-TICKS): per-anchor
         suppression cannot bound a corridor whose blocked tile wanders. `tactical_hold` had 0 calls in the run
         (covered statically by G6).
+        The navigation experience memory (TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON, design docs/plans/systemic_world/experience_memory_design.md, owner #715 7091042721): its typed model (core/navigation_experience.py) and its one review writer, the consume step (navigation_experience_step.py).
   - id: committed_intentions
     layer: entity
     summary: "A creature sticking to a plan it has committed to. The structure is written, but nothing uses it yet."
