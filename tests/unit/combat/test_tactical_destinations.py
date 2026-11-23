@@ -6,6 +6,7 @@ literal-(0.0, 0.0) code: the regions used here all start at x,y >= 5, so (0, 0) 
 """
 from dataclasses import replace
 
+from src.core.navigation_purpose import TargetPurpose
 from src.core.builder import V2EntityBuilder
 from src.core.enums import EntityRole, Faction
 from src.core.state import AuthoritativeState, RegionState, TaskComponent
@@ -66,7 +67,7 @@ class TestRetreatDestination:
         me = _entity(1, Faction.HERO_GUILD, pos=(20.0, 20.0))
         foe = _entity(2, Faction.MONSTER_HORDE, pos=(20.0, 18.0))
         state = _state(me, foe)
-        dest = retreat_destination(state, me, [foe])
+        dest = retreat_destination(state, me, [foe], TargetPurpose("none", "WANDER"))
         assert dest == (20.0, 20.0 + RETREAT_STEP)
         assert _inside_some_region(state, dest)
 
@@ -74,28 +75,28 @@ class TestRetreatDestination:
         me = _entity(1, Faction.HERO_GUILD, pos=(20.0, 28.0))
         foe = _entity(2, Faction.MONSTER_HORDE, pos=(20.0, 26.0))
         state = _state(me, foe)
-        assert retreat_destination(state, me, [foe]) == (20.0, 30.0)
+        assert retreat_destination(state, me, [foe], TargetPurpose("none", "WANDER")) == (20.0, 30.0)
 
     def test_cornered_holds_when_no_home_region(self):
         me = _entity(1, Faction.HERO_GUILD, pos=(20.0, 30.0))  # on the far edge already
         foe = _entity(2, Faction.MONSTER_HORDE, pos=(20.0, 28.0))
-        assert retreat_destination(_state(me, foe), me, [foe]) is None
+        assert retreat_destination(_state(me, foe), me, [foe], TargetPurpose("none", "WANDER")) is None
 
     def test_no_threat_vector_holds(self):
         me = _entity(1, Faction.HERO_GUILD)
-        assert retreat_destination(_state(me), me, []) is None
+        assert retreat_destination(_state(me), me, [], TargetPurpose("none", "WANDER")) is None
 
     def test_home_region_used_when_set_and_no_away_vector(self):
         me = _entity(1, Faction.HERO_GUILD, pos=(20.0, 30.0))
         me = replace(me, strategic=replace(me.strategic, home_region_id="far"))
         foe = _entity(2, Faction.MONSTER_HORDE, pos=(20.0, 28.0))
         state = _state(me, foe, regions=(REGION, OTHER))
-        assert retreat_destination(state, me, [foe]) == OTHER.center
+        assert retreat_destination(state, me, [foe], TargetPurpose("none", "WANDER")) == OTHER.center
 
     def test_entity_outside_every_region_gets_no_away_vector(self):
         me = _entity(1, Faction.HERO_GUILD, pos=(0.0, 0.0))
         foe = _entity(2, Faction.MONSTER_HORDE, pos=(1.0, 1.0))
-        assert retreat_destination(_state(me, foe), me, [foe]) is None
+        assert retreat_destination(_state(me, foe), me, [foe], TargetPurpose("none", "WANDER")) is None
 
 
 class TestWanderDestination:

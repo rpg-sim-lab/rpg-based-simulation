@@ -2,6 +2,7 @@
 the stored one, with the doubling suppression, and the project current at the give-up that reaches ACCESS_GIVEUP_LIMIT ends DESTINATION_GIVEN_UP. The blocker belongs to the SUBJECT."""
 from dataclasses import replace
 
+from src.core.navigation_purpose import TargetPurpose
 from src.core.builder import V2EntityBuilder
 from src.core.giveup_records import GiveUpRecord
 from src.core.strategic import BlockerState, ProjectEnd, ProjectState, ProjectStatus
@@ -93,7 +94,7 @@ def test_a_blocker_filed_under_project_a_forbids_the_tile_after_the_switch_to_pr
         e = replace(e, navigation=replace(e.navigation, giveup_records=(GiveUpRecord(anchor, tick),)))
         e = _apply(e, _file(e, tick))
     e = replace(e, strategic=replace(e.strategic, current_project_id="B"))  # the subject switches to B
-    assert destination_suppressed(e, (9, 5), 301) is not None  # the blocker is the subject's: still forbids the tile (suppressed until 300 + 200)
+    assert destination_suppressed(e, (9, 5), 301, TargetPurpose("none", "WANDER")) is not None  # the blocker is the subject's: still forbids the tile (suppressed until 300 + 200)
     for tick in (700, 1500):  # the 3rd and 4th give-ups happen under B
         e = replace(e, navigation=replace(e.navigation, giveup_records=(GiveUpRecord(anchor, tick),)))
         up = _file(e, tick)

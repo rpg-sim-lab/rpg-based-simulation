@@ -8,6 +8,7 @@ the "must not change" cases pin that the rule is narrow.
 from dataclasses import replace
 from types import SimpleNamespace
 
+from src.core.navigation_purpose import TargetPurpose
 from src.core.builder import V2EntityBuilder
 from src.core.enums import EntityRole, Faction
 from src.core.movement_modes import MovementMode
@@ -38,7 +39,7 @@ def _entity(eid, pos, *, faction, hp=100, attack_range=1):
 
 def _pursuer(pos=(10.0, 10.0), *, mode=MovementMode.PURSUE, target_id=2, attack_range=1, reason=None):
     e = _entity(1, pos, faction=Faction.HERO_GUILD, attack_range=attack_range)
-    nav = replace(e.navigation, movement_mode=mode, target=(10.0, 11.0))
+    nav = replace(e.navigation, movement_mode=mode, target=(10.0, 11.0), target_purpose=TargetPurpose("none", mode.value))
     payload = {"target_id": target_id, "target_position": (10.0, 11.0)}
     if reason is not None:
         payload["reason"] = reason

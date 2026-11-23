@@ -11,6 +11,7 @@ from dataclasses import replace
 
 import pytest
 
+from src.core.navigation_purpose import TargetPurpose
 from src.core.builder import V2EntityBuilder
 from src.core.enums import EntityRole, Faction
 from src.core.movement_modes import MovementMode
@@ -42,7 +43,7 @@ def _fighter(eid, pos, faction):
 
 def _walker(task_kind="ENTITY_ACT", payload=None):
     e = _fighter(1, (10.0, 10.0), Faction.HERO_GUILD)
-    return replace(e, navigation=replace(e.navigation, target=STORED, movement_mode=MovementMode.PURSUE),
+    return replace(e, navigation=replace(e.navigation, target=STORED, movement_mode=MovementMode.PURSUE, target_purpose=TargetPurpose("none", "PURSUE")),
                    task=TaskComponent(work_kind=task_kind, payload=dict(payload or {})))
 
 

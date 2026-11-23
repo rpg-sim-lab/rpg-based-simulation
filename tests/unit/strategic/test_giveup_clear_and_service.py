@@ -3,6 +3,7 @@ the slow pass (no fast path) and by a work-queue tier (inside the G4 window). Ea
 from dataclasses import replace
 
 
+from src.core.navigation_purpose import TargetPurpose
 from src.core.builder import V2EntityBuilder
 from src.core.dirty import DirtySet
 from src.core.giveup_records import GIVEUP_NEAR_RADIUS, GiveUpRecord, anchored_target, near_anchor
@@ -192,7 +193,7 @@ def test_the_fused_pass_clears_a_suppressed_stored_target_and_names_the_anchor_t
     e = V2EntityBuilder(1).kind("worker").location(10.0, 10.0).navigation(target=(20.0, 20.0)).build()
     blocker = BlockerState(id=access_blocker_id(anchor), kind="access", subject=f"{anchor}", suppression_until_tick=500, giveup_count=1)
     e = replace(e, strategic=replace(e.strategic, blockers={blocker.id: blocker}))
-    assert suppression_anchors(e, (21.0, 20.0), 5) == (anchor,) and suppression_anchors(e, (40.0, 40.0), 5) == ()
+    assert suppression_anchors(e, (21.0, 20.0), 5, TargetPurpose("none", "WANDER")) == (anchor,) and suppression_anchors(e, (40.0, 40.0), 5, TargetPurpose("none", "WANDER")) == ()
     upd = _pass(e).entity_updates.get(1)
     assert upd is not None and upd.navigation is not None and upd.navigation.target_clear is True and upd.navigation.target_clear_anchors == (anchor,)
 
