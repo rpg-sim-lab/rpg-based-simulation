@@ -7,7 +7,7 @@ the inn. Without this a sold worker stayed on the shop project, whose score the 
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import Any, Optional, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 from src.core.strategic import ObjectiveStatus, ProjectEnd, ProjectStatus, end_record
 from src.core.updates import EntityUpdate, StrategicUpdate, TaskUpdate
@@ -23,6 +23,9 @@ from src.engine.work_shift import (
     shift_startable,
 )
 from src.engine.work_wake import held_work_is_threatened
+
+if TYPE_CHECKING:
+    from src.core.state import BuildingState
 
 
 def _end_project(entity: Any, project: Any) -> EntityUpdate:
@@ -58,7 +61,7 @@ def _work_building_arrival(state: Any, entity: Any, project: Any, building: Any,
     (`work_shift.meal_in_reach`), so the guarantee does not depend on when the next strategic pass runs. The SAME project is re-pointed to the meal (the one helper,
     `work_shift.repoint_to_consume`, also called by the route): not ended, which would write COMPLETED while the subject is still hungry and leave a gap up to the strategic cadence."""
     if _meal_in_reach(state, entity):
-        inn = cast(Any, inn_in_reach(state, entity))  # not None: `_meal_in_reach` above is `admits(EAT) and inn_in_reach(...) is not None` (annotation only)
+        inn = cast("BuildingState", inn_in_reach(state, entity))  # not None: `_meal_in_reach` above is `admits(EAT) and inn_in_reach(...) is not None` (annotation only)
         return EntityUpdate(entity_id=entity.id, strategic=repoint_to_consume(project, "hunger", str(inn.id), (inn.position[0], inn.position[1])))
     if shift_startable(state, entity, building):
         return _act(entity, "WORK", building_id, **{SHIFT_START: state.tick})
