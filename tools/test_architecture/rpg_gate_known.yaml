@@ -21,3 +21,33 @@ known:
     expires_on: "2026-12-31"
     state: fail
     note: "The free meal: a subject that cannot pay eats at the inn. The inn charge (building_services.py:71-74, TOWN_SERVICE gold_delta -5, gold_cost 0) is accepted at 0 gold (conservation.py:256) and the -5 is clamped to 0 (inventory.py:156); V1 counts a hunger drop as backed only when an accepted transfer moved something (items, or the gold applied after the clamp), so it now shows. Before D74 it showed as merchants (group undeclared) via core_actions.py eat_update alone (-40, no transfer)."
+  - match: "V3"
+    ticket: TCK-20261121-A-SMALL-PLANT-EATER-STARVES-IN-FRONTIER-LIVING-WORLD-WITHOUT-TRYING-TO-FORAGE
+    owner: rpg-planner
+    added_on: "2026-11-21"
+    expires_on: "2026-12-15"
+    state: fail
+    cases:
+      - {world: frontier_living_world, seed: 42, entity_id: 55}
+    note: "small_plant_eater 55 starves at t4745 with FORAGE untried (SURV-06/07, H6); present since 3fc6d263a, absent at 414fb74f7, likely #955 (not bisected). Owned while its ticket bisects and traces it."
+  - match: "V3"
+    ticket: TCK-20261122-THREE-STARVING-BODIES-DIE-WITH-WAYS-UNTRIED-ONCE-THE-TOWN-HEAL-STOPS-HIDING-THEM
+    owner: rpg-planner
+    added_on: "2026-11-22"
+    expires_on: "2026-12-15"
+    state: fail
+    cases:
+      - {world: frontier_living_world, seed: 45, entity_id: 5}
+      - {world: crowded_frontier, seed: 45, entity_id: 30}
+      - {world: frontier_living_world, seed: 42, entity_id: 30}
+    note: "Three starving bodies die with ways untried once the town heal stops hiding them (#991): FLW/45 human 5 t3472 untried BUY FORAGE HUNT_EAT_RAW INN_MEAL WORK_SHIFT; crowded_frontier/45 goblin 30 t3618 untried FORAGE INN_MEAL SCAVENGE; FLW/42 goblin 30 t2588 untried FORAGE INN_MEAL. Cause unread (the gate documents record no project, objective or wage). Expires on the earlier of the cause ticket's fix landing (then a gate re-run) or 2026-12-15. A fourth such row is not covered."
+  - match: "V3"
+    ticket: TCK-20261122-A-STARVING-PREDATOR-HAS-NO-FALLBACK-WAY-TO-EAT
+    owner: rpg-planner
+    added_on: "2026-11-22"
+    expires_on: "2026-12-15"
+    state: fail
+    cases:
+      - {world: frontier_living_world, seed: 42, entity_id: 47}
+      - {world: frontier_living_world, seed: 45, entity_id: 49}
+    note: "Two starving wolves die with every food step closed once #992 lets the goblin strike back: FLW/42 wolf 47 t3553 untried HUNT_EAT_RAW SCAVENGE; FLW/45 wolf 49 t3969 untried HUNT_EAT_RAW SCAVENGE (rpg-designer, #715 7081250432: exposed, pre-existing, not a #992 regression; root: a starving predator has no fallback food). Expires on the earlier of the cause ticket's fix landing (then a gate re-run) or 2026-12-15. A third such row is not covered."

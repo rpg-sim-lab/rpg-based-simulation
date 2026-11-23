@@ -96,6 +96,8 @@ CLASSES = ("outcome", "validity")
 VALIDITY_ID_RE = re.compile(r"^V\d+$")
 MAIN_REF = "refs/heads/main"
 CI_FIELDS = ("run_id", "run_attempt", "event_name", "ref")
+MILESTONE_RULING_REF_RE = re.compile(r"#715 \d+")  # an owner-ruling comment on issue #715, as v2 records it: "#715 6920465555"
+REASON_FIRST_OF_MILESTONE = "first of milestone"
 PROVENANCE_FIELDS = ("commit_sha", "harness_hash", "worlds", "seeds", "ticks", "recorded_at", "stale_after", "cites")
 SCOPES = ("run", "pooled")
 
@@ -118,6 +120,8 @@ class StopLine:
     group: str = "*"
     min: Optional[float] = None
     max: Optional[float] = None
+    when_row: Optional[str] = None  # scope: the line applies to a (world, group) only when this pooled row's value there is at least ``when_min``; a missing row APPLIES the line (fails closed)
+    when_min: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -128,6 +132,7 @@ class GateConfig:
     stale_after_days: int
     stop_lines: Tuple[StopLine, ...] = ()
     required_validity: Mapping[str, Tuple[str, ...]] = field(default_factory=dict)  # level ("run" | "pooled") -> ids required in documents of that level
+    non_eating: Mapping[str, Mapping[str, str]] = field(default_factory=dict)  # kind group with no diet -> {exclusion: value}; handed to the metric module's compute and pool
 
     def required_at(self, level: str) -> Tuple[str, ...]:
         return tuple(self.required_validity.get(level, ()))
@@ -159,6 +164,41 @@ def _load_required_validity(path: Path, raw: Any) -> dict:
     return out
 
 
+NON_EATING_GROUPS = ("none",)  # the kind groups a config may declare as non-eating: a group with no diet
+NON_EATING_EXCLUSIONS = {"food_metrics": ("not_applicable",)}  # exclusion name -> its allowed values
+
+
+def _load_non_eating(path: Path, raw: Any) -> dict:
+    """``{group: {exclusion: value}}``, strict: a malformed declaration, an unknown group or an unknown exclusion or value raises (TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-GROUP-AS-UNDECLARED)."""
+    if raw is None:
+        return {}
+    if not isinstance(raw, dict):
+        raise BaselineError(f"{path}: non_eating_kind_groups must map a kind group to its exclusions, for example {{none: {{food_metrics: not_applicable}}}}, got {raw!r}")
+    out = {}
+    for group, entry in raw.items():
+        if group not in NON_EATING_GROUPS:
+            raise BaselineError(f"{path}: non_eating_kind_groups has an unknown group {group!r}; the declarable groups are {list(NON_EATING_GROUPS)}")
+        if not isinstance(entry, dict) or not entry:
+            raise BaselineError(f"{path}: non_eating_kind_groups[{group}] must map an exclusion to its value, got {entry!r}")
+        for name, value in entry.items():
+            if name not in NON_EATING_EXCLUSIONS:
+                raise BaselineError(f"{path}: non_eating_kind_groups[{group}] has an unknown exclusion {name!r}; the exclusions are {sorted(NON_EATING_EXCLUSIONS)}")
+            if value not in NON_EATING_EXCLUSIONS[name]:
+                raise BaselineError(f"{path}: non_eating_kind_groups[{group}][{name}] has an unknown value {value!r}; allowed: {list(NON_EATING_EXCLUSIONS[name])}")
+        out[group] = dict(entry)
+    return out
+
+
+def _load_when(path: Path, raw: Mapping[str, Any]) -> Tuple[Optional[str], Optional[float]]:
+    """A stop line's optional ``when: {row: <id>, min: <number>}`` scope, strict: any other shape, key or type raises."""
+    if "when" not in raw:
+        return None, None
+    when = raw["when"]
+    if not isinstance(when, dict) or set(when) != {"row", "min"} or not isinstance(when["row"], str) or isinstance(when["min"], bool) or not isinstance(when["min"], (int, float)):
+        raise BaselineError(f"{path}: stop line {raw.get('name')!r} has a malformed when; it must be {{row: <row id>, min: <number>}}, got {when!r}")
+    return when["row"], float(when["min"])
+
+
 def load_config(path: Path) -> GateConfig:
     data = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
     for name in ("worlds", "seeds", "ticks", "stale_after_days"):
@@ -172,9 +212,11 @@ def load_config(path: Path) -> GateConfig:
     for raw in data.get("stop_lines") or []:
         if not raw.get("name") or not raw.get("metric"):
             raise BaselineError(f"{path}: a stop line needs a name and a metric: {raw!r}")
-        lines.append(StopLine(raw["name"], raw["metric"], raw.get("group", "*"), raw.get("min"), raw.get("max")))
+        when = _load_when(path, raw)
+        lines.append(StopLine(raw["name"], raw["metric"], raw.get("group", "*"), raw.get("min"), raw.get("max"), *when))
     return GateConfig(
         tuple(data["worlds"]), tuple(data["seeds"]), int(data["ticks"]), int(data["stale_after_days"]), tuple(lines), required,
+        _load_non_eating(path, data.get("non_eating_kind_groups")),
     )
 
 
@@ -235,6 +277,7 @@ def lint_baseline(doc: Any, filename: Optional[str] = None) -> List[str]:
     problems.extend(_lint_omitted_validity(doc.get("omitted_validity"), doc.get("metrics")))
     problems.extend(_lint_undefined_rows(doc.get("undefined_rows"), doc.get("metrics")))
     problems.extend(_lint_rebaseline(doc.get("rebaseline"), version, (doc.get("provenance") or {}).get("cites")))
+    problems.extend(_lint_milestone_reference(doc))
     return problems
 
 
@@ -396,6 +439,35 @@ def _ruling_problem(ruling: Any) -> Optional[str]:
     return None
 
 
+def _milestone_ruling_problem(ruling: Any) -> Optional[str]:
+    """A ruling that names a baseline its milestone's reference must be an owner ruling that is a comment on issue #715 (``#715 <comment id>``)."""
+    problem = _ruling_problem(ruling)
+    if problem:
+        return problem
+    if not MILESTONE_RULING_REF_RE.fullmatch(str(ruling["ref"])):
+        return f"owner_ruling ref {ruling['ref']!r} is not a comment on issue #715 (expected '#715 <comment id>')"
+    return None
+
+
+def _recorded_ruling(doc: Mapping[str, Any]) -> Any:
+    """The owner ruling a baseline records: version 1 holds it at the top level, a later version in its rebaseline record."""
+    record = doc.get("rebaseline")
+    return record.get("owner_ruling") if isinstance(record, dict) and "owner_ruling" in record else doc.get("owner_ruling")
+
+
+def _lint_milestone_reference(doc: Mapping[str, Any]) -> List[str]:
+    """``milestone_reference`` is optional and boolean; true needs the owner ruling recorded on this baseline, a comment on #715 (baseline_change_policy.md rule 10)."""
+    if "milestone_reference" not in doc:
+        return []
+    marker = doc["milestone_reference"]
+    if not isinstance(marker, bool):
+        return [f"milestone_reference must be a boolean, got {marker!r}"]
+    if not marker:
+        return []
+    problem = _milestone_ruling_problem(_recorded_ruling(doc))
+    return [f"milestone_reference: needs an owner ruling recorded on this baseline, a comment on #715 ({problem}; baseline_change_policy.md rule 10)"] if problem else []
+
+
 def _lint_rebaseline(record: Any, version: Any, cites: Any = None) -> List[str]:
     if version == 1:
         return [] if record is None else ["version 1 must have rebaseline null"]
@@ -466,16 +538,23 @@ class References:
 
     last: dict
     milestone_first: dict
+    milestone_reason: str = REASON_FIRST_OF_MILESTONE
 
 
 def resolve_references(baselines: Sequence[dict]) -> Optional[References]:
-    """The last baseline and the first baseline of the last one's milestone; ``None`` when there is no baseline (the report's no-data state)."""
+    """The last baseline and the reference of the last one's milestone; ``None`` when there is no baseline (the report's no-data state).
+    The milestone reference is the highest-versioned baseline of that milestone that carries ``milestone_reference: true`` (named by an owner ruling), else the first
+    of the milestone. A marker on a baseline of another milestone has no effect."""
     if not baselines:
         return None
     ordered = sorted(baselines, key=lambda d: d["version"])
     last = ordered[-1]
-    first = next(d for d in ordered if d["milestone"] == last["milestone"])
-    return References(last=last, milestone_first=first)
+    in_milestone = [d for d in ordered if d["milestone"] == last["milestone"]]
+    named = [d for d in in_milestone if d.get("milestone_reference") is True]
+    if named:
+        ruling = _recorded_ruling(named[-1]) or {}
+        return References(last=last, milestone_first=named[-1], milestone_reason=f"named by owner ruling {ruling.get('ref')}")
+    return References(last=last, milestone_first=in_milestone[0])
 
 
 # ---------------------------------------------------------------- staleness
@@ -512,6 +591,15 @@ def staleness(baseline: Mapping[str, Any], now: dt.datetime, current_harness_has
 # ---------------------------------------------------------------- re-baseline
 
 
+def _out_of_scope(rows: Sequence[Mapping[str, Any]], row: Mapping[str, Any], line: StopLine) -> bool:
+    """True when the line's scope row exists for this row's (world, group) and is under ``when_min``; a missing or valueless scope row is NOT out of scope (fail closed: the line applies)."""
+    for scope in rows:
+        if scope.get("id") == line.when_row and scope.get("world") == row.get("world") and scope.get("group") == row.get("group"):
+            value = row_value(scope)
+            return value is not None and value < (line.when_min or 0.0)
+    return False
+
+
 def stop_lines_crossed(rows: Sequence[Mapping[str, Any]], stop_lines: Sequence[StopLine]) -> List[str]:
     """Names of the stop lines some row's value is outside of (each name once, in config order)."""
     crossed: List[str] = []
@@ -521,6 +609,8 @@ def stop_lines_crossed(rows: Sequence[Mapping[str, Any]], stop_lines: Sequence[S
             if row.get("class") != "outcome" or value is None or not fnmatch.fnmatchcase(str(row.get("id")), line.metric) or not fnmatch.fnmatchcase(str(row.get("group")), line.group):
                 continue
             if (line.min is not None and value < line.min) or (line.max is not None and value > line.max):
+                if line.when_row is not None and _out_of_scope(rows, row, line):
+                    continue
                 crossed.append(line.name)
                 break
     return crossed
@@ -554,12 +644,19 @@ def rebaseline(
     milestone: Optional[str] = None,
     known: Optional[Sequence[dict]] = None,
     today: Optional[dt.date] = None,
+    milestone_reference: bool = False,
 ) -> Path:
     """Write the next version from ``candidate`` and return its path, or raise :class:`RebaselineRefused`. Never modifies an existing file.
     A candidate marked ``evidence_only`` (from a branch-ref dispatch) is refused, and so is one whose ``provenance.ci`` is null or missing, whose ``ci.ref`` is not
     ``refs/heads/main``, or with a missing or malformed ``provenance.known_file_sha256`` (the same check as the lint, ``_lint_ci_provenance``): only a main CI run's own candidate is a baseline source. There is no override; ``milestone`` overrides the candidate's. A candidate that omitted owned validity
     fails needs ``known`` (the current ``rpg_gate_known.yaml`` entries): each omission's ``known_match`` must still be a ``state: fail`` entry and not expired."""
     directory = Path(directory)
+    if milestone_reference:  # rule 10: only an owner ruling that is a comment on #715 names a milestone's reference
+        if not owner_ruling:
+            raise RebaselineRefused("baseline_change_policy.md rule 10: naming a baseline its milestone's reference needs an owner ruling {ref, date} (--owner-ruling-ref '#715 <comment id>' --owner-ruling-date)")
+        ruling_problem = _milestone_ruling_problem(owner_ruling)
+        if ruling_problem:
+            raise RebaselineRefused(f"baseline_change_policy.md rule 10: {ruling_problem}")
     if candidate.get("evidence_only"):
         raise RebaselineRefused("this candidate is evidence only (a branch-ref dispatch); a baseline is recorded from a main run's candidate")
     ci_problems = _lint_ci_provenance(candidate.get("provenance") or {})  # the one rule, shared with the lint of the written file
@@ -620,6 +717,8 @@ def rebaseline(
             **({"owner_ruling": dict(owner_ruling)} if owner_ruling else {}),
             **({"undecided_world_semantic_change": True} if undecided_world_semantic_change else {}),
         }
+    if milestone_reference:
+        doc["milestone_reference"] = True
     problems = lint_baseline(doc, f"rpg_gate_v{version}.json")
     if problems:
         raise BaselineError("; ".join(problems))
@@ -652,6 +751,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     reb.add_argument("--owner-ruling-ref")
     reb.add_argument("--owner-ruling-date")
     reb.add_argument("--undecided-world-semantic-change", action="store_true")
+    reb.add_argument("--milestone-reference", action="store_true", help="name this baseline its milestone's reference (policy rule 10); needs --owner-ruling-ref '#715 <comment id>' and --owner-ruling-date")
     args = parser.parse_args(argv)
     if args.cmd == "lint":
         problems = lint_dir(args.dir)
@@ -671,6 +771,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             undecided_world_semantic_change=args.undecided_world_semantic_change,
             milestone=args.milestone,
             known=known_reds.load_known_reds(args.known, known_reds.RPG_GATE_SPEC) if args.known else None,
+            milestone_reference=args.milestone_reference,
         )
     except BaselineError as exc:
         print(f"REFUSED: {exc}" if isinstance(exc, RebaselineRefused) else f"ERROR: {exc}", file=sys.stderr)

@@ -12,12 +12,27 @@ from src.core.updates import (
     EntityUpdate,
     InventoryUpdate,
 )
+from src.engine.biological_needs import hunger_after_accrual
+from src.engine.cadence import should_run
+from src.engine.starvation import STARVING_LINE
 from src.engine.work_shift import WAGE_GOLD
 
 if TYPE_CHECKING:
-    from src.core.state import AuthoritativeState, BuildingState
+    from src.core.state import AuthoritativeState, BuildingState, EntityState
     from src.core.updates import StateUpdate
     from src.engine.cadence import SystemCadence
+
+PASSIVE_HEAL_AMT = 1  # HP a hurt body on a town tile regains on each town-resolution pass
+
+
+def _town_heal_update(entity: "EntityState", ent_upd: EntityUpdate, tick: int, cadence: "SystemCadence") -> "EntityUpdate | None":
+    """The entity's update with the town-tile heal merged in, or None when it is not healed. Nothing heals at or past the starving line (D36, D42), the one line
+    natural healing and the starvation drain use, read as the hunger the apply step will test (``_hunger_when_applied``)."""
+    if entity.combat.hp >= entity.combat.max_hp or _hunger_when_applied(entity, tick, cadence) >= STARVING_LINE:
+        return None
+    cb_upd = ent_upd.combat or CombatUpdate()
+    return replace(ent_upd, combat=cb_upd.merge(CombatUpdate(hp_delta=PASSIVE_HEAL_AMT)))
+
 
 class TownResolutionSystem:
     """
@@ -61,7 +76,6 @@ class TownResolutionSystem:
             new_metric_counters[key] = new_metric_counters.get(key, 0) + 1
 
         # 2. Constants & Caches
-        PASSIVE_HEAL_AMT = 1
         is_tax_tick = (state.tick % (cadence.town_resolution * 2) == 0)
         
         # Pre-cache faction keys for faster resource lookup
@@ -93,10 +107,9 @@ class TownResolutionSystem:
             # --- Part A: Town Logic (Healing). Building services (bed, meal, sale) land with their action: building_services.py ---
             tile_pos = (int(pos[0]), int(pos[1]))
             if tile_pos in state.town_tiles:
-                # Healing
-                if entity.combat.hp < entity.combat.max_hp:
-                    cb_upd = ent_upd.combat or CombatUpdate()
-                    ent_upd = replace(ent_upd, combat=cb_upd.merge(CombatUpdate(hp_delta=PASSIVE_HEAL_AMT)))
+                healed = _town_heal_update(entity, ent_upd, state.tick, cadence)
+                if healed is not None:
+                    ent_upd = healed
                     refined_entity_updates[e_id] = ent_upd
 
             # --- Part B: Regional Effects (Tax, Suppression) ---
@@ -160,6 +173,14 @@ class TownResolutionSystem:
             metric_counters=new_metric_counters,
             owed_remove=new_owed_remove,
         )
+
+
+def _hunger_when_applied(entity: "EntityState", tick: int, cadence: "SystemCadence") -> float:
+    """The hunger the apply path will test the starving drain against for this update: the apply tick (``tick + 1``) accrues one biological step first
+    (``ApplyPath._compute_entity_changes``), so a body that crosses the starving line on that tick must not be healed on it. Same expression as the apply path."""
+    if should_run(tick + 1, None, cadence.biological):
+        return hunger_after_accrual(entity, cadence.biological)
+    return entity.biological.hunger
 
 
 def _meet_upkeep(building: "BuildingState", key: str, treasury_balances: Dict[str, float], resource_updates: Dict[str, float],

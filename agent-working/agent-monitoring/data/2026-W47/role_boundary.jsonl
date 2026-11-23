@@ -1,0 +1,1 @@
+{"ts":"2026-11-22T03:19:15.241852Z","event":"role_boundary","kind":"message_class_mismatch","session_id":"2e6feeba-0adc-4342-a142-f4f7ad458fb6","session_role":"rpg-planner","function":"planner","domain":"rpg","tool":"SendMessage","target":"rpg-designer","message_class":"request","accepts_dispatch_from":["user"]}

@@ -154,6 +154,22 @@ def _elem_hint(hint: Any) -> Any:
     return None
 
 
+def _perturb_fixed_arity(value: tuple, hint: Any) -> Optional[Tuple[Any, Optional[Any]]]:
+    """A fixed-arity tuple (``Tuple[int, int]``: declared per position, no ``...``) keeps its length: appending is out of type, and ``to_canonical`` writes only the declared
+    positions, so an append would read as unhashed. Change the first element that can be changed, with that position's own hint. ``None`` when ``hint`` is not a fixed-arity
+    tuple of ``value``'s length (variadic ``Tuple[X, ...]`` and bare tuples keep the append); ``Cannot`` when no position can be changed."""
+    args = typing.get_args(_strip_optional(hint))
+    if typing.get_origin(_strip_optional(hint)) is not tuple or not args or Ellipsis in args or len(args) != len(value):
+        return None
+    for index, element_hint in enumerate(args):
+        try:
+            changed, inserted = perturb(value[index], element_hint)
+        except Cannot:
+            continue
+        return value[:index] + (changed,) + value[index + 1:], inserted
+    raise Cannot("no position of the fixed-arity tuple can be changed")
+
+
 def perturb(value: Any, hint: Any) -> Tuple[Any, Optional[Any]]:
     """(new value, the inserted element or None). Type-correct; raises ``Cannot``."""
     if isinstance(value, bool):
@@ -173,6 +189,10 @@ def perturb(value: Any, hint: Any) -> Tuple[Any, Optional[Any]]:
         inner = _strip_optional(hint)
         new = synthesize(inner)
         return new, (new if _is_instance(new) else None)
+    if isinstance(value, tuple):
+        in_place = _perturb_fixed_arity(value, hint)
+        if in_place is not None:
+            return in_place
     ehint = _elem_hint(hint)
     if isinstance(value, ReadOnlyDict) or isinstance(value, dict):
         if value and ehint is None:
