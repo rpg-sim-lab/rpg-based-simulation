@@ -420,6 +420,14 @@ class BlockerSettingsDefinition(CatalogBaseDefinition):
     access_giveup_limit: int = Field(..., ge=1, strict=True, description="Give-ups of one destination (a give-up-filed ACCESS blocker's giveup_count) that end the project that wanted it; an integer >= 1")
 
 
+class NavigationExperienceSettingsDefinition(CatalogBaseDefinition):
+    """Schema for the navigation experience memory's balance values (the #996 rework, design section 9): a one-record family like `blocker_settings`, so the values are part of the catalog fingerprint (the run's identity). All are integers >= 1."""
+    oscillation_review_delay: int = Field(..., ge=1, strict=True, description="Ticks after an oscillation give-up before the place is due for another try; an integer >= 1")
+    bodies_review_delay: int = Field(..., ge=1, strict=True, description="Ticks after a ring block with bodies among its evidence before the place is due; an integer >= 1")
+    approach_change_radius: int = Field(..., ge=1, strict=True, description="Tiles (Chebyshev) from where the subject gave up that count as a changed approach; an integer >= 1")
+    navigation_experience_cap: int = Field(..., ge=1, strict=True, description="Navigation experiences one subject keeps; an integer >= 1")
+
+
 class WayroundSettingsDefinition(CatalogBaseDefinition):
     """Schema for the way-round law's two numbers (F1, divergence 2.213): a one-record family like `defaults`, so the values are part of the catalog fingerprint (the run's identity). Both are integers >= 1; there is no cross-check between them (one counts steps, the other ticks)."""
     wayround_limit: int = Field(..., ge=1, strict=True, description="Way-round steps allowed on one target with no net progress before the oscillation replan is the real one; an integer >= 1")

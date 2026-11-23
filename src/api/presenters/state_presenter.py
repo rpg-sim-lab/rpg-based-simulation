@@ -200,6 +200,7 @@ class StatePresenter:
                 "betrayals": entity.social.betrayal_count
             },
             "navigation": _navigation_dto(entity.navigation),
+            "navigation_experiences": [r.to_canonical() for r in entity.cognition.memory.navigation.records],  # the #996 rework: the subject's own failed approaches (shaped, not the model)
             "biological": {
                 "sleep_debt": entity.biological.sleep_debt,
                 "hunger": entity.biological.hunger

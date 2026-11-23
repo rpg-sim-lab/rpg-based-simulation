@@ -834,6 +834,31 @@ class CognitionPatch(ComponentPatch):
             changes["cognition"] = self.cognition_bundle_set
 
 
+@dataclass(frozen=True, slots=True)
+class NavigationExperiencePatch(ComponentPatch):
+    """The subject's navigation experience update (the #996 rework): rebuilds ``cognition.memory.navigation`` through `apply_experience_update`. It layers on whatever cognition the same update already
+    stages (it reads ``changes["cognition"]`` first), so a whole-object `CognitionPatch` of the memory phase and this patch compose in either order of arrival."""
+    navigation_experience: Optional[Any] = None  # NavigationExperienceUpdate
+
+    def is_noop(self) -> bool:
+        return self.navigation_experience is None or self.navigation_experience.is_noop()
+
+    def merge(self, other: NavigationExperiencePatch) -> NavigationExperiencePatch:
+        if not other or other.is_noop():
+            return self
+        merged = self.navigation_experience.merge(other.navigation_experience) if self.navigation_experience is not None else other.navigation_experience
+        return NavigationExperiencePatch(entity_id=self.entity_id, navigation_experience=merged)
+
+    def apply(self, entity: EntityState, changes: Dict[str, Any]) -> None:
+        if self.is_noop():
+            return
+        from src.core.navigation_experience import apply_experience_update
+        from src.engine.apply import replace
+        cognition = changes.get("cognition", entity.cognition)
+        memory = replace(cognition.memory, navigation=apply_experience_update(cognition.memory.navigation, self.navigation_experience))
+        changes["cognition"] = replace(cognition, memory=memory)
+
+
 def extract_patches(entity_id: int, update: EntityUpdate) -> List[ComponentPatch]:
     """
     Extracts all active component patches from a monolithic EntityUpdate.
@@ -898,5 +923,8 @@ def extract_patches(entity_id: int, update: EntityUpdate) -> List[ComponentPatch
         if not p.is_noop(): patches.append(p)
     if update.cognition_bundle_set is not None:
         p = CognitionPatch(entity_id, cognition_bundle_set=update.cognition_bundle_set)
+        if not p.is_noop(): patches.append(p)
+    if update.navigation_experience is not None:
+        p = NavigationExperiencePatch(entity_id, navigation_experience=update.navigation_experience)
         if not p.is_noop(): patches.append(p)
     return patches

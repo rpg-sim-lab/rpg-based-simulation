@@ -13,6 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable, Iterable, List, Optional
 
+from src.core.navigation_experience import NavigationExperienceMemory
 from src.core.state import seeded_next_group_id
 
 _UNSET = object()
@@ -41,6 +42,11 @@ class FieldRule:
 def _navigations(state: Any) -> Iterable[Any]:
     for e in (getattr(state, "entities", None) or {}).values():
         yield (f"entity {e.id}", e.navigation)
+
+
+def _memory_models(state: Any) -> Iterable[Any]:
+    for e in (getattr(state, "entities", None) or {}).values():
+        yield (f"entity {e.id}", e.cognition.memory)
 
 
 def _identities(state: Any) -> Iterable[Any]:
@@ -101,6 +107,7 @@ FIELD_RULES: List[FieldRule] = [
     FieldRule("giveup_records", _navigations, "giveup_records", fill=lambda state, owner: (), ruling="F2: a state that predates the give-up records held none", record="NavigationComponent"),
     FieldRule("target_purpose", _navigations, "target_purpose", fill=lambda state, owner: None, ruling="rpg-designer 2026-11-23, experience memory (#715 7091099713): a target that predates the purpose was chosen for none that is known; None is exactly that state", record="NavigationComponent"),
     FieldRule("target_gated", _navigations, "target_gated", fill=lambda state, owner: False, ruling="rpg-designer 2026-11-23, experience memory (#715 7091099713): a target that predates the latch flag was not recorded as gated; False is exactly that state", record="NavigationComponent"),
+    FieldRule("navigation", _memory_models, "navigation", fill=lambda state, owner: NavigationExperienceMemory(), ruling="rpg-designer 2026-11-23, experience memory (#715 7091099713): a state that predates the navigation experience memory held none; the empty memory is exactly that state", record="MemoryModel"),
     FieldRule("lodged_in", _navigations, "lodged_in", fill=lambda state, owner: None, ruling="2.155: a state that predates lodging lodged no one", record="NavigationComponent"),
     # PERC-02 (2.210): a state that predates the step clock never recorded a step, so the body reads still until it steps; None is exactly that state.
     FieldRule("last_moved_tick", _navigations, "last_moved_tick", fill=lambda state, owner: None, ruling="rpg-designer 2026-11-18, PERC-02: a state that predates the step clock recorded no step", record="NavigationComponent"),

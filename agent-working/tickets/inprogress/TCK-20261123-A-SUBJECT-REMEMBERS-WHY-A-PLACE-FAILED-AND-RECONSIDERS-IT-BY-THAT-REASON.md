@@ -98,6 +98,10 @@ New durable fields, each typed, canonical, hashed and checkpointed, LAST with FI
 Lifecycle per the design: filing by the consume step, a gate due-read, a recorded review, eviction by data cap. Clocks are the explicit tick, never a getattr default.
 
 ## Implementation Notes
+- Typing refinement inside the approved rule (designer, relayed by rpg-planner): the design's `need_service: Optional[str]` ("EAT" / "REST") is `need_services: FrozenSet[NeedService]` (`NeedService(str, Enum)`: EAT, REST), because an inn serves both and a compound string would be durable meaning in a string. Empty means not a food or bed tile. Canonical form is a sorted list of values. NEED_SEVERE = (EAT in need_services and hunger >= STARVING_LINE) or (REST in need_services and sleep_debt >= SLEEP_LINE). Looked up through main's `SERVICE_KINDS` table, no new name read.
+- The content-matrix evidence string for `access_giveup_limit` (`src/content/matrix.py`, "strategy/blocker_settings", names `giveup_filing_update` as the runtime consumer) changes with the cutover commit, when the ACCESS filing is removed.
+- `GiveUpRecord.to_canonical` carries the producer's evidence (cause, ring evidence, from-position, target tile, stored purpose) whenever the record has a from-position; `tests/unit/movement/test_giveup_records.py:105` asserts the old two-key form and goes on the class (ii) owner table, required by the approved design (section 3, #715 7091099713).
+- The navigation experience settings family is `data/content/strategy/navigation_experience_settings.yaml` (100 / 50 / 5 / 8), wired through schema, repository, matrix and `src/content/navigation_experience_settings.py`.
 
 ## Test Summary
 

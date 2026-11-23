@@ -6,6 +6,7 @@ from dataclasses import replace
 from typing import Any, Dict, Optional, Tuple
 
 from src.content.blocker_settings import access_giveup_limit
+from src.content.navigation_experience_settings import navigation_experience_settings
 from src.core.giveup_records import HeldTargetAtAnchorCounts, near_anchor
 from src.core.inventory import InventoryService
 from src.core.state import AuthoritativeState, EntityState
@@ -31,6 +32,7 @@ from src.core.updates import (
     StrategicUpdate,
 )
 from src.strategy.destination_suppression import access_blocker_id, access_subject
+from src.systems.strategic_systems.navigation_experience_step import navigation_experience_update
 
 
 def reinferred_blockers_update(entity: EntityState, staged: StrategicUpdate, inferred: StrategicUpdate, tick: int) -> StrategicUpdate:
@@ -376,10 +378,17 @@ def giveup_filing_update(entity: EntityState, staged: StrategicUpdate, tick: int
     return update
 
 
-def consume_giveup_records(entity: EntityState, staged: StrategicUpdate, ent_upd: Optional[EntityUpdate], tick: int) -> Tuple[StrategicUpdate, EntityUpdate]:
+def consume_giveup_records(entity: EntityState, staged: StrategicUpdate, ent_upd: Optional[EntityUpdate], tick: int, state: Any = None) -> Tuple[StrategicUpdate, EntityUpdate]:
     """The give-up consume step of one strategic pass (F2, divergence 2.220): ``staged`` with the ACCESS blockers (and the typed end) of `giveup_filing_update` folded in, and ``ent_upd`` carrying the
-    typed clear of the records, so none outlives a pass (also when no project is current). A subject holding no record is returned unchanged; the limit is read from the catalog only then."""
+    typed clear of the records, so none outlives a pass (also when no project is current). A subject holding no record is returned unchanged; the limit is read from the catalog only then.
+    The #996 rework: the same step also computes the subject's navigation experience update (`navigation_experience_update`: reviews of due records, an upsert per pending give-up, evictions at the cap) and
+    stages it on ``ent_upd``; it runs whenever the subject holds a pending record or an experience, so a due record is reviewed on any pass that serves the subject."""
     cur = ent_upd if ent_upd is not None else EntityUpdate(entity_id=entity.id)
+    if entity.navigation.giveup_records or entity.cognition.memory.navigation.records:
+        project_id = (staged.current_project_id_set if staged.current_project_id_set is not None else entity.strategic.current_project_id) or ""
+        nx = navigation_experience_update(entity, state, tick, project_id, navigation_experience_settings())
+        if not nx.is_noop():
+            cur = replace(cur, navigation_experience=cur.navigation_experience.merge(nx) if cur.navigation_experience is not None else nx)
     if not entity.navigation.giveup_records:
         return staged, cur
     held = entity.navigation.target

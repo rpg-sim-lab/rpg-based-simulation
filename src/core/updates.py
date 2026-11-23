@@ -23,6 +23,7 @@ from src.core.dirty import DirtySet
 from src.core.giveup_records import GiveUpRecord
 from src.core.group_update_merge import merge_group_fields
 from src.core.movement_modes import MovementMode
+from src.core.navigation_experience import NavigationExperienceUpdate
 from src.core.navigation_purpose import TargetPurpose
 from src.core.spawn_source import SpawnSource
 from src.core.state import ItemInstance, ItemStack, LifeStage  # noqa: F401  (ItemStack re-exported: tests import it from here)
@@ -273,6 +274,7 @@ class EntityUpdate:
     # path, so a raw ActionIntent can no longer reach that IntentResult-typed durable field by
     # construction, regardless of whether InformationIntentExecutionPhase runs.
     pending_action_intent: Optional[ActionIntent] = None
+    navigation_experience: Optional[NavigationExperienceUpdate] = None  # the #996 rework: the subject's navigation experience memory update (reviews, upserts, evictions), written ONLY by its strategic consume step; applied by NavigationExperiencePatch
 
     def is_noop(self) -> bool:
         return (self.kind_set is None and self.new_position is None and 
@@ -296,7 +298,7 @@ class EntityUpdate:
                 (self.status_effect_update is None or self.status_effect_update.is_noop()) and
                 self.group_id_set is None and self.self_model_bundle_set is None and
                 self.cognition_bundle_set is None and not self.intent_results and
-                self.pending_action_intent is None and
+                self.pending_action_intent is None and (self.navigation_experience is None or self.navigation_experience.is_noop()) and
                 not self.property_updates)
 
     def merge(self, other: EntityUpdate) -> EntityUpdate:
@@ -335,6 +337,7 @@ class EntityUpdate:
         if other.cognition_bundle_set is not None: changes["cognition_bundle_set"] = other.cognition_bundle_set
         if other.intent_results: changes["intent_results"] = self.intent_results + other.intent_results
         if other.pending_action_intent is not None: changes["pending_action_intent"] = other.pending_action_intent
+        if other.navigation_experience is not None and not other.navigation_experience.is_noop(): changes["navigation_experience"] = self.navigation_experience.merge(other.navigation_experience) if self.navigation_experience else other.navigation_experience
         if other.property_updates: changes["property_updates"] = {**self.property_updates, **other.property_updates}
         return replace(self, **changes)
 
