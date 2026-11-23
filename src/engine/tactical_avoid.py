@@ -43,12 +43,23 @@ def classify_neighbours(entity: "EntityState", neighbors: Sequence["EntityState"
     return hood
 
 
-def _retreat(entity: "EntityState", where: Tuple[float, float], reason: str, strat_up: Any, purpose: TargetPurpose, gated: bool) -> EntityUpdate:
-    """The flight update. ``purpose`` is the caller's bound name (the gate's argument for a gated ``where``, `ungated_purpose` for the own-tile hold) and ``gated`` says which."""
+def _flight_update(entity: "EntityState", where: Tuple[float, float], reason: str, strat_up: Any, navigation: NavigationUpdate) -> EntityUpdate:
+    """The flight update around a ready navigation update: the move task to ``where`` with its ``reason``, and the strategic update the caller carries."""
     return EntityUpdate(
-        entity_id=entity.id, strategic=strat_up,
-        navigation=NavigationUpdate(target_set=where, movement_mode_set=MovementMode.RETREAT, target_purpose_set=purpose, target_gated_set=gated),
+        entity_id=entity.id, strategic=strat_up, navigation=navigation,
         task=TaskUpdate(work_kind_set="ENTITY_MOVE", payload_set={"target_position": where, "reason": reason}),
+    )
+
+
+def _retreat(entity: "EntityState", where: Tuple[float, float], reason: str, strat_up: Any, purpose: TargetPurpose) -> EntityUpdate:
+    """The flight update to a tile that came through the gate. ``purpose`` is the caller's bound name (the gate's argument), stored with the target as gated."""
+    return _flight_update(entity, where, reason, strat_up, NavigationUpdate(target_set=where, movement_mode_set=MovementMode.RETREAT, target_purpose_set=purpose, target_gated_set=True))
+
+
+def _retreat_hold(entity: "EntityState", reason: str, strat_up: Any) -> EntityUpdate:
+    """The flight update with no tile to flee to: the subject holds its own tile (a by-value write that skipped the gate, stored with `ungated_purpose` and as NOT gated)."""
+    where = entity.navigation.position
+    return _flight_update(entity, where, reason, strat_up, NavigationUpdate(target_set=where, movement_mode_set=MovementMode.RETREAT, target_purpose_set=ungated_purpose(entity, MovementMode.RETREAT), target_gated_set=False))
     )
 
 
@@ -63,12 +74,12 @@ def avoid_what_can_eat_me(
         purpose = purpose_of(entity, None, MovementMode.RETREAT)
         away = retreat_destination(state, entity, hood.threatening, purpose)
         if away is None:
-            return _retreat(entity, entity.navigation.position, "FLEE_THREAT", strat_up, ungated_purpose(entity, MovementMode.RETREAT), False)
-        return _retreat(entity, away, "FLEE_THREAT", strat_up, purpose, True)
+            return _retreat_hold(entity, "FLEE_THREAT", strat_up)
+        return _retreat(entity, away, "FLEE_THREAT", strat_up, purpose)
     near = [w for w in hood.wary if manhattan_tile_distance(entity.navigation.position, w.navigation.position) <= WARY_DISTANCE]
     purpose = purpose_of(entity, None, MovementMode.RETREAT)
     distant = retreat_destination(state, entity, near, purpose) if near else None
-    return _retreat(entity, distant, "KEEP_DISTANCE", strat_up, purpose, True) if distant is not None else None
+    return _retreat(entity, distant, "KEEP_DISTANCE", strat_up, purpose) if distant is not None else None
 
 
 def eat_at_hunger_corpse(entity: "EntityState", state: "AuthoritativeState", project: Any, objective: Any) -> Optional[EntityUpdate]:
