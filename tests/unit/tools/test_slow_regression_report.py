@@ -197,9 +197,28 @@ def test_the_real_known_reds_file_is_loadable_and_lints_clean():
     ],
 )
 def test_real_file_has_no_owner_for_a_corpus_anchor_after_the_baseline_v1_reanchor(anchor):
-    # TCK-20261014-SIMQ-SINGLE-REANCHOR-ON-BASELINE-V1 retired the family entries and the corpus catch-all: a corpus anchor red again is UNOWNED.
+    # TCK-20261014-SIMQ-SINGLE-REANCHOR-ON-BASELINE-V1 retired the family entries and the corpus catch-all: a corpus anchor red again is UNOWNED, unless it is owned as
+    # `kind: flaky`. Owner ruling #715 7090968271 (TCK-20261123-FOUR-CORPUS-GRADE-STABILITY-GUARDS-PASS-AND-FAIL-ON-THE-SAME-SHA-GET-FLAKY-ENTRIES): a guard that passes and fails on
+    # the same sha is owned as flaky; a broken-kind owner (a standing red) still fails here.
     known = srr.load_known_reds(REAL_KNOWN_REDS)
-    assert srr.owner_of(f"{CORPUS}{anchor}_grade_stability", known) is None
+    owner = srr.owner_of(f"{CORPUS}{anchor}_grade_stability", known)
+    assert owner is None or owner["kind"] == "flaky"
+
+
+FLAKY_CORPUS_GUARDS = (
+    "urban_political_seed123_1000t_social_economy",
+    "generated_frontier_3_42_seed123_200t_combat_narrative",
+    "frontier_extended_seed42_200t_narrative",
+    "frontier_extended_seed123_200t_combat_progression_narrative",
+)
+
+
+@pytest.mark.parametrize("guard", FLAKY_CORPUS_GUARDS)
+def test_real_file_owns_each_flaky_corpus_guard_as_flaky_under_the_throttle_ticket(guard):
+    known = srr.load_known_reds(REAL_KNOWN_REDS)
+    owner = srr.owner_of(f"{CORPUS}{guard}_grade_stability", known)
+    assert owner is not None and owner["kind"] == "flaky"
+    assert owner["ticket"] == "TCK-20260822-STANDARD-SLOW-REGRESSION-CI-JOB-EXIT-CODE-2" and owner["expires_on"] == "2026-12-15"
 
 
 HELD_V1_KEYS = {

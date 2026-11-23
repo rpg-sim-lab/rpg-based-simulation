@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261123-FOUR-CORPUS-GRADE-STABILITY-GUARDS-PASS-AND-FAIL-ON-THE-SAME-SHA-GET-FLAKY-ENTRIES
-phase: open
+phase: done
 date: 2026-11-23
 tags: [testing]
 ---
@@ -15,7 +15,7 @@ tags: [testing]
 Four corpus grade-stability guards that pass and fail on the same sha in the scheduled slow run are owned as flaky known reds, and the re-anchor pin test accepts only a flaky owner
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -71,10 +71,10 @@ Entries expire on 2026-12-15.
 Pytest on taskset -c 0-3, --basetemp on /data, no uv sync. Changed existing test: owner-approved (#715 7090968271). No bare git stash.
 
 ## Test Summary
-Not run yet.
+tests/unit/tools/test_slow_regression_report.py and test_known_reds.py: 128 passed (taskset -c 0-3). The four tests resolve to a flaky entry under the throttle ticket (new parametrized test); the real-file lint is clean. One-off check, not committed: with every flaky entry flipped to broken, the amended pin test fails for frontier_extended_seed42_200t_narrative, the only one of the five pinned anchors that now has an owner; the other four anchors still have none, and the pin still fails for any owner that is not flaky. No rerun, no heavy run.
 
 ## Files Changed
-None yet.
+tools/test_architecture/slow_known_reds.yaml (4 flaky entries), tests/unit/tools/test_slow_regression_report.py (pin amended, one ownership test added), this ticket.
 
 ## Completion Summary
-Open.
+The four guards are owned as flaky until 2026-12-15 under the parked throttle ticket; the re-anchor pin accepts only a flaky owner (owner ruling #715 7090968271). Push yes still to be logged on #715.
