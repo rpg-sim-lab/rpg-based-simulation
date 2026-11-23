@@ -2,19 +2,21 @@
 # Compliance IDs: COMB-009, COMB-010, COMB-011, COMB-012, COMB-188, COMB-189, COMB-190, COMB-199, COMB-201, COMB-202, COMB-203, COMB-204, COMB-205, COMB-206, COMB-207, COMB-208, COMB-211, COMB-212, COMB-213, COMB-214, COMB-219, COMB-220, COMB-221, COMB-222, COMB-223, COMB-224, COMB-225, COMB-226, COMB-231, COMB-232, COMB-233, COMB-234, COMB-235, COMB-236, COMB-238, COMB-239, COMB-240, COMB-241, COMB-242, COMB-243, COMB-272, COMB-273
 # src/engine/movement.py
 from __future__ import annotations
-from typing import TYPE_CHECKING, Tuple, Optional, Any, Dict, List
+from typing import TYPE_CHECKING, Tuple, Optional, Any, Dict, FrozenSet, List
 from dataclasses import dataclass, replace
 
 from src.content.common_knowledge_seed import warmed_catalog
 from src.content.wayround_settings import WayroundSettings, wayround_settings
 from src.core.giveup_records import GiveUpRecord
-from src.core.navigation_experience import NavCause, ring_evidence_of
+from src.core.navigation_experience import NavCause, NeedService, ring_evidence_of
 from src.core.movement_modes import MovementMode
 from src.core.updates import EntityUpdate, NavigationUpdate, StaminaUpdate, LifecycleUpdate
 from src.core.enums import ReasonCode
 
 from src.engine.felt_swing import felt_lethal_attacker
+from src.engine.building_services import SERVICE_KINDS
 from src.engine.legality import LegalityServiceV2
+from src.engine.service_reach import service_tile
 from src.systems.world_systems.navigation import NavigationSystem
 from src.world.environment import EnvironmentService
 from src.engine.combat import CombatResolutionSystem
@@ -29,6 +31,12 @@ if TYPE_CHECKING:
 # A step rejected for one of these reasons failed because the destination tile is static terrain or a building footprint,
 # not because another entity stands there (that is OCCUPANCY_VIOLATION).
 _UNENTERABLE_TILE_REASONS = (ReasonCode.PATH_NOT_FOUND, ReasonCode.BUILDING_OBSTRUCTION)
+
+
+def need_services_at(state_or_context: Any, anchor: Tuple[int, int]) -> FrozenSet[NeedService]:
+    """The needs the building in reach of ``anchor`` serves (an inn: EAT and REST; a home: REST), or the empty set: a pure read through main's building-kind table, taken at the give-up and carried on its record. It reads
+    the building map the serial state and a worker's read-only packet both carry, so the two paths agree."""
+    return frozenset(NeedService(action) for action in ("EAT", "REST") if service_tile(state_or_context, (int(anchor[0]), int(anchor[1])), SERVICE_KINDS[action]) is not None)
 
 
 @dataclass(frozen=True, slots=True)
@@ -227,7 +235,7 @@ class MovementSystem:
         kept = (int(anchor[0]), int(anchor[1])) if anchor is not None else target_tile
         ring_blocked = way_round is None  # the one-ring check found no legal tile (else the bounded way-round count was spent: OSCILLATION, with no ring evidence)
         record = GiveUpRecord(kept, int(current_tick), NavCause.RING_BLOCKED if ring_blocked else NavCause.OSCILLATION, ring_evidence_of(refusals) if ring_blocked else (),
-                              (int(entity.navigation.position[0]), int(entity.navigation.position[1])), target_tile, entity.navigation.target_purpose)
+                              (int(entity.navigation.position[0]), int(entity.navigation.position[1])), target_tile, entity.navigation.target_purpose, need_services_at(state_or_context, kept))
         return OscReplanOutcome(None, osc_delta, wait_delta, None, True, record)
 
     @staticmethod

@@ -15,8 +15,7 @@ from src.core.navigation_experience import (
     ReviewReason,
     RingEvidence,
 )
-from src.engine.need_pull import SLEEP_LINE
-from src.engine.starvation import STARVING_LINE
+from src.core.need_lines import SLEEP_LINE, STARVING_LINE
 
 
 def next_review_tick_of(cause: NavCause, evidence: tuple, observed_tick: int, settings: NavigationExperienceSettings) -> Optional[int]:

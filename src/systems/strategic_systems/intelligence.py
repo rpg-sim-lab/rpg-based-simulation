@@ -381,7 +381,7 @@ class StrategicIntelligenceSystem:
             )
             
             strat_up = reinferred_blockers_update(entity, strat_up, inferred_up, state.tick)
-            strat_up, ent_upd = consume_giveup_records(entity, strat_up, ent_upd, state.tick, state)  # F2 (divergence 2.220): file the give-up records' ACCESS blockers and clear them
+            strat_up, ent_upd = consume_giveup_records(entity, strat_up, ent_upd, state.tick)  # F2 (divergence 2.220): file the give-up records' ACCESS blockers and clear them
             removals = set(strat_up.blockers_remove)
             resolved_ids = set()
             for b_id, b in entity.strategic.blockers.items():

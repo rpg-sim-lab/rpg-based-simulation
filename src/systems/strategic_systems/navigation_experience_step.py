@@ -2,10 +2,10 @@
 
 In order: REVIEW every ACTIVE record whose due rule holds (`experience_due.due_reason`); FILE each pending give-up record as an upsert of its (anchor, purpose) record, a fresh cycle every time with every
 field derived afresh from THAT give-up's evidence and the data values (nothing from the old record's timing survives); EVICT at the cap. It returns one typed `NavigationExperienceUpdate`; it writes nothing itself. A give-up
-whose stored purpose is None files nothing and is counted. No kind, role, faction or name is read: the inputs are the subject's own position, needs, projects and records, and the building-kind service table."""
+whose stored purpose is None files nothing and is counted. No kind, role, faction or name is read: the inputs are the subject's own position, needs, projects and records, and the needs the give-up record carries (read by the producer, at the give-up, through the building-kind service table)."""
 from __future__ import annotations
 
-from typing import Any, Dict, FrozenSet, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from src.content.navigation_experience_settings import NavigationExperienceSettings
 from src.core.navigation_experience import (
@@ -15,18 +15,10 @@ from src.core.navigation_experience import (
     NavigationExperienceCounts,
     NavigationExperienceMemory,
     NavigationExperienceUpdate,
-    NeedService,
     apply_experience_update,
     experience_id_of,
 )
-from src.engine.building_services import SERVICE_KINDS
-from src.engine.service_reach import service_tile
 from src.strategy.experience_due import due_reason, next_review_tick_of
-
-
-def need_services_at(state: Any, anchor: Tuple[int, int]) -> FrozenSet[NeedService]:
-    """The needs the building in reach of ``anchor`` serves (an inn: EAT and REST; a home: REST), or the empty set. It reuses main's building-kind service table; no body's kind is read."""
-    return frozenset(NeedService(action) for action in ("EAT", "REST") if service_tile(state, (int(anchor[0]), int(anchor[1])), SERVICE_KINDS[action]) is not None)
 
 
 def _oldest_reviewed(pool: List[NavigationExperience]) -> List[NavigationExperience]:
@@ -62,7 +54,7 @@ def _evictions(entity: Any, memory: NavigationExperienceMemory, kept_ids: set, t
     return tuple(out)
 
 
-def navigation_experience_update(entity: Any, state: Any, tick: int, project_id: str, settings: NavigationExperienceSettings) -> NavigationExperienceUpdate:
+def navigation_experience_update(entity: Any, tick: int, project_id: str, settings: NavigationExperienceSettings) -> NavigationExperienceUpdate:
     """The experience update of one strategic pass for ``entity``: reviews, the upserts its pending give-up records file, and the evictions the cap needs. ``project_id`` is the project current at this pass ("" when none)."""
     memory = entity.cognition.memory.navigation
     stored: Dict[str, NavigationExperience] = {r.experience_id: r for r in memory.records}
@@ -83,7 +75,7 @@ def navigation_experience_update(entity: Any, state: Any, tick: int, project_id:
         filed[eid] = NavigationExperience(
             experience_id=eid, anchor=anchor, purpose=rec.purpose, cause=rec.cause, ring_evidence=tuple(rec.ring_evidence),
             from_position=rec.from_position if rec.from_position is not None else here, target_tile=rec.target_tile if rec.target_tile is not None else anchor,
-            need_services=need_services_at(state, anchor), project_id=project_id, observed_tick=tick, cycle=(prev.cycle + 1) if prev is not None else 1,
+            need_services=rec.need_services, project_id=project_id, observed_tick=tick, cycle=(prev.cycle + 1) if prev is not None else 1,
             next_review_tick=next_review_tick_of(rec.cause, tuple(rec.ring_evidence), tick, settings), status=NavExperienceStatus.ACTIVE, reviewed_tick=None, review_reason=None,
             project_giveups=(prev.project_giveups + 1) if prev is not None and prev.project_id == project_id else 1)
     upserts = tuple(filed[k] for k in sorted(filed))

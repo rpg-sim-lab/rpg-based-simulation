@@ -7,9 +7,9 @@ counted in `GiveUpDropCounts` (observability only)."""
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple
+from typing import Dict, FrozenSet, Optional, Tuple
 
-from src.core.navigation_experience import NavCause, RingEvidence
+from src.core.navigation_experience import NavCause, NeedService, RingEvidence
 from src.core.navigation_purpose import TargetPurpose
 
 # The designer's structural bound on unconsumed records (FINAL v2, OBJ-2): the strategic pass consumes them every pass, so more than this means the strategic pass is not running for the subject.
@@ -39,6 +39,7 @@ class GiveUpRecord:
     from_position: Optional[Tuple[int, int]] = None
     target_tile: Optional[Tuple[int, int]] = None
     purpose: Optional[TargetPurpose] = None
+    need_services: FrozenSet[NeedService] = frozenset()  # LAST: the needs the building in reach of the anchor serves, read by the producer AT the give-up (frozen then, not at consume time)
 
     def to_canonical(self) -> Dict[str, object]:
         """The canonical-dict form: EVERY field, always (the digest hashes the whole record: a record built with only an anchor and a tick carries the defaults, cause "oscillation", no evidence, no position)."""
@@ -46,7 +47,7 @@ class GiveUpRecord:
             "anchor": [int(self.anchor[0]), int(self.anchor[1])], "tick": int(self.tick), "cause": self.cause.value, "ring_evidence": [e.value for e in self.ring_evidence],
             "from_position": None if self.from_position is None else [int(self.from_position[0]), int(self.from_position[1])],
             "target_tile": None if self.target_tile is None else [int(self.target_tile[0]), int(self.target_tile[1])],
-            "purpose": None if self.purpose is None else self.purpose.to_canonical(),
+            "purpose": None if self.purpose is None else self.purpose.to_canonical(), "need_services": sorted(s.value for s in self.need_services),
         }
 
 
