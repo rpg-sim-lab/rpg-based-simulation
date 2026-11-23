@@ -1178,7 +1178,7 @@ overcome it), estimated from senses and wits, serves hunting, fleeing and warine
      (903239fbe against e6a6a3e10, seeds 42-51) is disclosure M4; its stop was the pooled test
      (memo row 86). The extinction line, revisited at v1: per seed it stays the stop for a single
      step; a cumulative or M0-crossing span stops on the pooled test (memo row 86).
-1. **Kinds by properties.**
+1. **Kinds by properties** (milestone name: **systemic_foundation**, owner decision #715 7064089876; the gate baseline label stays `M1` until it ends).
    - The property model in coarse bands, as schema and content.
    - The appraisal.
    - `kind` always means species, and occupation is a separate field.
@@ -1256,7 +1256,7 @@ not as commitments:
 The rules already decided for these areas (EXCH-02's selling, wages and tax; LEARN-03's taught
 crafts) stay in force. Only further design waits.
 
-### 12.5 Milestone 1: done criteria and freeze rule (written before work starts)
+### 12.5 Milestone 1 (systemic_foundation): done criteria and freeze rule (written before work starts)
 
 Approved by the owner on 2026-10-23 (#715 6356123802), after review by lead-planner-u24 and rpg-designer.
 

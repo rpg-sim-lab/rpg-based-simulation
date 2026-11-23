@@ -342,6 +342,67 @@ requires a named present-threat term: WOUNDED, ADJACENT, CLOSING, TARGETED or OU
 test above: no retreat from a lone, distant, non-targeting hostile; a retreat once a named threat
 term holds.
 
+**Amendment, flight holds once decided (decided by the owner, 2026-11-22: intent #715 7076062275,
+wording "Approve as worded" #715 7076096298 on the text in #715 7076083309):**
+
+> A subject that has decided to flee keeps fleeing while the threat that started the flight is
+> still present to it (its pursuer still in reach or still closing), until it is out of the
+> threat's reach or has reached safety. It does not return to an ordinary goal and then flee again
+> within a few moments while the same threat holds. A NEW present threat may change the flight's
+> direction; ending a flight is a decision made when the threat is gone, not a timer.
+
+- **Why:** the Rule above says when flight starts, but nothing said how long it holds. So a
+  subject flipping between flight and wandering every few ticks under the same threat was not
+  unlawful by the text. The #781 and O3 traces (TCK-20261121-MEAT-EATERS-IN-FRONTIER-LIVING-WORLD-ATTACK-PEOPLE-FORTY-TIMES-MORE-AFTER-THE-NIGHT-AND-SLOT-FIXES)
+  saw a goblin hit 51 times by wolves while its mode alternated between WANDER and REGROUP.
+- **Engineering, not this Rule:** the reach distance, what counts as safety, and any hysteresis
+  band.
+- Kind-neutral: it holds for every subject, decided from its own threat terms.
+- **Repository evidence: NOT YET SUPPORTED.** It lands as a rule first. Its implementation is Step A
+  of the goblin-30 fix (owner order 2026-11-22: points 1-3 first).
+
+**Amendment, when to fight back (decided by the owner, 2026-11-22: intent #715 7076062275, wording
+"Approve as worded" #715 7076096298 on the text in #715 7076083309):**
+
+> A subject that is being attacked always weighs fighting back against fleeing. It turns and
+> fights when its flight is failing (it is cornered, it is outpaced, or it is caught again and
+> again) or when it judges, from what it perceives of itself and its attacker (strength, health,
+> arms), that it can win. Neither "always flee" nor "always fight" is the rule; the choice follows
+> the subject's own appraisal, disposition and condition.
+
+- **Why:** CONFLICT-03 gives every subject the PERMISSION to fight back (its symmetric rule). But
+  no Rule said WHEN an attacked subject chooses to. That choice sits in the decision layer
+  (AGENCY-02), and this amendment states it.
+- **Engineering, not this Rule:** how "flight is failing" is detected, and the "can win" estimate.
+  The estimate is the same appraisal as CONFLICT-03's amendment, and KNOW-02's caveat on true
+  stats applies.
+- Kind-neutral: decided from properties, never from a kind.
+- **Repository evidence: NOT YET SUPPORTED.** The two amendments land as rules first. Their
+  implementation is a separate step from the goblin-30 fix, owner order 2026-11-22: points 1-3
+  first, and fighting back as its own measured step.
+
+**Amendment, a first strike when it judges it can win (decided by the owner, 2026-11-22: intent
+#715 7078469868, choice "Only if it judges it can win"; wording "Approve revised" #715 7078502579
+on the text in #715 7078497229, which replaces the earlier text approved in #715 7078442937):**
+
+> **A first strike when it judges it can win.** A creature facing one that could eat it normally keeps its distance or flees (CONFLICT-03's amendment). If its kind's declared way of fighting allows a first strike, a creature that judges, from what it perceives of itself and the other (strength, health, arms), that it can overcome the other may strike first, before it is attacked; within that, the choice follows its own appraisal, disposition and condition. It is never made to. A kind whose way of fighting does not allow a first strike, or a creature that judges it cannot overcome the other, does not start the fight: it keeps away, flees, or fights back only once attacked, as its way of fighting declares.
+
+- **Why:** the amendment above says when an ATTACKED subject fights back. Nothing said whether a
+  subject that has NOT been attacked may strike first. The owner's answer: only if it judges it
+  can win, and only if its kind's declared way of fighting allows it.
+- **Engineering, not this Rule:** "judges it can overcome" is read from ONE power-judgement
+  component: the creature's estimate of the other's power from what it observes, inspects or
+  remembers (TCK-20261122-AN-ATTACKED-SUBJECT-CHOOSES-TO-FIGHT-BACK-WHEN-FLIGHT-FAILS-OR-IT-CAN-WIN,
+  then TCK-20261122-EVERY-CAN-I-WIN-JUDGEMENT-GOES-THROUGH-ONE-POWER-SEAM). Each kind's way of
+  fighting is declared from properties in content (decision 62,
+  TCK-20261109-M1-EACH-MONSTER-KIND-DECLARES-WHY-IT-FIGHTS), never by kind name in code.
+  "Disposition" here keeps its AGENCY-02 meaning (an ordinary motivation that only weights a
+  choice). A declared way of fighting is behaviour declared by its own Rule (AGENCY-02's
+  carve-out).
+- Kind-neutral: decided from properties and the kind's declaration, never from a kind name.
+- **Repository evidence: NOT YET SUPPORTED.** It lands as a rule first. Its implementation is Step B,
+  after decision 62's slice 1.
+
 ## AGENCY-08 — A subject's standing drive comes from who it is: the most specific declared source wins, and a default is visible
 
 > A subject's standing drive (its ordinary motivations, AGENCY-02) belongs to the person, not the
@@ -534,7 +595,9 @@ mechanism never built at all).
   (`survival-needs.md`'s SURV-05, the need half), Roles/Institutions (`roles-institutions.md`)
 - AGENCY-07 → this family's own AGENCY-02 (ordinary motivation never decides an action) and
   AGENCY-06 (its companion for ambient dread); Conflict/Combat (`conflict-combat.md`, being
-  outmatched as a present threat)
+  outmatched as a present threat). Its 2026-11-22 amendments (flight holds once decided; when to
+  fight back) → Conflict/Combat (`conflict-combat.md`'s CONFLICT-03 symmetric permission and
+  appraisal amendment, and CONFLICT-04's leaving an engagement as flight)
 
 ## Open questions carried forward
 
