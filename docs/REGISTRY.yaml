@@ -7986,6 +7986,379 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261123-FOUR-CORPUS-GRADE-STABILITY-GUARDS-PASS-AND-FAIL-ON-THE-SAME-SHA-GET-FLAKY-ENTRIES.md
+  ticket_id: TCK-20261123-FOUR-CORPUS-GRADE-STABILITY-GUARDS-PASS-AND-FAIL-ON-THE-SAME-SHA-GET-FLAKY-ENTRIES
+  title: Four corpus grade-stability guards that pass and fail on the same sha in
+    the scheduled slow run are owned as flaky known reds, and the re-anchor pin test
+    accepts only a flaky owner
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-23'
+  related_code_areas:
+  - tools/test_architecture/slow_known_reds.yaml
+  - tests/unit/tools/test_slow_regression_report.py
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261123-A-BROKE-BODY-CAN-EARN-BY-TAKING-A-QUEST.md
+  ticket_id: TCK-20261123-A-BROKE-BODY-CAN-EARN-BY-TAKING-A-QUEST
+  title: A broke body that can take quests earns money by taking one at a guild or
+    similar building, not only by a work shift
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-23'
+  related_code_areas:
+  - src/ai/goals/ways.py, src/ai/goals/opening_steps.py, src/ai/goals/scorers.py,
+    src/quests/,
+  - src/engine/quests.py, src/engine/service_admission.py (keeps_coin)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261122-A-FLEEING-SUBJECT-KEEPS-FLEEING-AND-AN-ATTACKED-ONE-WEIGHS-FIGHTING-BACK.md
+  ticket_id: TCK-20261122-A-FLEEING-SUBJECT-KEEPS-FLEEING-AND-AN-ATTACKED-ONE-WEIGHS-FIGHTING-BACK
+  title: 'World rules: a subject that decides to flee keeps fleeing while its threat
+    holds, and a subject under attack weighs fighting back (AGENCY-07 amendment and
+    companion)'
+  tier: hotfix
+  ticket_type: feature
+  date: '2026-11-22'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS.md
+  ticket_id: TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS
+  title: 'Attack permission is asymmetric and transient for wild pairs: a prey may
+    strike its predator only on the tick the predator''s task names it, breaking CONFLICT-03'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-22'
+  related_code_areas:
+  - src/engine/hostility.py (attack_allowed); src/engine/legality.py (LegalityServiceV2);
+    src/engine/domain/combat_actions.py:56
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS/plan.md
+  - agent-working/stored_artifacts/TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS/test_plan.md
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261122-PERSON-ATTACK-LAUNCHER-WRITES-NO-RUNNER-RECORD.md
+  ticket_id: TCK-20261122-PERSON-ATTACK-LAUNCHER-WRITES-NO-RUNNER-RECORD
+  title: 'The person-attack trace launcher writes no runner.json: its bookkeeping
+    step imports the kit from the caller''s directory, not from the kit'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-22'
+  related_code_areas:
+  - tools/rpg_measure/person_attack_launch.sh
+  - tests/tools/test_person_attack_kit.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261122-STATE-DIGEST-PROBE-PERTURBS-FIXED-ARITY-TUPLES-IN-PLACE.md
+  ticket_id: TCK-20261122-STATE-DIGEST-PROBE-PERTURBS-FIXED-ARITY-TUPLES-IN-PLACE
+  title: The state-digest probe changes an element of a fixed-arity tuple field instead
+    of appending one, so an in-type field that is hashed is no longer reported unhashed
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-22'
+  related_code_areas:
+  - tests/architecture/state_digest_probe.py
+  - tests/architecture/test_state_digest_covers_every_field.py
+  - tests/architecture/state_digest_allowlist.yaml (read only)
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261122-TOWN-TILE-HEALING-IGNORES-STARVATION-SO-A-STARVING-BODY-IN-TOWN-NEVER-DIES.md
+  ticket_id: TCK-20261122-TOWN-TILE-HEALING-IGNORES-STARVATION-SO-A-STARVING-BODY-IN-TOWN-NEVER-DIES
+  title: Town-tile healing has no hunger check, so a starving body standing in town
+    regains every HP the starvation drain takes and never dies
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-22'
+  related_code_areas:
+  - src/systems/town_resolution.py (Part A healing, PASSIVE_HEAL_AMT)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261122-TOWN-TILE-HEALING-IGNORES-STARVATION-SO-A-STARVING-BODY-IN-TOWN-NEVER-DIES/investigation.md
+  - agent-working/stored_artifacts/TCK-20261122-TOWN-TILE-HEALING-IGNORES-STARVATION-SO-A-STARVING-BODY-IN-TOWN-NEVER-DIES/plan.md
+  - agent-working/stored_artifacts/TCK-20261122-TOWN-TILE-HEALING-IGNORES-STARVATION-SO-A-STARVING-BODY-IN-TOWN-NEVER-DIES/test_plan.md
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261122-V3-THREE-STARVATIONS-UNDER-THE-TOWN-HEAL-FIX-GET-A-SCOPED-KNOWN-ENTRY.md
+  ticket_id: TCK-20261122-V3-THREE-STARVATIONS-UNDER-THE-TOWN-HEAL-FIX-GET-A-SCOPED-KNOWN-ENTRY
+  title: 'Gate V3 on three bodies that starve once #991''s town-heal fix lands gets
+    a scoped known entry that expires on 2026-12-15'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-22'
+  related_code_areas:
+  - tools/test_architecture/rpg_gate_known.yaml
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261122-V3-TWO-WOLVES-STARVE-ONCE-992-LETS-THE-GOBLIN-STRIKE-BACK-GET-A-SCOPED-KNOWN-ENTRY.md
+  ticket_id: TCK-20261122-V3-TWO-WOLVES-STARVE-ONCE-992-LETS-THE-GOBLIN-STRIKE-BACK-GET-A-SCOPED-KNOWN-ENTRY
+  title: 'Gate V3 on two wolves that starve once #992 lands gets a scoped known entry
+    that expires on 2026-12-15'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-22'
+  related_code_areas:
+  - tools/test_architecture/rpg_gate_known.yaml
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-A-RESOLVED-OBJECTIVE-PULLS-A-FLEEING-SUBJECT-BACK-TOWARD-IT.md
+  ticket_id: TCK-20261122-A-RESOLVED-OBJECTIVE-PULLS-A-FLEEING-SUBJECT-BACK-TOWARD-IT
+  title: 'Step A of the goblin-30 fix: a RESOLVED objective keeps pulling a subject,
+    so a decided flight is pulled back toward the finished goal again and again; flight
+    must hold while its threat holds'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-22'
+  related_code_areas:
+  - the strategic project/objective lifecycle (src/systems/strategic_systems/intelligence.py,
+    src/core/strategic.py)
+  - tactical flight (src/engine/tactical.py, src/engine/tactical_threat.py)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-A-STARVING-PREDATOR-HAS-NO-FALLBACK-WAY-TO-EAT.md
+  ticket_id: TCK-20261122-A-STARVING-PREDATOR-HAS-NO-FALLBACK-WAY-TO-EAT
+  title: A starving predator has no fallback way to eat (no carcass, no food node,
+    and its hunt belief says it cannot win)
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-22'
+  related_code_areas:
+  - src/ai/goals/opening_steps.py (HUNT, SCAVENGE, HUNT_EAT_RAW steps); src/engine/appraisal.py
+    (can_overcome)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-AN-ARENA-OF-PREDATORS-AND-PREY-SHOWS-HOW-ATTACKED-BODIES-REACT.md
+  ticket_id: TCK-20261122-AN-ARENA-OF-PREDATORS-AND-PREY-SHOWS-HOW-ATTACKED-BODIES-REACT
+  title: 'Report-only arena observation: many meat-eaters against many prey, over
+    several seeds, to see how attacked bodies react (flee, fight, die) as a distribution'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-22'
+  related_code_areas:
+  - tools/rpg_measure/ (the person_attack kit as a base)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-AN-ATTACKED-SUBJECT-CHOOSES-TO-FIGHT-BACK-WHEN-FLIGHT-FAILS-OR-IT-CAN-WIN.md
+  ticket_id: TCK-20261122-AN-ATTACKED-SUBJECT-CHOOSES-TO-FIGHT-BACK-WHEN-FLIGHT-FAILS-OR-IT-CAN-WIN
+  title: 'Step B of the goblin-30 fix: an attacked subject chooses to fight back when
+    its flight fails or it judges it can win (AGENCY-07 amendment "when to fight back")'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-22'
+  related_code_areas:
+  - src/engine/tactical.py, src/engine/tactical_flight_guard.py, src/engine/tactical_threat.py,
+    the appraisal
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-EVERY-CAN-I-WIN-JUDGEMENT-GOES-THROUGH-ONE-POWER-SEAM.md
+  ticket_id: TCK-20261122-EVERY-CAN-I-WIN-JUDGEMENT-GOES-THROUGH-ONE-POWER-SEAM
+  title: Every "can I win" judgement goes through one power-judgement seam
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-22'
+  related_code_areas:
+  - src/engine/appraisal.py; tactical_threat.py:93-94; src/domains/combat_engagement/perception.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-THE-GATE-ATTACK-AND-UNEATEN-KILL-ROWS-SPLIT-VICTIMS-INTO-PEOPLE-AND-NON-PEOPLE.md
+  ticket_id: TCK-20261122-THE-GATE-ATTACK-AND-UNEATEN-KILL-ROWS-SPLIT-VICTIMS-INTO-PEOPLE-AND-NON-PEOPLE
+  title: 'The gate''s O3 attack row and O6 uneaten-kill row split attackers and victims
+    into people and non-people: redefine both by attacker diet group, over any living
+    victim'
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-22'
+  related_code_areas:
+  - is_person
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-THREE-STARVING-BODIES-DIE-WITH-WAYS-UNTRIED-ONCE-THE-TOWN-HEAL-STOPS-HIDING-THEM.md
+  ticket_id: TCK-20261122-THREE-STARVING-BODIES-DIE-WITH-WAYS-UNTRIED-ONCE-THE-TOWN-HEAL-STOPS-HIDING-THEM
+  title: 'Three bodies starve to death with ways untried (V3) once #991 stops the
+    illegal town heal: the cause is unread'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-22'
+  related_code_areas:
+  - src/ai/goals/opening_steps.py (earn_then_buy); the strategic objective lifecycle
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-TRACE-KIT-CALENDAR-LOAD-WRITES-BYTECODE-INTO-A-FROZEN-TREE.md
+  ticket_id: TCK-20261122-TRACE-KIT-CALENDAR-LOAD-WRITES-BYTECODE-INTO-A-FROZEN-TREE
+  title: The trace kit's calendar loader writes a .pyc into the frozen tree it reads,
+    when it is called outside the launcher
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-22'
+  related_code_areas:
+  - tools/rpg_measure/person_attack_summary.py
+  - tests/tools/test_person_attack_kit.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261121-MEAT-EATERS-IN-FRONTIER-LIVING-WORLD-ATTACK-PEOPLE-FORTY-TIMES-MORE-AFTER-THE-NIGHT-AND-SLOT-FIXES.md
+  ticket_id: TCK-20261121-MEAT-EATERS-IN-FRONTIER-LIVING-WORLD-ATTACK-PEOPLE-FORTY-TIMES-MORE-AFTER-THE-NIGHT-AND-SLOT-FIXES
+  title: 'Meat-eaters in frontier_living_world attack people about forty times more
+    often (gate O3 0.6 -> 24.0 per seed) since the night fix (#953) and the suspended-project
+    expiry (#954): trace who attacks, and decide intended vs a loop'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-21'
+  related_code_areas:
+  - src/observability/rpg_gate_metrics.py (O3 counting, meat grouping)
+  - src/core/calendar.py, src/systems/strategic_systems/intelligence.py (suspension
+    expiry), src/engine/tactical.py (attack decisions)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261121-MEAT-EATERS-IN-FRONTIER-LIVING-WORLD-ATTACK-PEOPLE-FORTY-TIMES-MORE-AFTER-THE-NIGHT-AND-SLOT-FIXES/o3_trace_brief_relayed_2026-11-21.md
+  - agent-working/stored_artifacts/TCK-20261121-MEAT-EATERS-IN-FRONTIER-LIVING-WORLD-ATTACK-PEOPLE-FORTY-TIMES-MORE-AFTER-THE-NIGHT-AND-SLOT-FIXES/o3prime_motive_run_record_2026-11-22.md
+  - agent-working/stored_artifacts/TCK-20261121-MEAT-EATERS-IN-FRONTIER-LIVING-WORLD-ATTACK-PEOPLE-FORTY-TIMES-MORE-AFTER-THE-NIGHT-AND-SLOT-FIXES/rpg_designer_o3_kit_answers_2026-11-21.md
+  - agent-working/stored_artifacts/TCK-20261121-MEAT-EATERS-IN-FRONTIER-LIVING-WORLD-ATTACK-PEOPLE-FORTY-TIMES-MORE-AFTER-THE-NIGHT-AND-SLOT-FIXES/stage1_SHA256SUMS.md
+  - agent-working/stored_artifacts/TCK-20261121-MEAT-EATERS-IN-FRONTIER-LIVING-WORLD-ATTACK-PEOPLE-FORTY-TIMES-MORE-AFTER-THE-NIGHT-AND-SLOT-FIXES/stage2_SHA256SUMS.md
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261121-RPG-GATE-A-BASELINE-CAN-BE-NAMED-ITS-MILESTONES-REFERENCE.md
+  ticket_id: TCK-20261121-RPG-GATE-A-BASELINE-CAN-BE-NAMED-ITS-MILESTONES-REFERENCE
+  title: 'A baseline can be named its milestone''s reference (`milestone_reference`),
+    set only by `rebaseline` citing an owner-ruling comment on #715, so a re-record
+    inside M1 does not leave the stale first baseline as the fixed reference'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-21'
+  related_code_areas:
+  - tools/test_architecture/rpg_gate_baseline.py
+  - tools/test_architecture/rpg_gate_report.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261121-RPG-GATE-A-BASELINE-CAN-BE-NAMED-ITS-MILESTONES-REFERENCE/investigation.md
+  - agent-working/stored_artifacts/TCK-20261121-RPG-GATE-A-BASELINE-CAN-BE-NAMED-ITS-MILESTONES-REFERENCE/plan.md
+  - agent-working/stored_artifacts/TCK-20261121-RPG-GATE-A-BASELINE-CAN-BE-NAMED-ITS-MILESTONES-REFERENCE/test_plan.md
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-GROUP-AS-UNDECLARED.md
+  ticket_id: TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-GROUP-AS-UNDECLARED
+  title: 'The rpg gate marks crowded_frontier s42 and s44 `no-data` with `GateDataMissingError:
+    kind group [''none''] seen in the run but not declared` once births add the first
+    non-eating living kind'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-21'
+  related_code_areas:
+  - src/observability/rpg_gate_metrics.py
+  - tests/simulation_quality/rpg_gate/config.yaml
+  - tools/test_architecture/rpg_gate_harness.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-GROUP-AS-UNDECLARED/investigation.md
+  - agent-working/stored_artifacts/TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-GROUP-AS-UNDECLARED/plan.md
+  - agent-working/stored_artifacts/TCK-20261121-RPG-GATE-METRICS-REJECT-A-NON-EATING-KIND-GROUP-AS-UNDECLARED/test_plan.md
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261121-V3-FLW-S42-E55-GETS-AN-OWNER-ACCEPTED-SCOPED-KNOWN-ENTRY.md
+  ticket_id: TCK-20261121-V3-FLW-S42-E55-GETS-AN-OWNER-ACCEPTED-SCOPED-KNOWN-ENTRY
+  title: Gate V3 on frontier_living_world s42 entity 55 gets an owner-accepted scoped
+    known entry that expires on 2026-12-15
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-21'
+  related_code_areas:
+  - tools/test_architecture/rpg_gate_known.yaml
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261121-A-SMALL-PLANT-EATER-STARVES-IN-FRONTIER-LIVING-WORLD-WITHOUT-TRYING-TO-FORAGE.md
+  ticket_id: TCK-20261121-A-SMALL-PLANT-EATER-STARVES-IN-FRONTIER-LIVING-WORLD-WITHOUT-TRYING-TO-FORAGE
+  title: A small_plant_eater (entity 55) in frontier_living_world seed 42 starves
+    at t4745 without ever trying FORAGE (gate V3, SURV-06/07, H6)
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-21'
+  related_code_areas:
+  - src/ai/goals/scorers.py (graze/forage scoring), src/systems/strategic_systems/intelligence.py
+  - tools/test_architecture/rpg_gate_known.yaml (the scoped known entry)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261121-MILESTONE-REGISTRY-DESCRIPTIVE-NAMES-AND-LEGACY-IDS.md
+  ticket_id: TCK-20261121-MILESTONE-REGISTRY-DESCRIPTIVE-NAMES-AND-LEGACY-IDS
+  title: Add an append-only milestone registry that maps each descriptive milestone
+    name to its legacy short id, and a lint against a bare `M<n>` in new tickets
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-21'
+  related_code_areas:
+  - registries/, tools/, tests/tools/
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261121-RPG-GATE-REBASELINE-AFTER-THE-NONE-KIND-GROUP-HASH-MOVE.md
+  ticket_id: TCK-20261121-RPG-GATE-REBASELINE-AFTER-THE-NONE-KIND-GROUP-HASH-MOVE
+  title: Re-record the rpg gate baseline from a main run after the `none` kind-group
+    change moves the harness hash
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-21'
+  related_code_areas:
+  - tools/test_architecture/rpg_gate_baseline.py
+  - tests/simulation_quality/rpg_gate/baselines/
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261121-THE-BLOCKER-BACKOFF-WINDOW-IS-HARD-CODED-IN-CORE-NOT-DECLARED-IN-DATA.md
+  ticket_id: TCK-20261121-THE-BLOCKER-BACKOFF-WINDOW-IS-HARD-CODED-IN-CORE-NOT-DECLARED-IN-DATA
+  title: The blocker backoff window (100 ticks, doubling, capped at 800) is hard-coded
+    in src/core/strategic.py, not declared in data
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-21'
+  related_code_areas:
+  - src/core/strategic.py (BLOCKER_BACKOFF_BASE_TICKS, BLOCKER_BACKOFF_CAP_TICKS)
+  - src/content/ (the loader), data/content/strategy/
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261121-THE-GATE-PERSON-FLAG-CHECK-SILENTLY-TREATS-A-NON-STRING-FLAG-AS-A-NON-PERSON.md
+  ticket_id: TCK-20261121-THE-GATE-PERSON-FLAG-CHECK-SILENTLY-TREATS-A-NON-STRING-FLAG-AS-A-NON-PERSON
+  title: The rpg gate's person-flag check (`_is_wild_meat_eater`) silently treats
+    a non-string flag as a non-person; it should refuse one
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-21'
+  related_code_areas:
+  - src/observability/rpg_gate_metrics.py (_is_wild_meat_eater, _combat_rows, _split)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261121-TWO-ANCHOR-TILES-ARE-GIVEN-UP-ON-BY-MANY-SUBJECTS-FOR-THOUSANDS-OF-TICKS.md
+  ticket_id: TCK-20261121-TWO-ANCHOR-TILES-ARE-GIVEN-UP-ON-BY-MANY-SUBJECTS-FOR-THOUSANDS-OF-TICKS
+  title: 'Two tiles, [40, 82] in frontier_living_world and [40, 31] in urban_political,
+    are given up on again and again by many subjects for 4000+ ticks: check whether
+    world content makes them unreachable'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-21'
+  related_code_areas:
+  - src/worldassembly/
+  - src/engine/tactical_destinations.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261120-SUBJECT-LINK-DOES-NOT-LIFT-A-TICKET-THE-BRANCH-ALSO-EDITS-IN-TODOS.md
   ticket_id: TCK-20261120-SUBJECT-LINK-DOES-NOT-LIFT-A-TICKET-THE-BRANCH-ALSO-EDITS-IN-TODOS
   title: A ticket worked on a branch that also edits its todos/ file reads To do,
@@ -8000,6 +8373,18 @@
   artifact_files: []
   tags:
   - delivery
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261120-A-HELD-ACTION-THAT-PRODUCES-NO-UPDATE-IS-RE-DISPATCHED-EVERY-TICK.md
+  ticket_id: TCK-20261120-A-HELD-ACTION-THAT-PRODUCES-NO-UPDATE-IS-RE-DISPATCHED-EVERY-TICK
+  title: A held ENTITY_ACT whose actor produces no update (NO_ACTION_UPDATE) is never
+    ended, so the scheduler may re-dispatch the same do-nothing action every tick
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-20'
+  related_code_areas:
+  - src/engine/pipeline_phases/actions.py; src/engine/scheduler.py; src/engine/action_router.py
+  artifact_files: []
+  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261120-A-TOWN-RETURN-PROJECT-NEVER-COMPLETES-WHEN-ITS-TARGET-IS-REACHED.md
   ticket_id: TCK-20261120-A-TOWN-RETURN-PROJECT-NEVER-COMPLETES-WHEN-ITS-TARGET-IS-REACHED
