@@ -7986,6 +7986,20 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261123-A-BROKE-BODY-CAN-EARN-BY-TAKING-A-QUEST.md
+  ticket_id: TCK-20261123-A-BROKE-BODY-CAN-EARN-BY-TAKING-A-QUEST
+  title: A broke body that can take quests earns money by taking one at a guild or
+    similar building, not only by a work shift
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-23'
+  related_code_areas:
+  - src/ai/goals/ways.py, src/ai/goals/opening_steps.py, src/ai/goals/scorers.py,
+    src/quests/,
+  - src/engine/quests.py, src/engine/service_admission.py (keeps_coin)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261122-PERSON-ATTACK-LAUNCHER-WRITES-NO-RUNNER-RECORD.md
   ticket_id: TCK-20261122-PERSON-ATTACK-LAUNCHER-WRITES-NO-RUNNER-RECORD
   title: 'The person-attack trace launcher writes no runner.json: its bookkeeping
