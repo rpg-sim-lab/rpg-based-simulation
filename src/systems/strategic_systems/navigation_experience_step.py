@@ -29,19 +29,32 @@ def need_services_at(state: Any, anchor: Tuple[int, int]) -> FrozenSet[NeedServi
     return frozenset(NeedService(action) for action in ("EAT", "REST") if service_tile(state, (int(anchor[0]), int(anchor[1])), SERVICE_KINDS[action]) is not None)
 
 
-def _evictions(entity: Any, memory: NavigationExperienceMemory, kept_ids: set, tick: int, cap: int, settings: NavigationExperienceSettings) -> Tuple[str, ...]:
-    """The ids to evict so the memory holds at most ``cap`` records, never one filed this pass: the REVIEWED record with the oldest reviewed tick (ties by id), else an ACTIVE record that is due now (oldest observed
-    first), else the oldest ACTIVE record, which is counted because it ends a live refusal."""
+def _oldest_reviewed(pool: List[NavigationExperience]) -> List[NavigationExperience]:
+    """The REVIEWED records, the oldest reviewed tick first (ties by id): a record that no longer refuses anything."""
+    return sorted((r for r in pool if r.status == NavExperienceStatus.REVIEWED), key=lambda r: (r.reviewed_tick if r.reviewed_tick is not None else -1, r.experience_id))
+
+
+def _oldest_due(pool: List[NavigationExperience], entity: Any, tick: int, settings: NavigationExperienceSettings) -> List[NavigationExperience]:
+    """The ACTIVE records that are due now, the oldest observed first (ties by id): their refusal is already over."""
+    return sorted((r for r in pool if r.status == NavExperienceStatus.ACTIVE and due_reason(r, entity, tick, settings) is not None), key=lambda r: (r.observed_tick, r.experience_id))
+
+
+def _oldest_active(pool: List[NavigationExperience]) -> List[NavigationExperience]:
+    """The ACTIVE records, the oldest observed first (ties by id): the last resort, since evicting one ends a live refusal."""
+    return sorted((r for r in pool if r.status == NavExperienceStatus.ACTIVE), key=lambda r: (r.observed_tick, r.experience_id))
+
+
+def _evictions(entity: Any, memory: NavigationExperienceMemory, kept_ids: set, tick: int, settings: NavigationExperienceSettings) -> Tuple[str, ...]:
+    """The ids to evict so the memory holds at most ``settings.navigation_experience_cap`` records, never one filed this pass: the REVIEWED record with the oldest reviewed tick (ties by id), else an ACTIVE record
+    that is due now (oldest observed first), else the oldest ACTIVE record, which is counted because it ends a live refusal."""
     records = {r.experience_id: r for r in memory.records}
     out: List[str] = []
-    while len(records) > cap:
+    while len(records) > settings.navigation_experience_cap:
         pool = [r for r in records.values() if r.experience_id not in kept_ids]
         if not pool:
             break
-        reviewed = sorted((r for r in pool if r.status == NavExperienceStatus.REVIEWED), key=lambda r: (r.reviewed_tick if r.reviewed_tick is not None else -1, r.experience_id))
-        due = sorted((r for r in pool if r.status == NavExperienceStatus.ACTIVE and due_reason(r, entity, tick, settings) is not None), key=lambda r: (r.observed_tick, r.experience_id))
-        active = sorted((r for r in pool if r.status == NavExperienceStatus.ACTIVE), key=lambda r: (r.observed_tick, r.experience_id))
-        victim = (reviewed or due or active)[0]
+        reviewed, due = _oldest_reviewed(pool), _oldest_due(pool, entity, tick, settings)
+        victim = (reviewed or due or _oldest_active(pool))[0]
         if not (reviewed or due):
             NavigationExperienceCounts.note_live_eviction()
         out.append(victim.experience_id)
@@ -75,5 +88,5 @@ def navigation_experience_update(entity: Any, state: Any, tick: int, project_id:
             project_giveups=(prev.project_giveups + 1) if prev is not None and prev.project_id == project_id else 1)
     upserts = tuple(filed[k] for k in sorted(filed))
     after = apply_experience_update(memory, NavigationExperienceUpdate(reviews=reviews, upserts=upserts))
-    evictions = _evictions(entity, after, set(filed), tick, settings.navigation_experience_cap, settings)
+    evictions = _evictions(entity, after, set(filed), tick, settings)
     return NavigationExperienceUpdate(reviews=reviews, upserts=upserts, evictions=evictions)

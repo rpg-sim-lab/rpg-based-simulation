@@ -174,3 +174,14 @@ def test_the_service_lookup_names_the_needs_the_building_in_reach_serves_through
     assert step.need_services_at(object(), (9, 5)) == frozenset()  # a place that is neither a food nor a bed tile
     monkeypatch.setattr(step, "service_tile", lambda state, tile, kinds=None: None)
     assert step.need_services_at(object(), (9, 5)) == frozenset()
+
+
+def test_a_reviewed_record_is_evicted_before_a_due_active_one_even_when_the_active_one_is_older():
+    """New with the #996 `_evictions` split: the reviewed-first preference holds against a due ACTIVE record that was observed earlier, and the eviction is not counted as a live one."""
+    small = NavigationExperienceSettings(100, 50, 5, 2)
+    NavigationExperienceCounts.reset()
+    due_active = _rec(3, 3, observed=1, nxt=60)
+    reviewed = _rec(2, 2, status=NavExperienceStatus.REVIEWED, reviewed=90, observed=50)
+    e = _subject(records=(due_active, reviewed), giveups=(_giveup(),))
+    assert step.navigation_experience_update(e, object(), 100, "", small).evictions == (reviewed.experience_id,)
+    assert NavigationExperienceCounts.live_evictions() == 0
