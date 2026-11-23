@@ -8000,6 +8000,18 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261122-A-FLEEING-SUBJECT-KEEPS-FLEEING-AND-AN-ATTACKED-ONE-WEIGHS-FIGHTING-BACK.md
+  ticket_id: TCK-20261122-A-FLEEING-SUBJECT-KEEPS-FLEEING-AND-AN-ATTACKED-ONE-WEIGHS-FIGHTING-BACK
+  title: 'World rules: a subject that decides to flee keeps fleeing while its threat
+    holds, and a subject under attack weighs fighting back (AGENCY-07 amendment and
+    companion)'
+  tier: hotfix
+  ticket_type: feature
+  date: '2026-11-22'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS.md
   ticket_id: TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS
   title: 'Attack permission is asymmetric and transient for wild pairs: a prey may
@@ -8084,18 +8096,6 @@
   artifact_files: []
   tags:
   - testing
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261122-A-FLEEING-SUBJECT-KEEPS-FLEEING-AND-AN-ATTACKED-ONE-WEIGHS-FIGHTING-BACK.md
-  ticket_id: TCK-20261122-A-FLEEING-SUBJECT-KEEPS-FLEEING-AND-AN-ATTACKED-ONE-WEIGHS-FIGHTING-BACK
-  title: 'World rules: a subject that decides to flee keeps fleeing while its threat
-    holds, and a subject under attack weighs fighting back (AGENCY-07 amendment and
-    companion)'
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-22'
-  related_code_areas: []
-  artifact_files: []
-  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261122-A-RESOLVED-OBJECTIVE-PULLS-A-FLEEING-SUBJECT-BACK-TOWARD-IT.md
   ticket_id: TCK-20261122-A-RESOLVED-OBJECTIVE-PULLS-A-FLEEING-SUBJECT-BACK-TOWARD-IT

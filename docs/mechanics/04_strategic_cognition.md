@@ -22,7 +22,7 @@ Entities evaluate multiple "Concerns" and select the one with the highest calcul
 | **Tier 3: Social** | `social`, `grudge`, `bond` | Protecting allies or seeking revenge. |
 | **Tier 4: Economic** | `harvest`, `trade`, `craft`, `occupation_change` | Accumulating wealth and equipment; `occupation_change` (`GoalKind.OCCUPATION_CHANGE`) is a `CITIZEN` entity taking an open, skill-matched civilian job (`SHOPKEEPER`/`WORKER`/`GUARD`) when idle. |
 
-A completed or resolved objective carries no pull and never holds a subject against a present threat (owner point 1, #715 7076062275; AGENCY-07 and its 2026-11-22 amendments in `docs/world_rules/knowledge-agency/agency-decision.md`).
+A completed or resolved objective carries no pull and never holds a subject against a present threat (owner point 1, #715 7076062275; AGENCY-07 and its 2026-11-22 amendments in `docs/world_rules/knowledge-agency/agency-decision.md`). Limits: this does not yet hold in code. A resolved objective can still pull a fleeing subject back toward it, and a need step's route can take a subject next to a present threat (two strict xfails on the free-meal branch); TCK-20261122-A-RESOLVED-OBJECTIVE-PULLS-A-FLEEING-SUBJECT-BACK-TOWARD-IT fixes both.
 
 Night is the night half of the time of day (`calendar.is_night`: ticks 1800-2399 and 0-599 of each 2400-tick day); the sleep bias in `SleepScorer` and the routine sleep urgency read it, not the never-wrapping `world_time` (SURV-08 clock amendment, memo row 98 Q1; divergence 2.209).
 

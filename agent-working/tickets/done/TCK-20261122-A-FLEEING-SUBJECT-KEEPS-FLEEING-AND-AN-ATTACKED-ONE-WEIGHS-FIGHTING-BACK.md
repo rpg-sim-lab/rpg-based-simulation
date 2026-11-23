@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: ai
 authority: P1
 audience: agent
 ticket_id: TCK-20261122-A-FLEEING-SUBJECT-KEEPS-FLEEING-AND-AN-ATTACKED-ONE-WEIGHS-FIGHTING-BACK
-phase: open
+phase: done
 date: 2026-11-22
 tags: []
 ---
@@ -15,10 +15,10 @@ tags: []
 World rules: a subject that decides to flee keeps fleeing while its threat holds, and a subject under attack weighs fighting back (AGENCY-07 amendment and companion)
 
 ## Status
-OPEN
+DONE
 
 ## Tier
-standard
+hotfix
 
 ## Type
 feature
@@ -85,9 +85,25 @@ None; this ticket is rules text only.
 None.
 
 ## Implementation Notes
+- Re-tiered from standard at close (2026-11-23, at lead-planner-u24's direction): rules text only, intent self-evident and owner-approved word for word; no code.
+- Item 1 "Flight holds once decided" and item 2 "Fighting back is a real option under attack" landed as AGENCY-07 amendments, owner-approved wording (#715 7076062275 intent; the wording via lead-planner-u24): c65073a27.
+- The designer's evidence line under the first amendment, and the ch04 sentence (item 3): e17a612bb.
+- A third AGENCY-07 amendment, "A first strike when it judges it can win", owner-approved revised text (#715 7078497229 → 7078502579), landed word for word before AGENCY-08: c0b9896e9.
+- Cross-links in conflict-combat.md's link section for CONFLICT-03 and CONFLICT-04 (item 4).
+- AC3: the ch04 sentence is NOT yet true in code (Step A's A7: two strict xfails on #995). So a limits line in ch04 cites TCK-20261122-A-RESOLVED-OBJECTIVE-PULLS-A-FLEEING-SUBJECT-BACK-TOWARD-IT (added at close).
+- Each amendment carries "Repository evidence: NOT YET SUPPORTED", naming Step A or Step B as its implementation.
+- Rides in the same PR: the roadmap's systemic_foundation milestone name (42ad7eab5, owner #715 7064089876, under the epic's id), and 14 ticket filings under todos/.
 
 ## Test Summary
+Docs only; no code and no test changes. No pytest: #995's W run holds u24.
+- Checks (executed): yaml/frontmatter validation of the ticket; the docs search; make knowledge-index-update; make docs-registry.
 
 ## Files Changed
+- docs/world_rules/knowledge-agency/agency-decision.md (three AGENCY-07 amendments)
+- docs/world_rules/capability-progression/conflict-combat.md (cross-links)
+- docs/mechanics/04_strategic_cognition.md (the resolved-objective sentence and its limits line)
+- docs/plans/systemic_world/roadmap.md (milestone name, riding)
+- docs/REGISTRY.yaml
 
 ## Completion Summary
+The AGENCY-07 rules text for owner points 3 and 4, plus the first-strike amendment, landed word for word as approved. The ch04 resolved-objective sentence landed with a limits line, because code doesn't satisfy it yet (Step A). Implementation is Steps A and B, which this PR unblocks.
