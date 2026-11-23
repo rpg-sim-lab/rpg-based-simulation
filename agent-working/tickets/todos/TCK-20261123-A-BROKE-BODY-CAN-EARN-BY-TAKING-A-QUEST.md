@@ -108,6 +108,7 @@ Facts at main ff27ac4b5 (the ubuntu lead's read, inspected):
   any of them had an open quest within reach.
 
 ## Related Tickets
+- TCK-20261123-A-KILL-LEAVES-TYPED-LOOT-OF-FOOD-AND-RESOURCES-ON-THE-CORPSE (DEPENDS ON: the typed loot and its QUEST_EVIDENCE slot)
 - TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1 (#995: D73 ATOMIC payment, SEEK_WORK,
   2.224 admission)
 - TCK-20261122-THREE-STARVING-BODIES-DIE-WITH-WAYS-UNTRIED-ONCE-THE-TOWN-HEAL-STOPS-HIDING-THEM
@@ -214,6 +215,47 @@ and status. Payment is a typed update through the authoritative pipeline. The qu
 stays in data files.
 
 ## Implementation Notes
+OWNER DIRECTION, 2026-11-23 (#715 7097367374, routed by lead-planner-u24): quests and kills. No dispatch yet.
+- The owner's words: "one kill can feed the body -> a kill spawn loot, the loot contain the quest item (if the killer holding a quest related to that) and the other parts (which can be considered as food) and other resources".
+- A kill yields LOOT, which holds:
+  - the quest evidence item, ONLY when the killer holds an active quest this kill serves. The match is typed (the quest's target and kind against the victim), never a name check;
+  - body parts usable as food. These REUSE the existing meat by size (body_models.yaml meat_yield): one food model, not a second;
+  - other resources from the body (for example hide or bone), declared by body properties in data.
+- One kill serves both purposes by construction: the food parts and the quest item are separate items, so they never compete.
+- Law to keep consistent: decision 44 (a kill leaves meat; scavenging never targets the subject's own kind); the corpse decay window (death + 100); EXCH-02 payer law for quest rewards.
+- Quest items are typed as quest items, never eaten and never sold as food.
+- "A purpose for coin" is defined ONCE and shared with TCK-20261123-A-BODY-KEEPS-ITS-FOOD-AND-SELLS-ONLY-FOR-A-PURPOSE-IT-HAS-FOR-THE-COIN.
+- RULED by rpg-designer (2026-11-23): the loot model is its OWN ticket, TCK-20261123-A-KILL-LEAVES-TYPED-LOOT-OF-FOOD-AND-RESOURCES-ON-THE-CORPSE, and THIS ticket DEPENDS on it. This ticket keeps only the rule for when QUEST_EVIDENCE is filled (the killer's active quest, a typed target and kind match against the victim), plus the quest-item rules.
+- Values come to the owner as numbers before data.
+OWNER DIRECTION 2, 2026-11-23 (#715 7097426495): what a quest item is. No dispatch.
+- Gathered ordinary resources are NOT quest items. For example, 10 berries for a gather quest stay ordinary berries. The body may eat them instead of turning them in, and the quest then needs more. Whether to eat or turn in follows the existing hunger budget; there is no second rule.
+- A quest item exists ONLY as evidence (of a hunt, a kill or a clear), or as a specific resource with no use except turning it in.
+- A quest item cannot be sold. The lead agrees: it keeps the model simple, stops proof being sold as goods, and an item with no use has no honest price.
+- A quest item can only be DISCARDED, and the reason is typed, never a silent drop. The reasons are: freeing inventory at a critical moment, or the quest being abandoned or forbidden.
+- Open, for rpg-designer:
+  - Is a quest item bound to its holder (if discarded, is it destroyed, or left inert so another body cannot use it)? The lead leans to destroyed, or bound.
+  - Can ordinary items earmarked for an active gather quest be sold? The lead leans to no: the quest is a purpose for the items, not for coin, so selling is not offered while the quest is active. Eating is still allowed, by the hunger rules.
+- rpg-designer RULINGS on direction 2 (2026-11-23). Each is an OWNER ASK, with the recommended option first:
+  (1) A quest item is BOUND, and destroyed whenever it would leave its holder.
+      - Typed: `QuestItem(item kind, holder_id, quest_id)`. Never traded, given, looted or sold.
+      - It leaves only through a typed sink, each a ledger record: TURNED_IN; DISCARDED(INVENTORY_SPACE | QUEST_ENDED); HOLDER_DIED (destroyed at death and never moved to the corpse).
+      - Its one source is the typed QUEST_EVIDENCE at the kill.
+      - Options: bound + destroyed (Recommended) | bound, left inert where dropped.
+  (2) Ordinary items a gather quest needs are NOT locked and carry no item earmark. The quest's outstanding need is a KEEP PURPOSE in the sale decision, a second purpose kind under the keep-food ticket's ONE purpose mechanism.
+      - Eating stays allowed, and the quest's need then rises.
+      - When the quest ends, the units are surplus.
+      - Options: keep purpose, not offered (Recommended) | a hard per-item lock | no protection.
+  Tests, from the designer:
+  - a quest item cannot be sold, given or looted;
+  - death destroys it (HOLDER_DIED), and the corpse does not hold it;
+  - discard writes its typed reason;
+  - need 10 with 12 held: the sale offers 2; after eating 5, it offers 0, and 3 more are needed;
+  - the quest ends, and everything is surplus.
+  OPEN (rpg-planner to the designer): do the hunger keep and the quest need ADD, or does the larger one cover both for the same food item? The 12-held example assumes no hunger keep.
+- OWNER RULINGS, #715 7097468700. These SUPERSEDE the open points above:
+  (1) DISCARD destroys an item. THROW leaves it on the tile, where any body may pick it up. A quest item can only be DISCARDED, never thrown, so no other body can get it. This matches the designer's "bound + destroyed": the sinks are TURNED_IN, DISCARDED(INVENTORY_SPACE | QUEST_ENDED) and HOLDER_DIED. THROW is never offered for a QuestItem.
+  (2) Ordinary items gathered for an active quest STAY SELLABLE. Their type is material or food, not a quest item, so the quest puts NO lock and NO keep purpose on them. The designer's "quest need as a keep purpose" and its ADD arithmetic are NOT adopted. Whether food is sold at all still follows TCK-20261123-A-BODY-KEEPS-ITS-FOOD-AND-SELLS-ONLY-FOR-A-PURPOSE-IT-HAS-FOR-THE-COIN.
+  Tests that still hold: a quest item cannot be sold, given, looted or thrown; HOLDER_DIED destroys it, and the corpse does not hold it; discard writes its typed reason. The gather-sale tests are dropped. In their place: an item gathered for an active quest is offered for sale exactly as it would be with no quest.
 Filed by rpg-planner from the owner direction. Read-only investigation comes first at dispatch.
 
 ## Test Summary

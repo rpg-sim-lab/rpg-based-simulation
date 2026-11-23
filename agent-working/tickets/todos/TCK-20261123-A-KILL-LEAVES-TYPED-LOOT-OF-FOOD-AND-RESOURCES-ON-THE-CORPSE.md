@@ -1,0 +1,87 @@
+---
+status: active
+layer: world
+authority: P1
+audience: agent
+ticket_id: TCK-20261123-A-KILL-LEAVES-TYPED-LOOT-OF-FOOD-AND-RESOURCES-ON-THE-CORPSE
+phase: open
+date: 2026-11-23
+tags: []
+---
+
+# TCK-20261123-A-KILL-LEAVES-TYPED-LOOT-OF-FOOD-AND-RESOURCES-ON-THE-CORPSE
+
+## Title
+A kill's corpse carries resources from body properties beside its meat, and a quest-evidence category is defined for the quest ticket
+
+## Status
+OPEN
+
+## Tier
+standard
+
+## Type
+feature
+
+## Priority
+P2
+
+## Request Summary
+OWNER DIRECTION, #715 7097367374: "one kill can feed the body -> a kill spawn loot, the loot contain the quest item (if the killer holding a quest related to that) and the other parts (which can be considered as food) and other resources".
+
+rpg-designer RULED, 2026-11-23, relayed to rpg-planner, that the loot model gets its OWN ticket and that TCK-20261123-A-BROKE-BODY-CAN-EARN-BY-TAKING-A-QUEST depends on it. The reasons:
+1. Loot follows every kill (hunting, defence, a fight, a quest), and most kills hold no quest.
+2. The quest ticket needs only one hook from it: a typed quest-evidence slot.
+3. The food side has to land, and be measured, alone. Moving meat into loot changes who can eat it and when, which is a #995-class hunger risk.
+
+## Scope
+CORRECTED by rpg-designer, 2026-11-23: the loot already EXISTS. It is the corpse's inventory. carcass.py body_meat puts meat on it at death (BODY_AT_DEATH); the dead body's coin and goods move to it (Bible 03 l.134); the sinks are CORPSE_FOOD, CORPSE loot and CORPSE_DECAY. This ticket adds NO new container.
+1. The corpse inventory gains RESOURCE items at death, beside the meat, through the same death step and ledger. body_models.yaml gains `yields: [{item, quantity}]`, empty by default, and one `body_yield` sits next to body_meat. The ledger records BODY_AT_DEATH per item and CORPSE_DECAY, with RESOURCE_DECAYED alongside MEAT_DECAYED.
+2. A QUEST_EVIDENCE item category is DEFINED here but never produced here; only the quest ticket produces it. It cannot be eaten or sold: one category check in the shop law refuses its sale.
+3. Kind-neutral, from body properties, never a kind name. Kinds with no flesh declare their own yield, or none. Decision 44's own-kind rule for eating stays where it is.
+4. The take rule is UNCHANGED: anyone eats or loots, as on main.
+5. Hash control: with every `yields` empty, the plain run equals the base.
+6. For the implementer to verify (inspected, not verified): whether the legacy undeclared diet would take a non-food item. If it would, the diet gate gains one "has a food_class" check.
+7. Owner questions, from the designer's draft at main-checkout .claude/handover/drafts/rpg-designer-kill-loot-design-questions.md (dbae3e67), through the lead:
+   - 4 design questions: which kinds yield in slice 1; whether to use hide and bone; whether yield is independent of the cause of death; whether resources rot with the corpse.
+   - 3 data values, as numbers: hide 0/1/2 by size, bone 0/1/2, and the values (hide 2, bone 1, kept below a meal).
+8. Bible ch03 and ch05, world rules and parity, updated in the same change.
+
+## Out of Scope
+- Filling QUEST_EVIDENCE, the quest match, and quest-item rules (TCK-20261123-A-BROKE-BODY-CAN-EARN-BY-TAKING-A-QUEST).
+- Prices for resources.
+
+## Acceptance Criteria
+1. The owner's answers (the 4 design questions and 3 values) are recorded with their #715 ids before data.
+2. A kill's corpse inventory gains its RESOURCE items from body properties beside unchanged meat. With all yields empty, the run hash equals the base (tests, plus a failing control).
+3. Resources decay with the corpse (RESOURCE_DECAYED). QUEST_EVIDENCE is refused by the shop law. No kind name appears in the logic (a static or unit check).
+4. Measurement: a W cell pair (hunger kit) with P2 HARD on food, plus kills → loot → taken counts grouped by MOTIVE, not diet (the owner's combat-motive rule). rpg-designer reads it.
+
+## Related Tickets
+- TCK-20261123-A-BROKE-BODY-CAN-EARN-BY-TAKING-A-QUEST (depends on this ticket)
+- TCK-20261123-A-BODY-KEEPS-ITS-FOOD-AND-SELLS-ONLY-FOR-A-PURPOSE-IT-HAS-FOR-THE-COIN
+- TCK-20261122-A-STARVING-PREDATOR-HAS-NO-FALLBACK-WAY-TO-EAT (carcass availability)
+
+## Related Docs
+- docs/mechanics/03_economic_laws.md; docs/mechanics/05_world_evolution.md; data body_models.yaml
+
+## Related Stored Artifacts
+- #715 7097367374 (owner direction)
+
+## Related Code Areas
+- the authoritative death step; corpse lifecycle; scavenging (SCAVENGE step); body_models meat_yield
+
+## Assumptions / Open Questions
+- rpg-designer drafts the design questions when this ticket is filed.
+- Order: the backlog, ahead of the quest ticket. No dispatch.
+
+## Durable state, lifecycle and clocks
+No new durable container: RESOURCE items live in the existing corpse inventory, with its existing lifecycle (made at death, decaying at death + 100) and ledger. The new data is `yields` in body_models.yaml.
+
+## Implementation Notes
+
+## Test Summary
+
+## Files Changed
+
+## Completion Summary

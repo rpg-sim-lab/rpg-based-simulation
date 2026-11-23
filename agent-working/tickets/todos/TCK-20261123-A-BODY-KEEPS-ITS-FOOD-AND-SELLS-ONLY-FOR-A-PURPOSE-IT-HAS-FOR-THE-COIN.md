@@ -60,9 +60,9 @@ What the code does today (inspected at cdb0d4f09):
 5. Bible, world rules and parity are in parity.
 
 ## Related Tickets
+- TCK-20261123-A-BROKE-BODY-CAN-EARN-BY-TAKING-A-QUEST (shares the ONE "purpose for coin" definition; quest items are never sold as food; #715 7097367374)
 - TCK-20261122-A-STARVING-PREDATOR-HAS-NO-FALLBACK-WAY-TO-EAT (the same owner direction, item 1)
 - #995 rpg-free-meal-atomic (the EARN to CONSUME re-point; it touches the same ladder)
-- TCK-20261123-A-BROKE-BODY-CAN-EARN-BY-TAKING-A-QUEST
 
 ## Related Docs
 - docs/mechanics/03_economic_laws.md; the EXCH-02 world rule; docs/world_rules/life-body/survival-needs.md
