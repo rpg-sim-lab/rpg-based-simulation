@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Dict, List, NamedTuple, Optional, Sequence, Tuple
 
 from src.core.movement_modes import MovementMode
+from src.core.navigation_purpose import TargetPurpose, purpose_of, ungated_purpose
 from src.core.updates import EntityUpdate, NavigationUpdate, TaskUpdate
 from src.engine.appraisal import WARY_DISTANCE, Relation
 from src.engine.hostility import ATTACK_RELATIONS, relation
@@ -42,10 +43,11 @@ def classify_neighbours(entity: "EntityState", neighbors: Sequence["EntityState"
     return hood
 
 
-def _retreat(entity: "EntityState", where: Tuple[float, float], reason: str, strat_up: Any) -> EntityUpdate:
+def _retreat(entity: "EntityState", where: Tuple[float, float], reason: str, strat_up: Any, purpose: TargetPurpose, gated: bool) -> EntityUpdate:
+    """The flight update. ``purpose`` is the caller's bound name (the gate's argument for a gated ``where``, `ungated_purpose` for the own-tile hold) and ``gated`` says which."""
     return EntityUpdate(
         entity_id=entity.id, strategic=strat_up,
-        navigation=NavigationUpdate(target_set=where, movement_mode_set=MovementMode.RETREAT),
+        navigation=NavigationUpdate(target_set=where, movement_mode_set=MovementMode.RETREAT, target_purpose_set=purpose, target_gated_set=gated),
         task=TaskUpdate(work_kind_set="ENTITY_MOVE", payload_set={"target_position": where, "reason": reason}),
     )
 
@@ -58,11 +60,15 @@ def avoid_what_can_eat_me(
     if hood.hostiles:
         return None
     if hood.threatening:
-        away = retreat_destination(state, entity, hood.threatening)
-        return _retreat(entity, away if away is not None else entity.navigation.position, "FLEE_THREAT", strat_up)
+        purpose = purpose_of(entity, None, MovementMode.RETREAT)
+        away = retreat_destination(state, entity, hood.threatening, purpose)
+        if away is None:
+            return _retreat(entity, entity.navigation.position, "FLEE_THREAT", strat_up, ungated_purpose(entity, MovementMode.RETREAT), False)
+        return _retreat(entity, away, "FLEE_THREAT", strat_up, purpose, True)
     near = [w for w in hood.wary if manhattan_tile_distance(entity.navigation.position, w.navigation.position) <= WARY_DISTANCE]
-    distant = retreat_destination(state, entity, near) if near else None
-    return _retreat(entity, distant, "KEEP_DISTANCE", strat_up) if distant is not None else None
+    purpose = purpose_of(entity, None, MovementMode.RETREAT)
+    distant = retreat_destination(state, entity, near, purpose) if near else None
+    return _retreat(entity, distant, "KEEP_DISTANCE", strat_up, purpose, True) if distant is not None else None
 
 
 def eat_at_hunger_corpse(entity: "EntityState", state: "AuthoritativeState", project: Any, objective: Any) -> Optional[EntityUpdate]:

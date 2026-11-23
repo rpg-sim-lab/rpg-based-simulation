@@ -9,6 +9,8 @@ last_verified: "2026-11-23"
 
 # Navigation experience memory: design v2 (rework of PR #996 under decision 56)
 
+> AMENDMENT 1 (2026-11-23, lead ruling #715 7091393459): reports, reach and limits only, from the owner-provided external review #2 (stored as a second artifact beside the first). It adds rows R1b, R3b, R3c and R3d to §11, a widened reach line, and the new section "Limits (slice 1)". No rule, behaviour or value changes; the owner-approved text (#715 7091099713) is otherwise untouched.
+
 Author: rpg-designer, 2026-11-23. DRAFT v2. It replaces v1 (`rpg-designer-experience-memory-design.md`, b518940d, kept unchanged) after the review by rpg-planner, the lead and an independent verifier (`expmem_review_rpg_planner.md`, sha 9e47f063). No code until the owner approves.
 Inputs:
 - the owner decision: #715 7090468332 / 7090493248;
@@ -287,8 +289,13 @@ Kit approved at a sha, controls that bite, fresh trees, spy hash = plain twin.
 | R2 | the old F2 G1-held / G1 / G3 rows on the reworked head | reported; G3 = D6 |
 | R3 | give-ups per (anchor, purpose) per 2400 t: max, distribution, retry loops | reported, owner-visible |
 | R4 | wait-replans (wait_count >= 5 clears) per (anchor, purpose) per 2400 t, and how many happened at a place with an ACTIVE or latched record | reported, owner-visible (v2.3) |
+| R1b | (amendment 1) same-anchor fragmentation: records per anchor tile across ALL purposes (count, max, the anchors with > 1 live record), and ACTIVE evictions (Q14) per cell with each evicted record's purpose and age | reported, owner-visible |
+| R3b | (amendment 1) retries per (anchor, purpose) that follow an APPROACH_CHANGED review: count, Chebyshev distance and elapsed ticks between consecutive attempts, and how many of those retries failed again with NO navigation progress (best distance to the anchor not improved over the previous cycle) | reported, owner-visible |
+| R3c | (amendment 1) DESTINATION_GIVEN_UP project ends STRATIFIED: ends whose counted give-ups had at least one APPROACH_CHANGED review between cycles vs ends with none. If premature abandonment shows (ends with no approach change), the POLICY is revisited (Q12), never the review delay | reported, owner-visible |
+| R3d | (amendment 1) STATIC-only records: count, how long each stayed ACTIVE, and how many were still ACTIVE at the end of the run while the subject never left the approach radius (the Limits blind spot, measured) | reported |
 
 - Reach rule: each cell has ≥ 1 give-up, ≥ 1 record, ≥ 1 refusal and ≥ 1 review, else VOID. A planted A-B-loop scene at a building is added if a base cell can't reach it.
+- Reach rule, widened (amendment 1): across the run set, at least ONE APPROACH_CHANGED review, ONE STATIC-only record, ONE DESTINATION_GIVEN_UP end from repeated give-ups and ONE eviction must each occur, else the set is VOID for that case. A planted scene is added for any case a base cell cannot reach (a building corner with terrain only for STATIC; a subject walked away and back for APPROACH_CHANGED; four failing cycles in one project; more than `navigation_experience_cap` anchors for eviction).
 - Unit and integration tests (R §15), as v1, plus:
   - the ring-evidence mapping per ReasonCode;
   - each due rule, including STATIC never time-due;
@@ -328,6 +335,15 @@ Kit approved at a sha, controls that bite, fresh trees, spy hash = plain twin.
 Pass 5 found own-tile RETREAT/WANDER holds latching ungated targets. As the rule says, slice 1 was NARROWED, not revised again: the latch now requires a GATED acceptance (`target_gated`, §4). That narrowing closes the class for every mode. The originally worded narrowing (PURSUE or need_service) did not close it, and is not used.
 
 KEEP_WALKING (tactical_hold.py:103) re-emits navigation.target. Ending it typed on a None purpose CHANGES that branch, which today stands (:100). That happens once per old-checkpoint target, and is disclosed in 2.220.
+
+## Limits (slice 1), amendment 1 (#715 7091393459)
+
+- **STATIC-only blind spot.** A STATIC-only record has no time rule. If the world changes (a building is removed, terrain changes) while the subject does not move beyond `approach_change_radius`, the record stays ACTIVE and keeps refusing that purpose at that place. This is deliberate. The natural extension is a later topology-change invalidation (an event or a perceived change); a polling timer is NOT added to hide the gap. R3d measures it. The doc updates of §13 (KNOW-05 or Bible ch04) carry this limit in one sentence.
+- **APPROACH_CHANGED is positional.** It fires on distance from `from_position`, not on a materially different route; a subject that moved for an unrelated reason may retry from a position with no better route. Kept for slice 1 (no route-segment identity, Q11); R3b measures it.
+- **The project-end threshold counts give-ups, not independent opportunities.** Four give-ups from effectively the same approach can end a project early. R3c stratifies the ends; a revisit changes the policy, never the delay, and never reintroduces backoff.
+- **The purpose key is the slice-1 NAVIGATION contract.** (project kind, movement mode) is the key for navigation experiences only, not a universal intent identity: different goals can share both and still have different success conditions. Expanding it needs evidence (R1 multi-mode records, R1b fragmentation and ACTIVE evictions).
+- **"Fresh evaluation" in slice 1 means the next attempt supplies the evidence.** The review opens the place and the attempt is the evaluation. It is NOT a pre-action reassessment system; future capability, vitality or information causes will need one that checks whether the old failure condition changed before another action is spent.
+- **Not reintroduced:** ACCESS blockers for give-ups, generic cooldowns, exponential backoff.
 
 ## 14. Out of scope (slice 1)
 

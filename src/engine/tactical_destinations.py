@@ -19,6 +19,7 @@ from src.platform.rng import DeterministicRNG
 from src.strategy.destination_suppression import propose_target
 
 if TYPE_CHECKING:
+    from src.core.navigation_purpose import TargetPurpose
     from src.core.state import AuthoritativeState, EntityState, RegionState
 
 Position = Tuple[float, float]
@@ -98,6 +99,7 @@ def retreat_destination(
     state: "AuthoritativeState",
     entity: "EntityState",
     threats: Iterable["EntityState"],
+    purpose: "TargetPurpose",
 ) -> Optional[Position]:
     """Where a retreating entity should head, or None when no valid destination exists. The candidates in a fixed order, each through `propose_target` (F2 v2.2a D2, class F: a destination near a suppressed
     give-up anchor is refused): (1) away from the perceived threats, clamped to stay inside the entity's current region (uses only the threats the caller already perceives and the entity's own position);
@@ -110,11 +112,11 @@ def retreat_destination(
     if region is not None and threat_positions:
         away = _away_destination(region, here, threat_positions)
         if away is not None:
-            if propose_target(entity, away, state.tick) is not None:
+            if propose_target(entity, away, state.tick, purpose) is not None:
                 return away
             half = _away_destination(region, here, threat_positions, RETREAT_STEP / 2.0)  # (2) only when (1) exists and is refused: an unrefused derivation is the old one
-            if half is not None and propose_target(entity, half, state.tick) is not None:
+            if half is not None and propose_target(entity, half, state.tick, purpose) is not None:
                 return half
     home_id = entity.strategic.home_region_id
     home = state.regions.get(home_id) if home_id else None
-    return propose_target(entity, home.center, state.tick) if home is not None else None
+    return propose_target(entity, home.center, state.tick, purpose) if home is not None else None

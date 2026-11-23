@@ -3362,6 +3362,16 @@
   - documentation
   - schema
 - type: doc
+  path: docs/plans/systemic_world/experience_memory_design.md
+  title: 'Navigation experience memory: design v2 (rework of PR #996 under decision
+    56)'
+  status: active
+  layer: strategy
+  authority: P1
+  audience: agent
+  tags: []
+  last_verified: '2026-11-23'
+- type: doc
   path: docs/plans/systemic_world/m1_kernel_spec_items_2_6.md
   title: 'Milestone 1 kernel spec: items 2-6'
   status: active
@@ -7985,6 +7995,22 @@
   - world
   - content
   last_verified: '2026-10-09'
+- type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON.md
+  ticket_id: TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON
+  title: 'A subject remembers why a place failed it, for what purpose, and reconsiders
+    it by that reason (the #996 rework: an entity-owned navigation experience memory)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-23'
+  related_code_areas:
+  - src/core/giveup_records.py, src/strategy/destination_suppression.py
+  - src/engine/movement.py (_oscillation_replan, _find_way_round_loop, _find_sidestep),
+    src/engine/legality.py
+  - src/systems/strategic_systems/blocker_lifecycle.py, intelligence.py, work_queue.py
+  - src/core/state.py (NavigationState, MemoryModel), checkpoint FIELD_RULES
+  artifact_files: []
+  tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS.md
   ticket_id: TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS

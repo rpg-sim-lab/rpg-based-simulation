@@ -11,6 +11,7 @@ from typing import Dict, Iterable, Mapping, Optional, Tuple
 
 from src.core.giveup_records import GiveUpRecord, near_anchor
 from src.core.movement_modes import MovementMode
+from src.core.navigation_purpose import TargetPurpose, stored_purpose
 from src.core.state import EntityState
 from src.core.strategic import BlockerState
 from src.core.updates import (
@@ -76,7 +77,7 @@ def _record_hit(records: Iterable[GiveUpRecord], tx: int, ty: int) -> Optional[S
     return None
 
 
-def destination_suppressed(entity: EntityState, pos: Tuple[float, float], tick: int, staged: Optional[EntityUpdate] = None) -> Optional[SuppressionHit]:
+def destination_suppressed(entity: EntityState, pos: Tuple[float, float], tick: int, purpose: Optional[TargetPurpose], staged: Optional[EntityUpdate] = None) -> Optional[SuppressionHit]:
     """The reason ``pos`` is forbidden as a destination for this subject at ``tick``, or None. Sources, all within Chebyshev 1 of an anchor (integer tiles; the +-1 covers the task layer's one-tile
     jitter of the objective's target): (1) an unresolved ``blocker_access_<x>_<y>`` ACCESS blocker of the subject with ``tick`` before its ``suppression_until_tick``; (2) v2.1c, the subject's own PENDING
     give-up records (``navigation.giveup_records``, held until the strategic pass consumes them). v2.2 D1, the FUSED STRATEGIC PASS only: ``staged`` is the subject's update staged so far this tick, and
@@ -115,15 +116,15 @@ def suppressed_move_end(entity_id: int) -> DestinationSuppressedEnd:
     return DestinationSuppressedEnd(entity_id=entity_id, navigation=NavigationUpdate(target_clear=True), task=TaskUpdate(work_kind_set="ENTITY_ACT", payload_set={}))
 
 
-def destination_open(entity: EntityState, pos: Tuple[float, float], tick: int, staged: Optional[EntityUpdate] = None) -> bool:
+def destination_open(entity: EntityState, pos: Tuple[float, float], tick: int, purpose: Optional[TargetPurpose], staged: Optional[EntityUpdate] = None) -> bool:
     """True when no suppressed give-up ACCESS blocker forbids ``pos`` as a destination."""
-    return destination_suppressed(entity, pos, tick, staged) is None
+    return destination_suppressed(entity, pos, tick, purpose, staged) is None
 
 
-def suppression_anchors(entity: EntityState, pos: Tuple[float, float], tick: int, staged: Optional[EntityUpdate] = None) -> Tuple[Tuple[int, int], ...]:
+def suppression_anchors(entity: EntityState, pos: Tuple[float, float], tick: int, purpose: Optional[TargetPurpose], staged: Optional[EntityUpdate] = None) -> Tuple[Tuple[int, int], ...]:
     """The anchor tile of the suppression that forbids ``pos`` for this subject at ``tick`` (what `destination_suppressed` found) as a one-tuple, or () when ``pos`` is open. The strategic pass's typed target clear carries it
     (`NavigationUpdate.target_clear_anchors`), so the navigation patch can let that clear beat a same-update set near the same anchor."""
-    hit = destination_suppressed(entity, pos, tick, staged)
+    hit = destination_suppressed(entity, pos, tick, purpose, staged)
     return () if hit is None else (hit.anchor,)
 
 
@@ -152,33 +153,36 @@ def navigation_with_filing_anchor(entity: EntityState, nav: Optional[NavigationU
     return replace(nav or NavigationUpdate(), target_clear_anchors=tuple(sorted(set(held) | set(filed))))
 
 
-def propose_target(entity: EntityState, pos: Tuple[float, float], tick: int, staged: Optional[EntityUpdate] = None) -> Optional[Tuple[float, float]]:
+def propose_target(entity: EntityState, pos: Tuple[float, float], tick: int, purpose: TargetPurpose, staged: Optional[EntityUpdate] = None) -> Optional[Tuple[float, float]]:
     """THE proposal point of a place target (F2 v2.2 D2, owner scope #715 7062303482: every writer, combat and flight included, no exemption): ``pos`` when it may be a destination for this subject, None
     when `destination_suppressed` forbids it. A decision site writes ``NavigationUpdate(target_set=...)`` for a place only from a non-None return; what None means is per site class (rpg-designer v2.2a
     D2: flight tries its next candidate, a combat positioning branch does not fire, stalemate-break holds, an objective idles typed, the strategic bridge tries its next alternative, the executor ends
     the task). ``staged`` is passed by the fused strategic pass only. Pure: reads, never writes."""
-    return pos if destination_suppressed(entity, pos, tick, staged) is None else None
+    return pos if destination_suppressed(entity, pos, tick, purpose, staged) is None else None
 
 
-def regroup_to_town_update(entity_id: int, staged: Optional[EntityUpdate], town_target: Tuple[float, float]) -> EntityUpdate:
+def regroup_to_town_update(entity_id: int, staged: Optional[EntityUpdate], town_target: Tuple[float, float], purpose: TargetPurpose) -> EntityUpdate:
     """The update that walks a subject carrying items to the town tile (movement mode REGROUP, interaction reset), built on its staged update when it has one (the fused strategic pass's two town
-    fallbacks, the fast path and the bridge, share it; the caller keeps the guards: `destination_open` and target != town_target). Plain builder: reads nothing, writes nothing."""
+    fallbacks, the fast path and the bridge, share it; the caller keeps the guards: `destination_open` and target != town_target). ``purpose`` is the caller's bound `purpose_of(...)` name, the same one it
+    passed to the gate; the target is stored with it and as gated. Plain builder: reads nothing, writes nothing."""
     if staged is None:
-        return EntityUpdate(entity_id=entity_id, navigation=NavigationUpdate(target_set=town_target, movement_mode_set=MovementMode.REGROUP), interaction=InteractionUpdate(reset=True))
-    return replace(staged, navigation=replace(staged.navigation or NavigationUpdate(), target_set=town_target, movement_mode_set=MovementMode.REGROUP), interaction=InteractionUpdate(reset=True))
+        return EntityUpdate(entity_id=entity_id, navigation=NavigationUpdate(target_set=town_target, movement_mode_set=MovementMode.REGROUP, target_purpose_set=purpose, target_gated_set=True), interaction=InteractionUpdate(reset=True))
+    return replace(staged, navigation=replace(staged.navigation or NavigationUpdate(), target_set=town_target, movement_mode_set=MovementMode.REGROUP, target_purpose_set=purpose, target_gated_set=True), interaction=InteractionUpdate(reset=True))
 
 
 def reaffirm_move_update(subject: EntityState, target: Tuple[float, float], tick: int) -> EntityUpdate:
     """The re-emission of a held ENTITY_MOVE's target (the executor and the worker dispatch share it; F2 v2.2a class X): the typed `suppressed_move_end` when ``target`` is suppressed, else the update that
-    re-affirms it. Never writes a refused target."""
-    if propose_target(subject, target, tick) is None:
+    re-affirms it. Never writes a refused target. The re-emission carries the subject's STORED purpose and gate flag (the pursuit's purpose does not change because its tracked position moved); a subject with no stored purpose
+    (a target restored from an old checkpoint, or a payload left after a give-up cleared the target) ends the move typed and re-decides (the #996 rework, design section 4)."""
+    purpose = stored_purpose(subject)
+    if purpose is None or propose_target(subject, target, tick, purpose) is None:
         return suppressed_move_end(subject.id)
-    return EntityUpdate(entity_id=subject.id, navigation=NavigationUpdate(target_set=target))
+    return EntityUpdate(entity_id=subject.id, navigation=NavigationUpdate(target_set=target, target_purpose_set=purpose, target_gated_set=subject.navigation.target_gated))
 
 
-def suppressed_move_to(entity: EntityState, intent_kind: str, position: Optional[Tuple[float, float]], tick: int) -> Optional[Dict[int, EntityUpdate]]:
+def suppressed_move_to(entity: EntityState, intent_kind: str, position: Optional[Tuple[float, float]], tick: int, purpose: TargetPurpose) -> Optional[Dict[int, EntityUpdate]]:
     """The class-O outcome of a ``MOVE_TO`` intent (the investigate path, F2 v2.2a): ``{entity.id: ObjectiveDestinationSuppressed}`` when the intent is a MOVE_TO whose ``position`` is suppressed, else
     None (the intent runs as before). No target is written."""
-    if intent_kind != "MOVE_TO" or position is None or propose_target(entity, position, tick) is not None:
+    if intent_kind != "MOVE_TO" or position is None or propose_target(entity, position, tick, purpose) is not None:
         return None
     return {entity.id: ObjectiveDestinationSuppressed(entity_id=entity.id)}
