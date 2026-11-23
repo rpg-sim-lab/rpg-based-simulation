@@ -9,6 +9,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
 
+from src.core.navigation_experience import NavCause, RingEvidence
+from src.core.navigation_purpose import TargetPurpose
+
 # The designer's structural bound on unconsumed records (FINAL v2, OBJ-2): the strategic pass consumes them every pass, so more than this means the strategic pass is not running for the subject.
 GIVEUP_RECORDS_CAP = 4
 
@@ -24,13 +27,29 @@ def near_anchor(tile: Tuple[float, float], anchor: Tuple[float, float]) -> bool:
 
 @dataclass(frozen=True, slots=True)
 class GiveUpRecord:
-    """One give-up: ``anchor`` is the tile the pursuit's way-round count opened on (the tile the subject could not get to), ``tick`` the tick of the give-up."""
+    """One give-up: ``anchor`` is the tile the pursuit's way-round count opened on (the tile the subject could not get to), ``tick`` the tick of the give-up.
+
+    The #996 rework adds the producer's EVIDENCE (design section 3), each written by `MovementSystem._oscillation_replan` from facts it already holds: ``cause`` (RING_BLOCKED when the one-ring check found no legal
+    tile, else OSCILLATION), ``ring_evidence`` (the legality refusal of each ring tile, mapped to BODIES / STATIC / OTHER), ``from_position`` (the subject's tile), ``target_tile`` (the tile it was walking to) and
+    ``purpose`` (the STORED purpose of the pursuit that failed; None for a target restored from an old checkpoint). A record built with only an anchor and a tick (``from_position`` None) carries none of it."""
     anchor: Tuple[int, int]
     tick: int
+    cause: NavCause = NavCause.OSCILLATION
+    ring_evidence: Tuple[RingEvidence, ...] = ()
+    from_position: Optional[Tuple[int, int]] = None
+    target_tile: Optional[Tuple[int, int]] = None
+    purpose: Optional[TargetPurpose] = None
 
     def to_canonical(self) -> Dict[str, object]:
-        """The canonical-dict form: the anchor as a list, the tick."""
-        return {"anchor": [int(self.anchor[0]), int(self.anchor[1])], "tick": int(self.tick)}
+        """The canonical-dict form: the anchor as a list and the tick; the evidence only on a record that carries it (``from_position`` set), so a bare record keeps its older form."""
+        res: Dict[str, object] = {"anchor": [int(self.anchor[0]), int(self.anchor[1])], "tick": int(self.tick)}
+        if self.from_position is not None:
+            res["cause"] = self.cause.value
+            res["ring_evidence"] = [e.value for e in self.ring_evidence]
+            res["from_position"] = [int(self.from_position[0]), int(self.from_position[1])]
+            res["target_tile"] = None if self.target_tile is None else [int(self.target_tile[0]), int(self.target_tile[1])]
+            res["purpose"] = None if self.purpose is None else self.purpose.to_canonical()
+        return res
 
 
 def giveup_canonical(records: Tuple[GiveUpRecord, ...]) -> Dict[str, object]:

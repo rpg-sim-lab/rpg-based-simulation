@@ -8,6 +8,7 @@ from dataclasses import dataclass, replace
 from src.content.common_knowledge_seed import warmed_catalog
 from src.content.wayround_settings import WayroundSettings, wayround_settings
 from src.core.giveup_records import GiveUpRecord
+from src.core.navigation_experience import NavCause, ring_evidence_of
 from src.core.movement_modes import MovementMode
 from src.core.updates import EntityUpdate, NavigationUpdate, StaminaUpdate, LifecycleUpdate
 from src.core.enums import ReasonCode
@@ -139,6 +140,7 @@ class MovementSystem:
         target_pos: Tuple[float, float],
         state_or_context: Any,
         move_speed_mult: float,
+        refusals: Optional[List[ReasonCode]] = None,
     ) -> Optional[Tuple[float, float]]:
         """The first legal orthogonal sidestep around a rejected step (3.1 of the congestion ladder), or None."""
         x, y = entity.navigation.position
@@ -156,11 +158,13 @@ class MovementSystem:
             LegalityServiceV2.get_manhattan_dist(p, target_pos)
         ))
         for side_tile in sidesteps:
-            s_ok, _ = LegalityServiceV2.verify_movement_legality(
+            s_ok, why = LegalityServiceV2.verify_movement_legality(
                 entity, side_tile, state_or_context, move_speed_mult=move_speed_mult
             )
             if s_ok:
                 return side_tile
+            if refusals is not None:
+                refusals.append(why)  # the legality refusal of this ring tile: the give-up's evidence (the #996 rework), no new world read
         return None
 
     @staticmethod
@@ -170,11 +174,12 @@ class MovementSystem:
         target_pos: Tuple[float, float],
         state_or_context: Any,
         move_speed_mult: float,
+        refusals: Optional[List[ReasonCode]] = None,
     ) -> Optional[Tuple[float, float]]:
         """The legal tile that gets an A-B oscillation out of the loop, or None: the sidestep around the looped step (3.1), else the nearest legal orthogonal
         neighbour to the target (3.3), never the tile just left (`looped_step`) and never the current tile."""
         here = (int(entity.navigation.position[0]), int(entity.navigation.position[1]))
-        side_tile = MovementSystem._find_sidestep(entity, looped_step, target_pos, state_or_context, move_speed_mult)
+        side_tile = MovementSystem._find_sidestep(entity, looped_step, target_pos, state_or_context, move_speed_mult, refusals)
         if side_tile is not None and (int(side_tile[0]), int(side_tile[1])) != (int(looped_step[0]), int(looped_step[1])):
             return side_tile
         x, y = entity.navigation.position
@@ -182,8 +187,11 @@ class MovementSystem:
         for tile in ring:
             if (int(tile[0]), int(tile[1])) in {here, (int(looped_step[0]), int(looped_step[1]))}:
                 continue
-            if LegalityServiceV2.verify_movement_legality(entity, tile, state_or_context, move_speed_mult=move_speed_mult)[0]:
+            ok, why = LegalityServiceV2.verify_movement_legality(entity, tile, state_or_context, move_speed_mult=move_speed_mult)
+            if ok:
                 return tile
+            if refusals is not None:
+                refusals.append(why)
         return None
 
     @staticmethod
@@ -200,8 +208,9 @@ class MovementSystem:
         legal tile that is neither it nor the current tile before dropping the target. The bounded give-up (2.213): a way-round that makes no net progress on this target counts; the count past
         the step limit (`wayround_limit`) is the real replan. Pure: it reads the entity and the state and returns the outcome."""
         target_tile = (int(target_pos[0]), int(target_pos[1]))
-        current_tick = getattr(state_or_context, "tick", 0)
-        way_round = MovementSystem._find_way_round_loop(entity, effective_target, target_pos, state_or_context, move_speed_mult)
+        current_tick = state_or_context.tick  # the kernel's tick, explicitly: a context with none raises, it never stamps 0 (the #996 rework)
+        refusals: List[ReasonCode] = []
+        way_round = MovementSystem._find_way_round_loop(entity, effective_target, target_pos, state_or_context, move_speed_mult, refusals)
         osc_delta = -entity.navigation.oscillation_count
         wait_delta = -entity.navigation.wait_count
         dist_now = int(abs(target_pos[0] - entity.navigation.position[0]) + abs(target_pos[1] - entity.navigation.position[1]))
@@ -210,7 +219,10 @@ class MovementSystem:
             return OscReplanOutcome(way_round, osc_delta, wait_delta, (wayround_count, wayround_best, wayround_anchor, current_tick), False)
         anchor = entity.navigation.wayround_anchor
         kept = (int(anchor[0]), int(anchor[1])) if anchor is not None else target_tile
-        return OscReplanOutcome(None, osc_delta, wait_delta, None, True, GiveUpRecord(kept, int(current_tick)))
+        ring_blocked = way_round is None  # the one-ring check found no legal tile (else the bounded way-round count was spent: OSCILLATION, with no ring evidence)
+        record = GiveUpRecord(kept, int(current_tick), NavCause.RING_BLOCKED if ring_blocked else NavCause.OSCILLATION, ring_evidence_of(refusals) if ring_blocked else (),
+                              (int(entity.navigation.position[0]), int(entity.navigation.position[1])), target_tile, entity.navigation.target_purpose)
+        return OscReplanOutcome(None, osc_delta, wait_delta, None, True, record)
 
     @staticmethod
     def _yield_update(entity: EntityState, effective_target: Tuple[float, float], state_or_context: Any, current_tick: int) -> Optional[EntityUpdate]:
