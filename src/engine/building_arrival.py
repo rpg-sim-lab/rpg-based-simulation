@@ -15,7 +15,7 @@ from src.engine.building_services import SERVICE_KINDS, offers_work
 from src.engine.lodging import finds_no_bed
 from src.engine.service_admission import admits
 from src.engine.shop_sale import plan_sale
-from src.engine.work_shift import SHIFT_START, inn_in_reach, shift_startable
+from src.engine.work_shift import SHIFT_START, meal_in_reach, shift_startable
 from src.engine.work_wake import held_work_is_threatened
 
 
@@ -41,9 +41,8 @@ def _act(entity: Any, action: str, building_id: int, **extra: Any) -> EntityUpda
 
 
 def _meal_in_reach(state: Any, entity: Any) -> bool:
-    """True when the subject could buy a meal in reach now: the INN_MEAL way's own test (`ways.ways_in_reach`): the nearest inn is inside its range (`work_shift.inn_in_reach`, one definition,
-    read from ``state.buildings`` because a worker packet has no world index) and the one admission rule `admits(EAT)` holds."""
-    return admits(entity, "EAT") and inn_in_reach(state, entity) is not None
+    """True when the subject could buy a meal in reach now: `work_shift.meal_in_reach`, the one predicate (also read by the re-point of a need project from its earn step to the meal)."""
+    return meal_in_reach(state, entity)
 
 
 def _hunger_arrival(state: Any, entity: Any, project: Any, building_id: int) -> EntityUpdate:
@@ -67,7 +66,9 @@ def _hunger_arrival(state: Any, entity: Any, project: Any, building_id: int) -> 
     if getattr(building, "kind", None) in SERVICE_KINDS["EAT"] and admits(entity, "EAT"):
         return _act(entity, "EAT", building_id)
     if building is not None and offers_work(building):
-        if shift_startable(state, entity, building):
+        # No NEW shift while a meal is affordable and admitted in reach (the earn step has done its work: the coin is in hand): the same predicate the strategic re-point reads
+        # (`work_shift.meal_in_reach`), so the guarantee does not depend on when the next strategic pass runs. The project then ends below and the next decision goes to eat.
+        if not _meal_in_reach(state, entity) and shift_startable(state, entity, building):
             return _act(entity, "WORK", building_id, **{SHIFT_START: state.tick})
         if held_work_is_threatened(entity, state):
             # Not takeable NOW because of a present threat (designer ruling 2026-10-30): the hunger project stays current, nothing is dispatched, and the

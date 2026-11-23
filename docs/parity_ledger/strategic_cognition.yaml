@@ -4654,6 +4654,17 @@
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.151.
   support_boundary: 'Main runs CLAMP with the free meal on, so the broke-subject effect shows only once the free-meal removal (D73) lands; the scenario tests switch off the core EAT free relief through one named fixture. No partial wages; ask stays a stub.'
 
+- id: STRAT-292
+  text: 'A need project re-points from its earn step to the buy step once the coin is in hand (SURV-06, SURV-07 row 27; #995 case (c)): the CURRENT project of a need kind whose active objective is an earn step (a building that offers a shift or buys goods, or the seek-work town centre) is re-pointed, under the same project id and with no switch check, to the direct consume way when it is open now and admitted to the subject (the one admission rule); a shift held in progress is not cut, and the arrival starts no new shift while a meal is affordable and admitted.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/ai/goals/live_record_route.py (repoint_earn_to_consume, route_live_record), src/engine/work_shift.py (meal_in_reach, shift_held), src/engine/building_arrival.py (the shift-start guard), src/systems/strategic_systems/intelligence.py (the state passed to the route)'
+  proof_type: regression
+  test_path: tests/unit/ai/test_need_project_repoints_from_earn_to_consume.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.224.
+  support_boundary: 'Not yet run: written before the W re-measure. A held shift is not cut (owner question, separate). The earn step is read from the building the objective targets (no typed marker on an objective).'
+
 - id: STRAT-289
   text: 'TCK-20261027-CAPACITY-GATE-FIRST-RECORD-OF-KIND-IS-DEAD-SO-LIVE-SIBLING-NEVER-RESUMED: a winning goal continues, resumes or supersedes the entity''s LIVE project of its kind, chosen as the current project of the kind, else the newest live record (ACTIVE before SUSPENDED); a COMPLETED or ABANDONED record and storage order take no part. A matching target (target_entity_id when either side has one, else target_id) continues the current project, resumes a suspended one or makes an active non-current one current, creating nothing. A different target is superseded (ABANDONED, ended_by SUPERSEDED_BY_TARGET) only when evaluate_project_switch returns an update, cap-neutral; a losing candidate changes nothing. No live record goes through the capacity gate.'
   status: verified

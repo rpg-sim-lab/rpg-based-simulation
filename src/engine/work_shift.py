@@ -59,6 +59,22 @@ def inn_in_reach(state: Any, entity: Any) -> Optional[Any]:
     return inn if inn is not None and way_in_range(entity, inn.position) else None
 
 
+def meal_in_reach(state: Any, entity: Any) -> bool:
+    """True when the subject could buy a meal in reach now: the INN_MEAL way's own test (`ways.ways_in_reach`): the nearest inn is inside its range (`inn_in_reach`, one definition,
+    read from ``state.buildings`` because a worker packet has no world index) and the one admission rule `admits(EAT)` holds (the coin trait, the diet, the full price). The ONE predicate for
+    the arrival (`building_arrival`: a visit ends instead of starting a shift) and the re-point of a need project from its earn step to the meal (`live_record_route`)."""
+    from src.engine.service_admission import admits
+    return admits(entity, "EAT") and inn_in_reach(state, entity) is not None
+
+
+def shift_held(entity: Any, state: Any) -> bool:
+    """True while a shift is HELD in progress: the task is the WORK action carrying its start tick and fewer than SHIFT_TICKS ticks have passed since (the wage is paid on the last one). A task whose
+    action is still WORK after the shift ended is not a held shift."""
+    payload = entity.task.payload if isinstance(entity.task.payload, dict) else {}
+    start = payload.get(SHIFT_START)
+    return payload.get("action") == "WORK" and start is not None and int(state.tick) - int(start) + 1 < SHIFT_TICKS
+
+
 def meal_position_after(state: Any, work_pos: Any) -> Optional[tuple]:
     """Where the wage is spent: the inn nearest to the place of work, or None when there is none."""
     inn = nearest_inn(state, work_pos)

@@ -35,16 +35,71 @@ class LiveRecordRoute:
     orphan: Optional[ProjectState] = None
 
 
-def route_live_record(entity: EntityState, best_candidate: Any, resume: Callable[[EntityState, str], Optional[StrategicUpdate]]) -> LiveRecordRoute:
+def _earn_objective(state: Any, objective: Any, candidate_target_id: Any) -> bool:
+    """True when the objective is an EARN step toward a way the candidate no longer needs: it targets the seek-work town centre (`SEEK_WORK_TARGET_ID`), or a building (not the candidate's own
+    target) the subject earns at: one that buys goods (a kind in `SERVICE_KINDS["SELL"]`) or offers a shift (`building_services.offers_work`). No typed marker exists on an objective, so it is
+    read from the building the target names, with the predicates the sale and shift steps use."""
+    from src.core.strategic import SEEK_WORK_TARGET_ID
+    from src.engine.building_services import SERVICE_KINDS, offers_work
+    target = getattr(objective, "target", None)
+    if target is None or str(target) == str(candidate_target_id):
+        return False
+    if target == SEEK_WORK_TARGET_ID:
+        return True
+    try:
+        building = state.buildings.get(int(target))
+    except (TypeError, ValueError):
+        return False
+    return building is not None and (building.kind in SERVICE_KINDS["SELL"] or offers_work(building))
+
+
+def _consume_way_open(entity: EntityState, state: Any, best_candidate: Any) -> bool:
+    """True when the candidate IS the direct way to meet the need, open now and ADMITTED to this subject (the one admission rule, which carries the coin trait): hunger: a candidate that
+    names its target with no opening step while `work_shift.meal_in_reach` holds (the INN_MEAL way's own test, the one the arrival also reads); fatigue: a candidate that carries a target
+    (SleepScorer targets only a bed `admits_at(entity, inn, "REST", state)` delivers to this subject: a paid bed, or a free home's, as the scorer reads it)."""
+    from src.engine.work_shift import meal_in_reach
+    if best_candidate.target_id is None:
+        return False
+    if str(getattr(best_candidate.kind, "value", best_candidate.kind)) == "hunger":
+        return best_candidate.opening_step is None and meal_in_reach(state, entity)
+    return True
+
+
+def repoint_earn_to_consume(entity: EntityState, state: Any, existing: ProjectState, best_candidate: Any) -> Optional[StrategicUpdate]:
+    """A need project made while the subject could not pay keeps its EARN objective after the coin is in hand (the objective is frozen at the way it was made with, and the switch check
+    refuses a same-need candidate): the subject then starts NEW shifts with the meal affordable. When the existing record is the CURRENT project of a need kind (`NEED_PROJECT_KINDS`),
+    its active objective is an EARN step (`_earn_objective`), the candidate is the direct consume way open now (`_consume_way_open`) and no shift is running, return an update that
+    RE-POINTS the same project's active objective to the candidate's target (same project id, no new project, no switch check). A shift already held is not cut: the re-point comes at the
+    next decision after it ends (`work_shift.shift_held`). Otherwise None (behaviour unchanged)."""
+    from src.core.strategic import NEED_PROJECT_KINDS, ObjectiveKind, ObjectiveState, ObjectiveStatus
+    from src.engine.work_shift import shift_held
+    if existing.id != entity.strategic.current_project_id or str(getattr(existing.kind, "value", existing.kind)) not in NEED_PROJECT_KINDS:
+        return None
+    active = next((o for o in existing.objectives if o.id == existing.active_objective_id), None)
+    if active is None or not _earn_objective(state, active, best_candidate.target_id) or not _consume_way_open(entity, state, best_candidate):
+        return None
+    if shift_held(entity, state):
+        return None  # a shift held in progress runs to its end (the wage law is unchanged); the next decision after it re-points
+    kind_str = getattr(best_candidate.kind, "value", best_candidate.kind)
+    fresh = ObjectiveState(id=f"{kind_str}_{best_candidate.target_id}", kind=ObjectiveKind.REACH_LOCATION, target=best_candidate.target_id, target_position=best_candidate.target_pos,
+                           target_entity_id=best_candidate.target_entity_id, status=ObjectiveStatus.ACTIVE)
+    objectives = [replace(o, status=ObjectiveStatus.RESOLVED) if o.id == active.id else o for o in existing.objectives if o.id != fresh.id] + [fresh]
+    return StrategicUpdate(projects_add_or_update=[replace(existing, objectives=objectives, active_objective_id=fresh.id)], current_objective_id_set=fresh.id)
+
+
+def route_live_record(entity: EntityState, best_candidate: Any, resume: Callable[[EntityState, str], Optional[StrategicUpdate]], state: Any) -> LiveRecordRoute:
     """The live record a goal of `best_candidate.kind` continues, resumes, makes current or contests the current project with (see the module docstring).
 
     The record is the current project when it is of the kind, else the newest live one (`same_kind_record`); a COMPLETED or ABANDONED record and storage order take no part. A
     matching target never creates a same-target duplicate: the current project continues; a SUSPENDED record is resumed (`resume`, existing behaviour); an ACTIVE one that lost
     `current_project_id` (several writers clear it without ending the project) is made current again, or, beside another live current project, contests it through the switch check.
-    A different target returns the record with `update` None: the caller's candidate may supersede it."""
+    A different target returns the record with `update` None: the caller's candidate may supersede it, except that a current NEED project on an earn objective is re-pointed to the
+    open consume way (`repoint_earn_to_consume`; `state` is required: a default would silently disable the re-point)."""
     strat = entity.strategic
     existing = same_kind_record(strat.projects, best_candidate.kind, strat.current_project_id)
     matches = existing is not None and project_target_matches(existing, best_candidate.target_id, best_candidate.target_entity_id)
+    if existing is not None and not matches:
+        return LiveRecordRoute(existing, matches, repoint_earn_to_consume(entity, state, existing, best_candidate))
     if existing is None or not matches:
         return LiveRecordRoute(existing, matches)
     if existing.id == strat.current_project_id:
