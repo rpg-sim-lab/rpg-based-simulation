@@ -335,7 +335,7 @@ services:
     #   container environment alloy can already read.
     #   Rejected: mounting /var/lib/docker/containers read-only in alloy (it would read every container's logs on the host, other stacks included, and loses
     #   the project filter); the Loki Docker logging driver (a host plugin install, a logging block on every service, and it bypasses alloy's pipeline).
-    image: tecnativa/docker-socket-proxy:v0.5.0@sha256:1f5038b54f06c3e18422902cf00ba21803d1c97805aae032e5e6673d532d3459
+    image: tecnativa/docker-socket-proxy:3.4@sha256:027f9fa5ee70be5836eeaa10ce889d7a83f34a8db16a7f412818b92997e0beab
     mem_limit: 64m
     environment:
       - CONTAINERS=1
