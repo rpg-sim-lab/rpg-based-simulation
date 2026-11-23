@@ -544,11 +544,13 @@ evidence for this same inherited entry.
 ## Cross-domain links recorded here
 
 - CONFLICT-01 → Resource (RES-*, Batch 03), Ecology/Population (ECOL-04, Batch 05)
-- CONFLICT-03 → Agency/Decision (AGENCY-01/02, Batch 06: intent lives in the decision layer),
+- CONFLICT-03 → Agency/Decision (AGENCY-01/02, Batch 06: intent lives in the decision layer;
+  AGENCY-07's 2026-11-22 amendments "when to fight back" and "a first strike when it judges it can win" state when the symmetric permission is used),
   Organizations / factions (`organizations.md`; the faction catalog's hostility law)
 - CONFLICT-04 → Agency/Decision (AGENCY-01/02/07, Batch 06: a step is a chosen action; flight
   is the decided way out), Movement/Navigation (MOV-07: orthogonal adjacency), Survival
-  (SURV-07: a present threat outranks a need)
+  (SURV-07: a present threat outranks a need); AGENCY-07's 2026-11-22 amendment "flight holds
+  once decided"
 - Inherited perception/knowledge entry (formerly CONFLICT-02) → Perception (PERC-01, KNOW-01,
   Batch 06), Agency/Decision (AGENCY-01/02, Batch 06), Capability/Progression
   (`capability-progression.md`, the same ad hoc `CapabilityEstimateService` finding)
