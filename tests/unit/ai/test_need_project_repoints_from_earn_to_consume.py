@@ -176,7 +176,7 @@ def test_a_subject_with_no_affordable_meal_and_no_startable_shift_still_ends_the
     broke_hall = replace(state.buildings[HALL], inventory=replace(state.buildings[HALL].inventory, gold=0), maintenance_shifts_needed=0, maintenance_shifts_done=0)
     state = replace(state, buildings={**state.buildings, HALL: broke_hall})
     out = building_arrival_update(state, ent, project, HALL)
-    assert out.task is None and out.strategic.current_project_id_set == "" and out.strategic.projects_add_or_update[0].status == ProjectStatus.COMPLETED
+    assert out.task is None and out.strategic.current_project_id_set == "" and out.strategic.projects_add_or_update[0].status == ProjectStatus.COMPLETED  # this asserts today's COMPLETED for a hunger project ended at a building that cannot serve the need; TCK-20261123-A-NEED-PROJECT-ENDED-AT-A-BUILDING-THAT-CANNOT-SERVE-IT-IS-RECORDED-AS-COMPLETED changes it
 
 
 def test_the_arrival_mutant_that_ends_instead_of_repointing_fails_the_arrival_case(monkeypatch):

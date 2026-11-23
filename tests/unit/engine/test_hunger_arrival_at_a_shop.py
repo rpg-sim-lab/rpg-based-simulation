@@ -42,7 +42,7 @@ def test_a_subject_that_can_pay_for_a_meal_in_reach_still_ends_the_shop_visit():
     state = _state(ent, _shop(), _inn(pos=(30.0, 10.0)))
     update = building_arrival_update(state, ent, _project(), SHOP_ID)
     assert update.task is None and update.strategic.current_project_id_set == ""
-    assert update.strategic.projects_add_or_update[0].status == ProjectStatus.COMPLETED
+    assert update.strategic.projects_add_or_update[0].status == ProjectStatus.COMPLETED  # this asserts today's COMPLETED for a hunger project ended at a shop that cannot serve the need; TCK-20261123-A-NEED-PROJECT-ENDED-AT-A-BUILDING-THAT-CANNOT-SERVE-IT-IS-RECORDED-AS-COMPLETED changes it
 
 
 def test_a_fed_subject_at_a_shop_with_nothing_to_sell_ends_the_visit():
