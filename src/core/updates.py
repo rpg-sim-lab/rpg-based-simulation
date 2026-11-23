@@ -23,6 +23,7 @@ from src.core.dirty import DirtySet
 from src.core.giveup_records import GiveUpRecord
 from src.core.group_update_merge import merge_group_fields
 from src.core.movement_modes import MovementMode
+from src.core.navigation_purpose import TargetPurpose
 from src.core.spawn_source import SpawnSource
 from src.core.state import ItemInstance, ItemStack, LifeStage  # noqa: F401  (ItemStack re-exported: tests import it from here)
 from src.core.update_models.body import (  # noqa: F401  (re-exported)
@@ -89,6 +90,8 @@ class NavigationUpdate:
     giveup_record_add: Optional[GiveUpRecord] = None  # F2: the give-up's typed record, appended by the navigation patch (written by resolve_move only)
     giveup_records_clear: bool = False  # F2: the subject's strategic pass has consumed the held records (written by the strategic pass only; applied before an add of the same update)
     target_clear_anchors: Tuple[Tuple[int, int], ...] = ()  # F2 v2.2a A'': the anchor tiles of suppressions, written by the strategic pass only: with ``target_clear`` when it refused the stored target at an anchor, and alone when it filed or extended a suppression; merged as the sorted, de-duplicated union; a transient update field, never stored or serialised
+    target_purpose_set: Optional[TargetPurpose] = None  # the #996 rework: what a NEW target_set was chosen for, written WITH it by the writer (the same bound name as the gate's purpose argument); the patch stores it only with the target it keeps
+    target_gated_set: Optional[bool] = None  # the #996 rework: True when the target_set position passed a gate call, False for a by-value own-tile write that skipped it; None = not stated (a re-emission keeps the stored flag)
 
     def __post_init__(self) -> None:
         """The anchors are always the sorted, de-duplicated tuple, whoever built the update (so a merge, or a no-op merge, returns the normalised form)."""
@@ -105,7 +108,7 @@ class NavigationUpdate:
                 self.wait_count_delta == 0 and self.oscillation_count_delta == 0 and 
                 self.last_position_set is None and self.region_id_set is None and self.lodged_in_set is None and not self.lodged_in_clear and self.last_moved_tick_set is None and
                 self.wayround_count_set is None and self.wayround_best_distance_set is None and self.wayround_anchor_set is None and
-                self.wayround_last_tick_set is None and not self.wayround_clear and self.giveup_record_add is None and not self.giveup_records_clear and not self.target_clear_anchors)
+                self.wayround_last_tick_set is None and not self.wayround_clear and self.giveup_record_add is None and not self.giveup_records_clear and not self.target_clear_anchors and self.target_purpose_set is None and self.target_gated_set is None)
 
     def merge(self, other: NavigationUpdate) -> NavigationUpdate:
         if not other or other.is_noop():
@@ -119,6 +122,7 @@ class NavigationUpdate:
         changes.update(other._lodging_changes())
         changes.update(other._wayround_changes())
         changes.update(other._giveup_changes())
+        changes.update(other._purpose_changes())
         if other.target_clear_anchors: changes["target_clear_anchors"] = tuple(sorted(set(self.target_clear_anchors) | set(other.target_clear_anchors)))  # the union, sorted and de-duplicated: the same whatever the writer order
         return replace(self, **changes)
 
@@ -131,6 +135,12 @@ class NavigationUpdate:
         sets = {"wayround_count_set": self.wayround_count_set, "wayround_best_distance_set": self.wayround_best_distance_set,
                 "wayround_anchor_set": self.wayround_anchor_set, "wayround_last_tick_set": self.wayround_last_tick_set}
         return {**{k: v for k, v in sets.items() if v is not None}, **({"wayround_clear": True} if self.wayround_clear else {})}
+
+    def _purpose_changes(self) -> Dict[str, Any]:
+        """What a merge takes from this (later) update for the target's purpose and gate flag: a later `target_set` brings ITS OWN purpose and flag (even None, never the earlier target's), else any value it names."""
+        if self.target_set is not None:
+            return {"target_purpose_set": self.target_purpose_set, "target_gated_set": self.target_gated_set}
+        return {**({"target_purpose_set": self.target_purpose_set} if self.target_purpose_set is not None else {}), **({"target_gated_set": self.target_gated_set} if self.target_gated_set is not None else {})}
 
     def _giveup_changes(self) -> Dict[str, Any]:
         """What a merge takes from this update for the give-up records (F2): the record to append if one is set, and the clear flag."""

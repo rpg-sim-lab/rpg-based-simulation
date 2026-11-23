@@ -265,6 +265,21 @@ def _target_and_path(u_nav: Any, stored_nav: Any) -> tuple:
     return target, path
 
 
+def _purpose_and_gate(u_nav: Any, stored_nav: Any, final_target: Any) -> tuple:
+    """The stored target's purpose and gate flag after a navigation update (the #996 rework, design section 4): they are written ONLY together with the target the patch keeps.
+    A cleared target takes neither; a target that is not the stored one takes the update's own (a write with no purpose stores None and False); the target that stays the stored one keeps the stored pair,
+    unless the update re-emits that same target and names them. So when `anchored_target` DROPS the update's set and keeps the stored target, the dropped write's purpose and flag are dropped with it."""
+    if final_target is None:
+        return None, False
+    if final_target != stored_nav.target:
+        return u_nav.target_purpose_set, bool(u_nav.target_gated_set)
+    if u_nav.target_set is not None and final_target == u_nav.target_set:
+        purpose = u_nav.target_purpose_set if u_nav.target_purpose_set is not None else stored_nav.target_purpose
+        gated = u_nav.target_gated_set if u_nav.target_gated_set is not None else stored_nav.target_gated
+        return purpose, gated
+    return stored_nav.target_purpose, stored_nav.target_gated
+
+
 @dataclass(frozen=True, slots=True)
 class NavigationPatch(ComponentPatch):
     navigation: Optional[Any] = None # NavigationUpdate
@@ -291,9 +306,12 @@ class NavigationPatch(ComponentPatch):
         if self.navigation:
             u_nav = self.navigation
             final_target, final_path = _target_and_path(u_nav, new_nav)  # F2 v2.2a A'': an anchor (the give-up's, or the strategic pass's) drops a same-update set near it and clears a stored target near it (the path with it); anywhere else today's precedence
+            final_purpose, final_gated = _purpose_and_gate(u_nav, new_nav, final_target)
             new_nav = replace(
                 new_nav,
                 target=final_target,
+                target_purpose=final_purpose,
+                target_gated=final_gated,
                 movement_mode=u_nav.movement_mode_set if u_nav.movement_mode_set is not None else new_nav.movement_mode,
                 path=final_path,
                 moved_recently=u_nav.moved_recently_set if u_nav.moved_recently_set is not None else new_nav.moved_recently,

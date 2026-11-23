@@ -15,7 +15,8 @@ def _navigation_tail(nav: "NavigationComponent") -> str:
     lodged = "" if nav.lodged_in is None else "lodged_in=%s:" % nav.lodged_in
     wayround = "wayround=%s@%s:%s:%s:" % (nav.wayround_count, nav.wayround_best_distance, nav.wayround_anchor, nav.wayround_last_tick) if nav.wayround_count else ""
     giveups = "giveups=%s:" % (tuple((r.anchor, r.tick) for r in nav.giveup_records),) if nav.giveup_records else ""  # F2: only while a give-up record is held
-    return lodged + wayround + giveups
+    purpose = "purpose=%s/%s%s:" % (nav.target_purpose.project_kind, nav.target_purpose.movement_mode, "+gated" if nav.target_gated else "") if nav.target_purpose is not None else ("gated:" if nav.target_gated else "")  # the #996 rework: only while the target carries a purpose or a gate flag
+    return lodged + wayround + giveups + purpose
 
 
 def _blocker_ident(blockers: "Dict[str, BlockerState]") -> str:

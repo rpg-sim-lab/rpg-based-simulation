@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from src.domains.belief_institution.model import BeliefInstitution
 from src.core.strategic import StrategicComponent
 from src.core.giveup_records import GiveUpRecord, giveup_canonical
+from src.core.navigation_purpose import TargetPurpose, purpose_canonical
 from src.core.group_record import GroupBindingError, GroupRecord  # noqa: F401  (re-exported: pickles name src.core.state.GroupRecord)
 from src.core.death_cause import DeathRecord
 from src.core.enums import Faction, EntityRole, DiplomaticState, PassiveDeathCause
@@ -500,7 +501,6 @@ class NavigationComponent:
     moved_recently: bool = False
     movement_mode: MovementMode = MovementMode.WANDER
     last_failure_reason: Optional[str] = None
-    
     # Phase 4 additions: Movement Congestion Recovery
     wait_count: int = 0
     oscillation_count: int = 0
@@ -534,6 +534,8 @@ class NavigationComponent:
     wayround_anchor: Optional[Tuple[int, int]] = None
     wayround_last_tick: Optional[int] = None
     giveup_records: Tuple[GiveUpRecord, ...] = ()  # F2 (2.220): the typed way-round give-up records, appended by movement and cleared by the strategic pass (src/core/giveup_records.py); omitted from the canonical form while empty
+    target_purpose: Optional[TargetPurpose] = None  # the #996 rework (design section 2.1): what the stored target was chosen for, written by the navigation patch with every NEW target and cleared with it; None = unknown (a target restored from an old checkpoint); omitted from the canonical form while None
+    target_gated: bool = False  # the #996 rework (design section 4, the latch): True only for a target whose position passed a destination gate call; every by-value own-tile write that skips the gate stores False; omitted from the canonical form while False
 
     def to_canonical_dict(self) -> Dict[str, Any]:
         """The navigation block of the entity's canonical form. `step_ready_tick` (D75) is present only once non-zero, so the form of an
@@ -569,7 +571,7 @@ class NavigationComponent:
             res["wayround_anchor"] = self.wayround_anchor  # F1 (2.213): present only while a count is open
         if self.wayround_last_tick is not None:
             res["wayround_last_tick"] = self.wayround_last_tick
-        res.update(giveup_canonical(self.giveup_records))  # F2: present only while a give-up record is held
+        res.update({**giveup_canonical(self.giveup_records), **purpose_canonical(self.target_purpose, self.target_gated)})  # F2: the give-up records only while one is held; the #996 rework: the target's purpose and gate flag only while set
         return res
 
 
