@@ -71,8 +71,8 @@ def repoint_earn_to_consume(entity: EntityState, state: Any, existing: ProjectSt
     its active objective is an EARN step (`_earn_objective`), the candidate is the direct consume way open now (`_consume_way_open`) and no shift is running, return an update that
     RE-POINTS the same project's active objective to the candidate's target (same project id, no new project, no switch check). A shift already held is not cut: the re-point comes at the
     next decision after it ends (`work_shift.shift_held`). Otherwise None (behaviour unchanged)."""
-    from src.core.strategic import NEED_PROJECT_KINDS, ObjectiveKind, ObjectiveState, ObjectiveStatus
-    from src.engine.work_shift import shift_held
+    from src.core.strategic import NEED_PROJECT_KINDS
+    from src.engine.work_shift import repoint_to_consume, shift_held
     if existing.id != entity.strategic.current_project_id or str(getattr(existing.kind, "value", existing.kind)) not in NEED_PROJECT_KINDS:
         return None
     active = next((o for o in existing.objectives if o.id == existing.active_objective_id), None)
@@ -81,10 +81,7 @@ def repoint_earn_to_consume(entity: EntityState, state: Any, existing: ProjectSt
     if shift_held(entity, state):
         return None  # a shift held in progress runs to its end (the wage law is unchanged); the next decision after it re-points
     kind_str = getattr(best_candidate.kind, "value", best_candidate.kind)
-    fresh = ObjectiveState(id=f"{kind_str}_{best_candidate.target_id}", kind=ObjectiveKind.REACH_LOCATION, target=best_candidate.target_id, target_position=best_candidate.target_pos,
-                           target_entity_id=best_candidate.target_entity_id, status=ObjectiveStatus.ACTIVE)
-    objectives = [replace(o, status=ObjectiveStatus.RESOLVED) if o.id == active.id else o for o in existing.objectives if o.id != fresh.id] + [fresh]
-    return StrategicUpdate(projects_add_or_update=[replace(existing, objectives=objectives, active_objective_id=fresh.id)], current_objective_id_set=fresh.id)
+    return repoint_to_consume(existing, kind_str, best_candidate.target_id, best_candidate.target_pos, best_candidate.target_entity_id)  # the one re-point, shared with the arrival
 
 
 def route_live_record(entity: EntityState, best_candidate: Any, resume: Callable[[EntityState, str], Optional[StrategicUpdate]], state: Any) -> LiveRecordRoute:

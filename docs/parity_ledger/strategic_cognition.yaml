@@ -4655,11 +4655,11 @@
   support_boundary: 'Main runs CLAMP with the free meal on, so the broke-subject effect shows only once the free-meal removal (D73) lands; the scenario tests switch off the core EAT free relief through one named fixture. No partial wages; ask stays a stub.'
 
 - id: STRAT-292
-  text: 'A need project re-points from its earn step to the buy step once the coin is in hand (SURV-06, SURV-07 row 27; #995 case (c)): the CURRENT project of a need kind whose active objective is an earn step (a building that offers a shift or buys goods, or the seek-work town centre) is re-pointed, under the same project id and with no switch check, to the direct consume way when it is open now and admitted to the subject (the one admission rule); a shift held in progress is not cut, and the arrival starts no new shift while a meal is affordable and admitted.'
+  text: 'A need project re-points from its earn step to the buy step once the coin is in hand (SURV-06, SURV-07 row 27; #995 case (c)): the CURRENT project of a need kind whose active objective is an earn step (a building that offers a shift or buys goods, or the seek-work town centre) is re-pointed, under the same project id and with no switch check, to the direct consume way when it is open now and admitted to the subject (the one admission rule); a shift held in progress is not cut, and the arrival at a work building makes the same re-point (one shared helper) instead of starting a new shift while a meal is affordable and admitted.'
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: 'src/ai/goals/live_record_route.py (repoint_earn_to_consume, route_live_record), src/engine/work_shift.py (meal_in_reach, shift_held), src/engine/building_arrival.py (the shift-start guard), src/systems/strategic_systems/intelligence.py (the state passed to the route)'
+  v2_evidence: 'src/ai/goals/live_record_route.py (repoint_earn_to_consume, route_live_record), src/engine/work_shift.py (meal_in_reach, shift_held, repoint_to_consume), src/engine/building_arrival.py (the shift-start guard), src/systems/strategic_systems/intelligence.py (the state passed to the route)'
   proof_type: regression
   test_path: tests/unit/ai/test_need_project_repoints_from_earn_to_consume.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.224.

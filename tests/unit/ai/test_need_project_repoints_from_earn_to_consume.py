@@ -140,12 +140,50 @@ def test_the_removed_repoint_mutant_fails_case_1(monkeypatch):
         _case1_assertions(_route(ent, state, _candidate()), project)
 
 
-def test_the_arrival_starts_no_new_shift_while_a_meal_is_affordable_and_admitted():
-    """The same predicate at the shift start: the shift ends with gold >= price and the inn admitting and NO strategic pass runs before the next tactical decision (the arrival is called directly):
-    no new shift starts, the project ends, and the next decision goes to eat. With the price not in hand the shift is still given."""
+def _arrival_assertions(out, project):
+    """Case a (the arrival re-point): at a work building with gold >= price and an admitting inn, the arrival re-points the SAME project to the inn: no WORK, no project end."""
+    assert out.task is None and out.strategic is not None
+    assert out.strategic.current_project_id_set is None  # the project is NOT ended (an end writes current_project_id_set == "" and COMPLETED while the subject is still hungry)
+    (moved,) = out.strategic.projects_add_or_update
+    assert moved.id == project.id and moved.status == ProjectStatus.ACTIVE
+    active = next(o for o in moved.objectives if o.id == moved.active_objective_id)
+    assert active.target == str(INN) and active.status == ObjectiveStatus.ACTIVE and out.strategic.current_objective_id_set == active.id
+    old = next(o for o in moved.objectives if o.id != active.id)
+    assert old.target == str(HALL) and old.status == ObjectiveStatus.RESOLVED
+
+
+def test_the_arrival_at_a_work_building_repoints_the_same_project_to_the_meal_when_it_is_affordable_and_admitted():
+    """The same predicate at the shift start (`work_shift.meal_in_reach`) and the same helper as the route (`work_shift.repoint_to_consume`): the shift ends with gold >= price and the inn admitting and NO
+    strategic pass runs before the next tactical decision (the arrival is called directly): no new shift starts and the project is re-pointed, not ended. With the price not in hand the shift is still given."""
     rich, project, state = _world(gold=6, hunger=70.0)
-    out = building_arrival_update(state, rich, project, HALL)
-    assert out.task is None and out.strategic is not None and out.strategic.current_project_id_set == ""
+    _arrival_assertions(building_arrival_update(state, rich, project, HALL), project)
     poor, project2, state2 = _world(gold=0, hunger=70.0)
     out2 = building_arrival_update(state2, poor, project2, HALL)
     assert out2.task is not None and out2.task.payload_set["action"] == "WORK"
+
+
+def test_the_arrival_and_the_route_build_the_same_repoint():
+    """One helper at both sites: the same project and the same inn give the identical update."""
+    ent, project, state = _world(gold=6, hunger=70.0)
+    from_route = _route(ent, state, _candidate()).update
+    from_arrival = building_arrival_update(state, ent, project, HALL).strategic
+    assert from_route.projects_add_or_update == from_arrival.projects_add_or_update and from_route.current_objective_id_set == from_arrival.current_objective_id_set
+
+
+def test_a_subject_with_no_affordable_meal_and_no_startable_shift_still_ends_the_project_at_the_work_building():
+    """_end_project stays for a building that truly cannot serve: no meal in reach and no shift the subject can start (here the hall cannot pay a wage)."""
+    ent, project, state = _world(gold=0, hunger=70.0)
+    broke_hall = replace(state.buildings[HALL], inventory=replace(state.buildings[HALL].inventory, gold=0), maintenance_shifts_needed=0, maintenance_shifts_done=0)
+    state = replace(state, buildings={**state.buildings, HALL: broke_hall})
+    out = building_arrival_update(state, ent, project, HALL)
+    assert out.task is None and out.strategic.current_project_id_set == "" and out.strategic.projects_add_or_update[0].status == ProjectStatus.COMPLETED
+
+
+def test_the_arrival_mutant_that_ends_instead_of_repointing_fails_the_arrival_case(monkeypatch):
+    from src.core.updates import StrategicUpdate
+    from src.engine import building_arrival
+    rich, project, state = _world(gold=6, hunger=70.0)
+    ends = lambda p, *a, **k: StrategicUpdate(projects_add_or_update=[replace(p, status=ProjectStatus.COMPLETED)], current_project_id_set="", current_objective_id_set="")
+    monkeypatch.setattr(building_arrival, "repoint_to_consume", ends)
+    with pytest.raises(AssertionError):
+        _arrival_assertions(building_arrival_update(state, rich, project, HALL), project)

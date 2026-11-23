@@ -14,7 +14,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from src.core.treasury import can_pay
-from src.core.updates import EntityUpdate, InteractionUpdate, ResourceTransferIntent
+from src.core.updates import EntityUpdate, InteractionUpdate, ResourceTransferIntent, StrategicUpdate
 from src.engine.biological_needs import need_rates
 from src.engine.building_services import maintenance_open, offers_work, service_building
 from src.engine.need_pull import TICKS_PER_TILE, step_travel_tiles
@@ -65,6 +65,18 @@ def meal_in_reach(state: Any, entity: Any) -> bool:
     the arrival (`building_arrival`: a visit ends instead of starting a shift) and the re-point of a need project from its earn step to the meal (`live_record_route`)."""
     from src.engine.service_admission import admits
     return admits(entity, "EAT") and inn_in_reach(state, entity) is not None
+
+
+def repoint_to_consume(project: Any, kind: str, target_id: str, target_pos: Any, target_entity_id: Any = None) -> StrategicUpdate:
+    """The ONE re-point of a need project from its earn step to the way that meets the need (#995 case (c)): the SAME project (same id, no new project, no switch check), its active objective
+    RESOLVED (the coin is in hand: the earn step's purpose is met) and a new ACTIVE REACH_LOCATION objective at the consume target. Called from the strategic route
+    (`live_record_route.repoint_earn_to_consume`) and from the arrival (`building_arrival._hunger_arrival`), so the two cannot differ."""
+    from dataclasses import replace
+
+    from src.core.strategic import ObjectiveKind, ObjectiveState, ObjectiveStatus
+    fresh = ObjectiveState(id=f"{kind}_{target_id}", kind=ObjectiveKind.REACH_LOCATION, target=target_id, target_position=target_pos, target_entity_id=target_entity_id, status=ObjectiveStatus.ACTIVE)
+    objectives = [replace(o, status=ObjectiveStatus.RESOLVED) if o.id == project.active_objective_id else o for o in project.objectives if o.id != fresh.id] + [fresh]
+    return StrategicUpdate(projects_add_or_update=[replace(project, objectives=objectives, active_objective_id=fresh.id)], current_objective_id_set=fresh.id)
 
 
 def shift_held(entity: Any, state: Any) -> bool:

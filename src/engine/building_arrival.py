@@ -15,7 +15,7 @@ from src.engine.building_services import SERVICE_KINDS, offers_work
 from src.engine.lodging import finds_no_bed
 from src.engine.service_admission import admits
 from src.engine.shop_sale import plan_sale
-from src.engine.work_shift import SHIFT_START, meal_in_reach, shift_startable
+from src.engine.work_shift import SHIFT_START, inn_in_reach, meal_in_reach, repoint_to_consume, shift_startable
 from src.engine.work_wake import held_work_is_threatened
 
 
@@ -67,8 +67,12 @@ def _hunger_arrival(state: Any, entity: Any, project: Any, building_id: int) -> 
         return _act(entity, "EAT", building_id)
     if building is not None and offers_work(building):
         # No NEW shift while a meal is affordable and admitted in reach (the earn step has done its work: the coin is in hand): the same predicate the strategic re-point reads
-        # (`work_shift.meal_in_reach`), so the guarantee does not depend on when the next strategic pass runs. The project then ends below and the next decision goes to eat.
-        if not _meal_in_reach(state, entity) and shift_startable(state, entity, building):
+        # (`work_shift.meal_in_reach`), so the guarantee does not depend on when the next strategic pass runs. The SAME project is re-pointed to the meal (the one helper,
+        # `work_shift.repoint_to_consume`, also called by the route): not ended, which would write COMPLETED while the subject is still hungry and leave a gap up to the strategic cadence.
+        if _meal_in_reach(state, entity):
+            inn = inn_in_reach(state, entity)
+            return EntityUpdate(entity_id=entity.id, strategic=repoint_to_consume(project, "hunger", str(inn.id), (inn.position[0], inn.position[1])))
+        if shift_startable(state, entity, building):
             return _act(entity, "WORK", building_id, **{SHIFT_START: state.tick})
         if held_work_is_threatened(entity, state):
             # Not takeable NOW because of a present threat (designer ruling 2026-10-30): the hunger project stays current, nothing is dispatched, and the
