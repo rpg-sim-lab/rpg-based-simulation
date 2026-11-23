@@ -57,6 +57,12 @@ updates:
       interval: monthly
     open-pull-requests-limit: 5
     labels: [dependencies, rpg]
+    # TypeScript majors wait for typescript-eslint: TypeScript 7 is outside its peer range and npm ci failed on the closed #811, #973 and #979
+    # (TCK-20261119-FRONTEND-MAJORS-FROM-THE-CLOSED-DEPENDABOT-811-MOVE-ONE-AT-A-TIME). Minor and patch updates and the
+    # other four npm majors still come through. Remove when a typescript-eslint release supports TypeScript 7.
+    ignore:
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     groups:
       npm-major:
         update-types: [major]
