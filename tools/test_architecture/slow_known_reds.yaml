@@ -184,3 +184,31 @@ known_reds:
     expires_on: "2026-11-29"
     kind: broken
     note: "measured on de5a223ca: WORLD 0.25 against anchor B 0.32 (past the 20 percent tolerance); first mover #769 (d914bace7), cleared by rpg-designer's ruling of 2026-10-31; re-anchor waits on the groups, churn and retention fixes. The entry cannot bound the value: the ticket re-measures at close and reports any further drift"
+  - match: "tests.unit.worldassembly.test_corpus_diversity::test_urban_political_seed123_1000t_social_economy_grade_stability"
+    ticket: TCK-20260822-STANDARD-SLOW-REGRESSION-CI-JOB-EXIT-CODE-2
+    owner: testing-planner
+    added_on: "2026-11-23"
+    expires_on: "2026-12-15"
+    kind: flaky
+    note: "fails and passes on the same sha in the scheduled slow run: failed at 613a8365b on 2026-11-21 20:39 and passed at 613a8365b on 2026-11-22 00:40; same shape at c540a0b17 (fail 11-20 10:27, pass 11-20 21:56) and 0c18f6151; failed in runs 45068558150 (19f6ecac8) and 45011543158 (cae7f4078); host or load sensitivity from the owner-parked wall-clock throttle; owned as flaky, no rerun (#715 7090950152, 7090968271)"
+  - match: "tests.unit.worldassembly.test_corpus_diversity::test_generated_frontier_3_42_seed123_200t_combat_narrative_grade_stability"
+    ticket: TCK-20260822-STANDARD-SLOW-REGRESSION-CI-JOB-EXIT-CODE-2
+    owner: testing-planner
+    added_on: "2026-11-23"
+    expires_on: "2026-12-15"
+    kind: flaky
+    note: "fails and passes on the same sha in the scheduled slow run: failed at 613a8365b on 2026-11-21 20:39 and passed at 613a8365b on 2026-11-22 00:40; same shape at c540a0b17 (fail 11-20 10:27, pass 11-20 21:56) and 0c18f6151; failed in runs 45068558150 (19f6ecac8) and 45011543158 (cae7f4078); host or load sensitivity from the owner-parked wall-clock throttle; owned as flaky, no rerun (#715 7090950152, 7090968271)"
+  - match: "tests.unit.worldassembly.test_corpus_diversity::test_frontier_extended_seed42_200t_narrative_grade_stability"
+    ticket: TCK-20260822-STANDARD-SLOW-REGRESSION-CI-JOB-EXIT-CODE-2
+    owner: testing-planner
+    added_on: "2026-11-23"
+    expires_on: "2026-12-15"
+    kind: flaky
+    note: "fails and passes on the same sha in the scheduled slow run: failed at 613a8365b on 2026-11-21 20:39 and passed at 613a8365b on 2026-11-22 00:40; same shape at c540a0b17 (fail 11-20 10:27, pass 11-20 21:56) and 0c18f6151; failed in runs 45068558150 (19f6ecac8) and 45011543158 (cae7f4078); host or load sensitivity from the owner-parked wall-clock throttle; owned as flaky, no rerun (#715 7090950152, 7090968271)"
+  - match: "tests.unit.worldassembly.test_corpus_diversity::test_frontier_extended_seed123_200t_combat_progression_narrative_grade_stability"
+    ticket: TCK-20260822-STANDARD-SLOW-REGRESSION-CI-JOB-EXIT-CODE-2
+    owner: testing-planner
+    added_on: "2026-11-23"
+    expires_on: "2026-12-15"
+    kind: flaky
+    note: "fails and passes on the same sha in the scheduled slow run: failed at 613a8365b on 2026-11-21 20:39 and passed at 613a8365b on 2026-11-22 00:40; same shape at c540a0b17 (fail 11-20 10:27, pass 11-20 21:56) and 0c18f6151; failed in runs 45068558150 (19f6ecac8) and 45011543158 (cae7f4078); host or load sensitivity from the owner-parked wall-clock throttle; owned as flaky, no rerun (#715 7090950152, 7090968271)"

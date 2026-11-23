@@ -89,6 +89,7 @@ Two candidate causes, named and NOT claimed:
 None.
 
 ## Implementation Notes
+- 2026-11-22, rpg-designer's read of the #781 v4 stage-2 trace (trace_full_v4_designer_read/read_notes.txt): at a SHOP, `_hunger_arrival` ends the project as a finished sell visit before the meal and work branches (src/engine/building_arrival.py:43-66), so a broke subject never gets its takeable shift and loops. That is a CANDIDATE for FLW/45 human 5 (untried includes WORK_SHIFT and BUY). It is NOT for FLW/42 goblin 30 (untried FORAGE, INN_MEAL, no work), whose candidate stays Step A. The rows merge only if the post-fix gate run removes them.
 
 ## Test Summary
 

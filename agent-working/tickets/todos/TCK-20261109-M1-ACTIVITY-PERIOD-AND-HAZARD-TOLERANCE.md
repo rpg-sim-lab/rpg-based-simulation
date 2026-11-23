@@ -66,6 +66,7 @@ content schemas, src/strategy/, hazard handling
 - Owner-level choices are asked when the milestone starts, not guessed here.
 
 ## Implementation Notes
+- 2026-11-21 (rpg-designer finding, via rpg-planner; inspected by rpg-planner-ubuntu at e72270894 and 87792e3e8): no code at either sha declares a kind's active period. SURV-08's periods exist only as owner text (Q5(a)). The O3 trace (TCK-20261121-MEAT-EATERS-IN-FRONTIER-LIVING-WORLD-ATTACK-PEOPLE-FORTY-TIMES-MORE-AFTER-THE-NIGHT-AND-SLOT-FIXES) measures rule R5 against a kit-side copy of that table. An R5 miss there is tagged "SURV-08 law MISSING in code" and is evidence for this ticket either way.
 None yet.
 
 ## Test Summary
