@@ -60,7 +60,6 @@ def _retreat_hold(entity: "EntityState", reason: str, strat_up: Any) -> EntityUp
     """The flight update with no tile to flee to: the subject holds its own tile (a by-value write that skipped the gate, stored with `ungated_purpose` and as NOT gated)."""
     where = entity.navigation.position
     return _flight_update(entity, where, reason, strat_up, NavigationUpdate(target_set=where, movement_mode_set=MovementMode.RETREAT, target_purpose_set=ungated_purpose(entity, MovementMode.RETREAT), target_gated_set=False))
-    )
 
 
 def avoid_what_can_eat_me(
