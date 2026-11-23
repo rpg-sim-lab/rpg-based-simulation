@@ -12,6 +12,7 @@ from src.core.state import AuthoritativeState
 from src.core.updates import NavigationUpdate
 from src.engine.movement import MovementSystem
 from src.engine.patches import NavigationPatch
+from src.core.navigation_experience import NavCause, RingEvidence
 from src.replay.fingerprint import StateFingerprinter
 
 
@@ -43,10 +44,15 @@ def _give_up_update(hero, tick=7, anchor=(9, 5)):
     return MovementSystem.resolve_move(state, hero, (9, 5))[1].navigation
 
 
+def _ring_blocked_record(anchor, tick):
+    """The widened record (design section 3) of the boxed-in hero: walls on three ring tiles, the fourth is the tile just left, so the ring check finds no legal tile (RING_BLOCKED, the refusals are bodies), the subject's tile (5, 5), the target tile (9, 5), no stored purpose."""
+    return GiveUpRecord(anchor=anchor, tick=tick, cause=NavCause.RING_BLOCKED, ring_evidence=(RingEvidence.BODIES,), from_position=(5, 5), target_tile=(9, 5), purpose=None)
+
+
 def test_a_give_up_carries_one_typed_record_of_the_pursuit_anchor_and_the_tick():
     nav = _give_up_update(_hero(target=(9, 5), last_position=(6, 5), oscillation_count=3), tick=7, anchor=(9, 4))
     assert nav.wayround_clear is True
-    assert nav.giveup_record_add == GiveUpRecord(anchor=(9, 4), tick=7)  # the tile the count opened on, not this tick's target tile
+    assert nav.giveup_record_add == _ring_blocked_record(anchor=(9, 4), tick=7)  # the tile the count opened on, not this tick's target tile
 
 
 def test_a_give_up_with_no_open_anchor_records_the_target_tile():
@@ -54,7 +60,7 @@ def test_a_give_up_with_no_open_anchor_records_the_target_tile():
     hero = replace(hero, navigation=replace(hero.navigation, wayround_count=0, wayround_anchor=None))
     state = AuthoritativeState(entities={1: hero, 10: _wall(10, 5, 4), 11: _wall(11, 5, 6), 12: _wall(12, 4, 5)}, tick=3, seed=1)
     nav = MovementSystem.resolve_move(state, hero, (9, 5))[1].navigation
-    assert nav.wayround_clear is True and nav.giveup_record_add == GiveUpRecord(anchor=(9, 5), tick=3)
+    assert nav.wayround_clear is True and nav.giveup_record_add == _ring_blocked_record(anchor=(9, 5), tick=3)
 
 
 def test_a_way_round_step_writes_no_record():
