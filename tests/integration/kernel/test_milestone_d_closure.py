@@ -317,6 +317,11 @@ def test_entity_move_work_can_drive_authoritative_movement_progress():
         .combat(readiness=100.0)
         .build()
     )
+    from dataclasses import replace
+    from src.core.movement_modes import MovementMode
+    from src.core.navigation_purpose import purpose_of
+
+    entity = replace(entity, navigation=replace(entity.navigation, target_purpose=purpose_of(entity, None, MovementMode.WANDER), target_gated=True))  # the #996 rework: a held move carries its stored purpose, set the writers' way
 
     state = AuthoritativeState(
         tick=0,

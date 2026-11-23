@@ -29,6 +29,8 @@ import pytest
 from src.config.profiles import PROD_SMALL
 from src.core.protocol_validator import ProtocolValidator, ProtocolViolationError
 from src.core.builder import V2EntityBuilder
+from src.core.movement_modes import MovementMode
+from src.core.navigation_purpose import purpose_of
 from src.core.state import AuthoritativeState
 from src.core.updates import EntityUpdate
 from src.core.work import WorkClass
@@ -49,12 +51,15 @@ FLAGS = {"audit_mode": True, "no_frame_pacing": True, "no_replay": True}
 
 def _ready_movers_state() -> AuthoritativeState:
     """Twelve entities that are all ready to act every tick, so many CRITICAL results share class and local priority."""
-    entities = {
-        i: V2EntityBuilder(i).kind("hero").location(float(3 * i), float((7 * i) % 40)).combat(readiness=100.0)
-        .task(work_kind="ENTITY_MOVE").build()
-        for i in range(1, 13)
-    }
+    entities = {i: _mover(i) for i in range(1, 13)}
     return AuthoritativeState(tick=0, seed=SEED, entities=entities)
+
+
+def _mover(i: int):
+    """One ready mover: an ENTITY_MOVE task and, since the #996 rework, the STORED purpose a held move carries (set the writers' way), so the move is re-emitted rather than ended typed."""
+    e = (V2EntityBuilder(i).kind("hero").location(float(3 * i), float((7 * i) % 40)).combat(readiness=100.0)
+         .task(work_kind="ENTITY_MOVE").build())
+    return dataclasses.replace(e, navigation=dataclasses.replace(e.navigation, target_purpose=purpose_of(e, None, MovementMode.WANDER), target_gated=True))
 
 
 SCENARIOS: Dict[str, Callable[[], Any]] = {
