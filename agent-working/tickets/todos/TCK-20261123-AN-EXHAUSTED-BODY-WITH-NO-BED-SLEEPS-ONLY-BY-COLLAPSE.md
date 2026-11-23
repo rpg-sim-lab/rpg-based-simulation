@@ -47,6 +47,8 @@ Found by rpg-designer's h3 trace read (freemeal_pre/trace_h3_designer_read/READ.
 
 ## Related Tickets
 - TCK-20261123-A-SECOND-WORKER-STARTS-A-MAINTENANCE-SHIFT-ANOTHER-ALREADY-HOLDS-AND-LOSES-IT-UNPAID; #995
+- TCK-20261103-A-CREATURE-WITH-BOTH-NEEDS-PRESSING-NEITHER-SLEEPS-NOR-FEEDS-ENOUGH (OPEN; the same collapse-instead-of-sleep shape, seen in a wild creature: check for one cause before scoping; merge if it is the same)
+- TCK-20261030-SLEEP-WINS-OVER-STARVING-HUNGER-WHEN-NO-BED (OPEN; the opposite arbitration, sleep holding over hunger with no bed: the fix must not reopen it)
 
 ## Related Docs
 - docs/world_rules/life-body/survival-needs.md; docs/mechanics/04_strategic_cognition.md
