@@ -32,7 +32,9 @@ from src.core.updates import (
     StrategicUpdate,
 )
 from src.strategy.destination_suppression import access_blocker_id, access_subject
-from src.systems.strategic_systems.navigation_experience_step import navigation_experience_update
+from src.systems.strategic_systems.navigation_experience_step import (
+    navigation_experience_update,
+)
 
 
 def reinferred_blockers_update(entity: EntityState, staged: StrategicUpdate, inferred: StrategicUpdate, tick: int) -> StrategicUpdate:

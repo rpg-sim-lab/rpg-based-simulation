@@ -850,12 +850,13 @@ class NavigationExperiencePatch(ComponentPatch):
         return NavigationExperiencePatch(entity_id=self.entity_id, navigation_experience=merged)
 
     def apply(self, entity: EntityState, changes: Dict[str, Any]) -> None:
-        if self.is_noop():
+        update = self.navigation_experience
+        if update is None or self.is_noop():
             return
         from src.core.navigation_experience import apply_experience_update
         from src.engine.apply import replace
         cognition = changes.get("cognition", entity.cognition)
-        memory = replace(cognition.memory, navigation=apply_experience_update(cognition.memory.navigation, self.navigation_experience))
+        memory = replace(cognition.memory, navigation=apply_experience_update(cognition.memory.navigation, update))
         changes["cognition"] = replace(cognition, memory=memory)
 
 
@@ -864,7 +865,7 @@ def extract_patches(entity_id: int, update: EntityUpdate) -> List[ComponentPatch
     Extracts all active component patches from a monolithic EntityUpdate.
     Preserves precise evaluation order for derived stats calculation.
     """
-    patches = []
+    patches: List[ComponentPatch] = []
     if update.kind_set is not None:
         patches.append(KindPatch(entity_id, kind_set=update.kind_set))
     if update.lifecycle is not None or update.active is not None:
@@ -925,6 +926,6 @@ def extract_patches(entity_id: int, update: EntityUpdate) -> List[ComponentPatch
         p = CognitionPatch(entity_id, cognition_bundle_set=update.cognition_bundle_set)
         if not p.is_noop(): patches.append(p)
     if update.navigation_experience is not None:
-        p = NavigationExperiencePatch(entity_id, navigation_experience=update.navigation_experience)
-        if not p.is_noop(): patches.append(p)
+        xp = NavigationExperiencePatch(entity_id, navigation_experience=update.navigation_experience)
+        if not xp.is_noop(): patches.append(xp)
     return patches

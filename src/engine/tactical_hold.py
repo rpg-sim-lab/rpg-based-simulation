@@ -101,9 +101,11 @@ def notice_unengaged_hostile(
     if posture == "ignore":
         goal = entity.navigation.target
         purpose = stored_purpose(entity)  # a re-emission carries the STORED purpose and gate flag (the #996 rework, design section 4)
-        if goal is not None and purpose is None:  # a target restored from an old checkpoint has no purpose: the move ends typed and the subject re-decides (disclosed in 2.220)
+        if goal is None:  # no goal is the same stand as a suppressed one
+            return EntityUpdate(entity_id=entity.id, strategic=strat_up)
+        if purpose is None:  # a target restored from an old checkpoint has no purpose: the move ends typed and the subject re-decides (disclosed in 2.220)
             return replace(suppressed_move_end(entity.id), strategic=strat_up)
-        if goal is None or propose_target(entity, goal, state.tick, purpose) is None:  # F2 v2.2a: a suppressed goal is the same stand as no goal (None would mean 'go on to fight')
+        if propose_target(entity, goal, state.tick, purpose) is None:  # F2 v2.2a: a suppressed goal is the same stand as no goal (None would mean 'go on to fight')
             return EntityUpdate(entity_id=entity.id, strategic=strat_up)
         return EntityUpdate(
             entity_id=entity.id, strategic=strat_up,

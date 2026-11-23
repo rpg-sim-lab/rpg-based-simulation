@@ -8,7 +8,13 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from src.content.navigation_experience_settings import NavigationExperienceSettings
-from src.core.navigation_experience import NavCause, NavigationExperience, NeedService, RingEvidence, ReviewReason
+from src.core.navigation_experience import (
+    NavCause,
+    NavigationExperience,
+    NeedService,
+    ReviewReason,
+    RingEvidence,
+)
 from src.engine.need_pull import SLEEP_LINE
 from src.engine.starvation import STARVING_LINE
 

@@ -45,7 +45,7 @@ def _give_up_update(hero, tick=7, anchor=(9, 5)):
 
 
 def _ring_blocked_record(anchor, tick):
-    """The widened record (design section 3) of the boxed-in hero: walls on three ring tiles, the fourth is the tile just left, so the ring check finds no legal tile (RING_BLOCKED, the refusals are bodies), the subject's tile (5, 5), the target tile (9, 5), no stored purpose."""
+    """The widened record (design section 3) of the boxed-in hero: obstacle bodies (entities) on three ring tiles, the fourth is the tile just left, so the ring check finds no legal tile (RING_BLOCKED, the refusals are bodies), the subject's tile (5, 5), the target tile (9, 5), no stored purpose."""
     return GiveUpRecord(anchor=anchor, tick=tick, cause=NavCause.RING_BLOCKED, ring_evidence=(RingEvidence.BODIES,), from_position=(5, 5), target_tile=(9, 5), purpose=None)
 
 

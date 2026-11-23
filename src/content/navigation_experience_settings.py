@@ -20,6 +20,7 @@ class NavigationExperienceSettingsError(ValueError):
 
 @dataclass(frozen=True, slots=True)
 class NavigationExperienceSettings:
+    """The four balance values of the navigation experience memory (data/content/strategy/navigation_experience_settings.yaml)."""
     oscillation_review_delay: int
     bodies_review_delay: int
     approach_change_radius: int

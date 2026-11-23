@@ -34,11 +34,13 @@ class NeedService(str, Enum):
 
 
 class NavExperienceStatus(str, Enum):
+    """Whether a record still refuses its approach (ACTIVE) or has been reviewed."""
     ACTIVE = "active"
     REVIEWED = "reviewed"
 
 
 class ReviewReason(str, Enum):
+    """Why a record was reviewed (the first due rule that held)."""
     DUE_TICK = "due_tick"
     APPROACH_CHANGED = "approach_changed"
     NEED_SEVERE = "need_severe"
@@ -104,6 +106,7 @@ class NavigationExperienceMemory:
     records: Tuple[NavigationExperience, ...] = ()
 
     def to_canonical_dict(self) -> Dict[str, Any]:
+        """The canonical dict: the records in id order."""
         return {"records": [r.to_canonical() for r in self.records]}
 
 
@@ -124,9 +127,11 @@ class NavigationExperienceUpdate:
     evictions: Tuple[str, ...] = ()
 
     def is_noop(self) -> bool:
+        """True when the update carries no review, upsert or eviction."""
         return not (self.reviews or self.upserts or self.evictions)
 
     def merge(self, other: "NavigationExperienceUpdate") -> "NavigationExperienceUpdate":
+        """This update merged under ``other`` (reviews and upserts concatenated, evictions a sorted union)."""
         if other is None or other.is_noop():
             return self
         return NavigationExperienceUpdate(self.reviews + other.reviews, self.upserts + other.upserts, tuple(sorted(set(self.evictions) | set(other.evictions))))
@@ -166,13 +171,16 @@ class NavigationExperienceCounts:
 
     @classmethod
     def no_purpose(cls) -> int:
+        """How many give-ups were not filed because the pursuit had no stored purpose."""
         return cls._no_purpose
 
     @classmethod
     def live_evictions(cls) -> int:
+        """How many records the cap evicted while still ACTIVE and not due."""
         return cls._live_evictions
 
     @classmethod
     def reset(cls) -> None:
+        """Clear both counts (run start, test teardown)."""
         cls._no_purpose = 0
         cls._live_evictions = 0

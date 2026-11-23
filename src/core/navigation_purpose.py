@@ -76,4 +76,5 @@ def ungated_purpose(entity: Any, mode_set: Optional[MovementMode] = None, staged
 
 def stored_purpose(entity: Any) -> Optional[TargetPurpose]:
     """The purpose stored with the entity's target (None for a target restored from an old checkpoint, or when no target is held). A re-emission carries it unchanged."""
-    return entity.navigation.target_purpose
+    purpose: Optional[TargetPurpose] = entity.navigation.target_purpose
+    return purpose
