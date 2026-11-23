@@ -45,6 +45,11 @@ rpg-designer ruled them EXPOSED and pre-existing, not a #992 regression (#715 70
 1. Read why a starving predator has no fallback: is it the ecology (no carcasses, no meat source), the hunt belief (CONFLICT-03 can_overcome, which the power-judgement seam will host), or the step ladder (no last-resort step for a starving body)?
 2. A fix ruled by rpg-designer, kind-neutral and from properties, with mechanic-scenario tests and a failing control.
 3. Re-run the gate: the two wolf rows are gone or re-attributed with a cause.
+4. OWNER DIRECTION (#715 7094165498, item 1), folded in by lead-planner-u24:
+   - A bounded hunt: a hunt ends with a typed end after a data-declared limit (the code has no time bound on a hunt today, per the lead's read at 13844fee8). The limit is a data setting, not a code constant.
+   - Prey slightly easier to catch. rpg-designer picks the mechanism from properties (for example a speed or readiness change), never from kind names; the value lives in data.
+   - The exact values go to the owner as numbers BEFORE they enter data.
+   - Ecosystem effects are measured and reported; any extinction trip goes to the owner (§12.5). The owner: "we can balance it later if that destroy the ecosystem".
 
 ## Out of Scope
 - #992's permission rule (correct, owner-accepted).
@@ -53,7 +58,9 @@ rpg-designer ruled them EXPOSED and pre-existing, not a #992 regression (#715 70
 ## Acceptance Criteria
 1. The cause is read (inspected/executed) and named.
 2. The fix lands with its tests; the gate re-run shows the 2 rows gone or re-attributed.
-3. The scoped known entry for these 2 rows is removed.
+3. The scoped known entry for these 2 rows is removed (#998's V3 wolf entry, which expires 2026-12-15).
+4. A hunt past its data limit ends typed (a mechanic-scenario test plus a failing control); the prey-catch change is from properties only, and its values carry the owner's approval comment id.
+5. The ecosystem report (populations against the base, extinction trips) is attached and read by rpg-designer.
 
 ## Known entry (testing-planner drafts it)
 - It names exactly the 2 rows above and cites this ticket.
@@ -61,6 +68,7 @@ rpg-designer ruled them EXPOSED and pre-existing, not a #992 regression (#715 70
 - Separately, #994's entry SHRINKS when #992 lands, to CF/45 goblin 30 only. FLW/42 goblin 30 and FLW/45 human 5 are retired with "no longer occurs after #992 (#715 <id>); the cause ticket stays open".
 
 ## Related Tickets
+- #998 (the V3 wolf known entry this ticket retires; expires 2026-12-15)
 - TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS (#992, the exposer)
 - TCK-20261122-AN-ARENA-OF-PREDATORS-AND-PREY-SHOWS-HOW-ATTACKED-BODIES-REACT
 - TCK-20261122-EVERY-CAN-I-WIN-JUDGEMENT-GOES-THROUGH-ONE-POWER-SEAM (the hunt belief's home)
@@ -77,6 +85,7 @@ rpg-designer ruled them EXPOSED and pre-existing, not a #992 regression (#715 70
 
 ## Assumptions / Open Questions
 - Whether 0 carcasses is a world-content fact or a lifecycle effect is unknown.
+- Order (#715 7094165498): systemic_foundation backlog, behind #995 and #996 unless the owner rules it ahead. No dispatch until they settle.
 
 ## Durable state, lifecycle and clocks
 None.

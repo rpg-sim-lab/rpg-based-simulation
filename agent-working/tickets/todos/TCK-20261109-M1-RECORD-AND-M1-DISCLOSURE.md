@@ -70,6 +70,7 @@ tools/test_architecture/ (gate), SimQ anchors
 - Owner-level choices are asked when the milestone starts, not guessed here.
 
 ## Implementation Notes
+- 2026-11-23, m1_disclosure line from #995 (OWNER (B), #715 7097174591): P2 HARD on the w995d cells has ONE hit, urban_political s42 human 3, 619 ticks over the line. It is EXPOSED by #995, not caused by it: shifts were lost unpaid at a contested maintenance slot, followed by a collapse sleep (h3 trace read, freemeal_pre/trace_h3_designer_read). It is owned by TCK-20261123-A-SECOND-WORKER-STARTS-A-MAINTENANCE-SHIFT-ANOTHER-ALREADY-HOLDS-AND-LOSES-IT-UNPAID, with T2 TCK-20261123-AN-EXHAUSTED-BODY-WITH-NO-BED-SLEEPS-ONLY-BY-COLLAPSE. The day-0 HAZARD excess (fix: COMBAT 13, DEFEAT 1, HAZARD 7; base: COMBAT 14, HAZARD 2) is report-only and unchanged against w995c. The grade re-pins: urban SOCIAL 37.832 and unit ECONOMY 0.30832 (owner 7097550602), re-measured after T1.
 2026-11-09 prerequisite check (rpg-planner):
 - F3, the §12.5 prerequisite TCK-20261023-CHECKPOINT-RESTORE-DRAWS-STATELESS-RANDOMS-FROM-SEED-ZERO, is met on main by #848 (66d08dd56, TCK-20261107-A-RESTORED-SCENARIO-CHECKPOINT-DRAWS-FROM-SEED-0). Both change src/engine/scenario_checkpoint.py the same way: the restore RNG is built with `base_seed=state.seed`.
 - The 10-23 ticket was never on main. Its fix d690c808a sits only on the local branch rpg-checkpoint-restore-randoms (worktree .claude/worktrees/f3), which has no remote and is superseded. Deleting it is the owner's call.
