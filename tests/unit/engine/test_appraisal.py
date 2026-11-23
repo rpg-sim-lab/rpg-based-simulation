@@ -164,7 +164,7 @@ def test_a_kind_never_hunts_its_own_species_whatever_its_faction():
     assert relation(hungry, same_kind) is Relation.NONE
 
 
-def test_prey_may_fight_back_against_what_is_hunting_it_but_not_start_a_fight():
+def test_prey_and_hunter_are_each_permitted_to_strike_the_other_whether_or_not_it_is_hunting():
     from src.content_semantics.relation import RelationContext
     context = RelationContext(combat_engaged=True)
     hunter = _entity(1, "meat_eater_medium", (10.0, 10.0), hunger=HUNGRY, payload={"target_id": 2})
@@ -172,7 +172,7 @@ def test_prey_may_fight_back_against_what_is_hunting_it_but_not_start_a_fight():
     assert _attack_allowed(hunter, prey, context) is True
     assert _attack_allowed(prey, hunter, context) is True  # counter-attack against its hunter
     idle = replace(hunter, task=TaskComponent(work_kind="ENTITY_ACT", payload={}))
-    assert _attack_allowed(prey, idle, context) is False  # no un-engaged first strike
+    assert _attack_allowed(prey, idle, context) is True  # permitted: whether it strikes first is the decision layer's choice (Step B: only if it judges it can win), not a permission rule (CONFLICT-03)
 
 
 def test_a_hungry_wolf_gets_predation_on_the_plant_eater_as_compiled_from_content():
