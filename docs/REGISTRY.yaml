@@ -8000,6 +8000,22 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS.md
+  ticket_id: TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS
+  title: 'Attack permission is asymmetric and transient for wild pairs: a prey may
+    strike its predator only on the tick the predator''s task names it, breaking CONFLICT-03'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-22'
+  related_code_areas:
+  - src/engine/hostility.py (attack_allowed); src/engine/legality.py (LegalityServiceV2);
+    src/engine/domain/combat_actions.py:56
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS/investigation.md
+  - agent-working/stored_artifacts/TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS/plan.md
+  - agent-working/stored_artifacts/TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261122-PERSON-ATTACK-LAUNCHER-WRITES-NO-RUNNER-RECORD.md
   ticket_id: TCK-20261122-PERSON-ATTACK-LAUNCHER-WRITES-NO-RUNNER-RECORD
   title: 'The person-attack trace launcher writes no runner.json: its bookkeeping
