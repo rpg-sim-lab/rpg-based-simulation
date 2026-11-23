@@ -745,7 +745,7 @@ class ApplyPath:
         object.__setattr__(res, "chase_ticks", nav.chase_ticks)
         object.__setattr__(res, "max_chase_ticks", nav.max_chase_ticks)
         object.__setattr__(res, "returning_home", nav.returning_home)
-        for name in ("place_id", "step_ready_tick", "lodged_in", "last_moved_tick", "wayround_count", "wayround_best_distance", "wayround_anchor", "wayround_last_tick", "giveup_records"):  # (F3: a move must carry the lodging, or it would silently reset to the default)
+        for name in ("place_id", "step_ready_tick", "lodged_in", "last_moved_tick", "wayround_count", "wayround_best_distance", "wayround_anchor", "wayround_last_tick", "giveup_records", "target_purpose", "target_gated"):  # (F3: a move must carry the lodging, or it would silently reset to the default)
             object.__setattr__(res, name, getattr(nav, name))
         return res
 
