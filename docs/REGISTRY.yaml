@@ -8295,6 +8295,18 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261121-MILESTONE-REGISTRY-DESCRIPTIVE-NAMES-AND-LEGACY-IDS.md
+  ticket_id: TCK-20261121-MILESTONE-REGISTRY-DESCRIPTIVE-NAMES-AND-LEGACY-IDS
+  title: Add an append-only milestone registry that maps each descriptive milestone
+    name to its legacy short id, and a lint against a bare `M<n>` in new tickets
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-21'
+  related_code_areas:
+  - registries/, tools/, tests/tools/
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261121-RPG-GATE-REBASELINE-AFTER-THE-NONE-KIND-GROUP-HASH-MOVE.md
   ticket_id: TCK-20261121-RPG-GATE-REBASELINE-AFTER-THE-NONE-KIND-GROUP-HASH-MOVE
   title: Re-record the rpg gate baseline from a main run after the `none` kind-group
@@ -8464,6 +8476,20 @@
   - agent-working/stored_artifacts/TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-AND-FLAGS-DOUBTFUL-PARKED-MARKERS/investigation.md
   - agent-working/stored_artifacts/TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-AND-FLAGS-DOUBTFUL-PARKED-MARKERS/plan.md
   - agent-working/stored_artifacts/TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-AND-FLAGS-DOUBTFUL-PARKED-MARKERS/test_plan.md
+  tags:
+  - delivery
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES.md
+  ticket_id: TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES
+  title: project_sync reads `origin/*` branches as well as checked-out worktrees,
+    so a ticket worked on a branch nobody has checked out shows on either host
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-19'
+  related_code_areas:
+  - tools/sessions/project_sync.py
+  - tests/tools/test_session_project_view.py
+  artifact_files: []
   tags:
   - delivery
 - type: ticket
@@ -8680,20 +8706,6 @@
     (is_wild_creature)
   artifact_files: []
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES.md
-  ticket_id: TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES
-  title: project_sync reads `origin/*` branches as well as checked-out worktrees,
-    so a ticket worked on a branch nobody has checked out shows on either host
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-19'
-  related_code_areas:
-  - tools/sessions/project_sync.py
-  - tests/tools/test_session_project_view.py
-  artifact_files: []
-  tags:
-  - delivery
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261119-RECRUIT-CHEST-AND-CRAFTING-COSTS-DEBIT-THE-PAYER-WITH-NO-PAYEE.md
   ticket_id: TCK-20261119-RECRUIT-CHEST-AND-CRAFTING-COSTS-DEBIT-THE-PAYER-WITH-NO-PAYEE
