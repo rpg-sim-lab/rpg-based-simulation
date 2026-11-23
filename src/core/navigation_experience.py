@@ -152,6 +152,11 @@ def apply_experience_update(memory: NavigationExperienceMemory, update: Navigati
     return NavigationExperienceMemory(tuple(records[k] for k in sorted(records)))
 
 
+def with_navigation_experience(cognition: Any, update: NavigationExperienceUpdate) -> Any:
+    """The cognition model with its memory's navigation experiences after ``update`` (the navigation patch's apply). Duck-typed on the cognition model so this module does not import it (the memory model imports this one)."""
+    return replace(cognition, memory=replace(cognition.memory, navigation=apply_experience_update(cognition.memory.navigation, update)))
+
+
 class NavigationExperienceCounts:
     """Counts of what the consume step skipped or ended: OBSERVABILITY ONLY, never durable state; written only by the consume step, read and reset only by the run ledger (it lives in this core module because
     the layer contract allows systems -> core and observability -> core). Nothing in the simulation reads it."""

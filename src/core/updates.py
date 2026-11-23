@@ -231,6 +231,18 @@ class StatusEffectUpdate:
         return replace(self, **changes)
 
 
+def _experience_is_noop(update: Optional[NavigationExperienceUpdate]) -> bool:
+    """True when there is no navigation experience update, or it holds no review, upsert or eviction."""
+    return update is None or update.is_noop()
+
+
+def _experience_changes(mine: Optional[NavigationExperienceUpdate], theirs: Optional[NavigationExperienceUpdate]) -> Dict[str, Any]:
+    """The merge change for the navigation experience update: ``theirs`` merged under ``mine`` when ``theirs`` holds anything, else no change."""
+    if theirs is None or theirs.is_noop():
+        return {}
+    return {"navigation_experience": mine.merge(theirs) if mine else theirs}
+
+
 @dataclass(frozen=True, slots=True)
 class EntityUpdate:
     """
@@ -298,7 +310,7 @@ class EntityUpdate:
                 (self.status_effect_update is None or self.status_effect_update.is_noop()) and
                 self.group_id_set is None and self.self_model_bundle_set is None and
                 self.cognition_bundle_set is None and not self.intent_results and
-                self.pending_action_intent is None and (self.navigation_experience is None or self.navigation_experience.is_noop()) and
+                self.pending_action_intent is None and _experience_is_noop(self.navigation_experience) and
                 not self.property_updates)
 
     def merge(self, other: EntityUpdate) -> EntityUpdate:
@@ -337,7 +349,7 @@ class EntityUpdate:
         if other.cognition_bundle_set is not None: changes["cognition_bundle_set"] = other.cognition_bundle_set
         if other.intent_results: changes["intent_results"] = self.intent_results + other.intent_results
         if other.pending_action_intent is not None: changes["pending_action_intent"] = other.pending_action_intent
-        if other.navigation_experience is not None and not other.navigation_experience.is_noop(): changes["navigation_experience"] = self.navigation_experience.merge(other.navigation_experience) if self.navigation_experience else other.navigation_experience
+        changes.update(_experience_changes(self.navigation_experience, other.navigation_experience))
         if other.property_updates: changes["property_updates"] = {**self.property_updates, **other.property_updates}
         return replace(self, **changes)
 
