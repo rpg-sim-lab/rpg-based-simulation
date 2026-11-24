@@ -162,6 +162,7 @@ def test_a_pinned_run_in_a_run_scope_is_accepted() -> None:
 class FakeWatch:
     def __init__(self, shares: List[float], fail_start: bool = False) -> None:
         self._shares, self._fail = shares, fail_start
+        self.fields = {"cpu_steal": {"jiffies": 4, "pct": 0.2}, "swap_in_pages": 0, "swap_out_pages": 0}
 
     def start(self) -> None:
         if self._fail:
@@ -191,6 +192,8 @@ def test_a_pinned_series_under_the_foreign_share_threshold_completes_and_records
     assert _drive(monkeypatch, tmp_path, FakeWatch([0.0, 0.04, 0.099])) == 0
     summary = json.loads((tmp_path / "resource_100_local" / "summary.json").read_text(encoding="utf-8"))
     assert [g["foreign_share"] for g in summary["gates"]] == [0.0, 0.04, 0.099] and summary["cpu_affinity"]
+    for g in summary["gates"]:  # every timed run's gate entry carries the counters, zero swap included
+        assert g["cpu_steal"] == {"jiffies": 4, "pct": 0.2} and g["swap_in_pages"] == 0 and g["swap_out_pages"] == 0
 
 
 def test_a_foreign_share_of_ten_percent_stops_the_series_and_writes_no_candidate(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
@@ -294,3 +297,71 @@ def test_both_probes_and_the_limit_are_recorded_as_data(monkeypatch: pytest.Monk
     summary = json.loads((tmp_path / "resource_100_local" / "summary.json").read_text(encoding="utf-8"))
     assert summary["max_probe_ms"] == 35.0
     assert [(g["probe_before_ms"], g["probe_after_ms"]) for g in summary["gates"]] == [(30.0, 57.0)] * 3
+
+
+def _stat_text(steal_by_cpu: dict) -> str:
+    lines = [f"cpu  1 2 3 4 5 6 7 {sum(steal_by_cpu.values())} 0 0"]
+    lines += [f"cpu{c} 1 2 3 4 5 6 7 {v} 0 0" for c, v in steal_by_cpu.items()]
+    return "\n".join(lines) + "\nintr 1\n"
+
+
+def test_the_steal_reader_parses_the_aggregate_and_each_cpu(tmp_path: Path) -> None:
+    f = tmp_path / "stat"
+    f.write_text(_stat_text({0: 3, 4: 9}), encoding="utf-8")
+    assert qg.read_steal_jiffies(str(f)) == (12, {0: 3, 4: 9})
+
+
+@pytest.mark.parametrize("text", ["", "cpu  1 2 3\ncpu0 1 2 3\n", "cpu  1 2 3 4 5 6 7 x 0 0\ncpu0 1 2 3 4 5 6 7 x 0 0\n"])
+def test_an_unreadable_steal_field_gives_none(tmp_path: Path, text: str) -> None:
+    f = tmp_path / "stat"
+    f.write_text(text, encoding="utf-8")
+    assert qg.read_steal_jiffies(str(f)) is None
+    assert qg.read_steal_jiffies(str(tmp_path / "missing")) is None
+
+
+def _steal_watch(before, after, swap, affinity, wall=10.0, own_usec=0):
+    steals, swaps, clock = iter([before, after]), iter(swap), iter([100.0, 100.0 + wall])
+    busy = iter([{4: (0, 0), 5: (0, 0), 0: (0, 0)}, {4: (0, 100), 5: (0, 100), 0: (0, 100)}])
+    return qg.RunWatch(stat=lambda: next(busy), cgroup_usec=lambda: own_usec, affinity=lambda: set(affinity), clock=lambda: next(clock),
+                       cgroup_path=lambda: SCOPE, vmstat=lambda: next(swaps), steal=lambda: next(steals))
+
+
+def test_a_pinned_run_records_the_steal_delta_of_its_allowed_cpus_and_zero_swap() -> None:
+    w = _steal_watch((10, {0: 5, 4: 2, 5: 3}), (40, {0: 25, 4: 12, 5: 13}), [(7, 8), (7, 8)], {4, 5})
+    w.start()
+    w.finish()
+    steal = w.fields["cpu_steal"]
+    assert steal["jiffies"] == 20 and steal["per_cpu_jiffies"] == {4: 10, 5: 10} and steal["aggregate_jiffies"] == 30
+    assert steal["pct"] == round(100.0 * 20 / qg.USER_HZ / (2 * 10.0), 3)
+    assert w.fields["swap_in_pages"] == 0 and w.fields["swap_out_pages"] == 0  # zero is recorded, not omitted
+
+
+def test_a_steal_share_above_the_limit_warns_and_does_not_void_the_run() -> None:
+    w = _steal_watch((0, {4: 0, 5: 0}), (0, {4: 600, 5: 600}), [(0, 0), (0, 0)], {4, 5})
+    w.start()
+    assert w.finish() is not None  # no exception: the run stands
+    assert "above" in w.fields["cpu_steal"]["warning"]
+
+
+def test_an_unpinned_run_records_steal_over_every_cpu_and_the_swap_deltas() -> None:
+    w = _steal_watch((0, {0: 0, 1: 0}), (4, {0: 1, 1: 3}), [(5, 6), (7, 10)], set())  # empty affinity: unpinned
+    w.start()
+    assert w.finish() is None
+    assert w.fields["cpu_steal"]["per_cpu_jiffies"] == {0: 1, 1: 3}
+    assert (w.fields["swap_in_pages"], w.fields["swap_out_pages"]) == (2, 4)
+
+
+def test_an_unreadable_steal_field_is_recorded_as_such_and_does_not_fail_the_run() -> None:
+    w = _steal_watch(None, None, [(0, 0), (0, 0)], {4, 5})
+    w.start()
+    w.finish()
+    steal = w.fields["cpu_steal"]
+    assert steal["jiffies"] is None and "unreadable" in steal["warning"]
+
+
+def test_a_swap_move_still_stops_the_run_and_the_pages_are_in_the_fields() -> None:
+    w = _steal_watch((0, {4: 0, 5: 0}), (0, {4: 0, 5: 0}), [(0, 0), (3, 1)], {4, 5})
+    w.start()
+    with pytest.raises(qg.SwapMovedError):
+        w.finish()
+    assert (w.fields["swap_in_pages"], w.fields["swap_out_pages"]) == (3, 1)

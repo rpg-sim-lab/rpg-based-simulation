@@ -183,6 +183,18 @@ Cross-check: the pass's share of the tick (19 to 26 %) is close to `resolution_o
 
 Phase figures are medians of the three runs. All three worlds exceed the 10 % noisy line or sit on it, so **the tick figures are NOISY**, and `crowded_frontier` and `frontier_living_world` read 18 to 28 % above section 9 (26.8 ms; 39 to 58 ms) with the same code in the hot phases. Treat the shares, not the ms, as the result. A quiet-host rerun is owed.
 
+#### 10.1b Rerun of R1 on loaded host, pinned cpus 4-5, steal/swap recorded (2026-11-19, tree `99a83adc9`, `src/` unchanged, PROVISIONAL)
+
+Same three worlds, seed 42, `PROD_SMALL`, `--contract pinned`, `--sampler none`, `taskset -c 4-5`, `MemoryMax=1G`, `MemorySwapMax=0`, quiet gate before each run (cpus 4-5 under 10 % busy, swap-out 0). About 16 seats were up, so this is **not** a quiet-host reading. CPU steal was 0 jiffies on cpus 4 and 5 and real swap-out was 0 in all 18 runs. Raw data: `/data/vboxuser/perf_runs/r6` (1000 ticks) and `r6b` (200 ticks).
+
+| world | R1 original, 200 ticks, cpus 2-3 (median ms, spread) | rerun 200 ticks (runs 1/2/3 ms, spread) | rerun 1000 ticks (runs 1/2/3 ms, spread) |
+|---|---|---|---|
+| `frontier_living_world` | 48.2, 13 % | 31.1 / 31.4 / 31.0, 1.2 % | 33.6 / 32.0 / 32.0, 5.1 % |
+| `urban_political` | 24.5, 24 % | 19.0 / 19.3 / 18.7, 3.4 % | 20.2 / 18.8 / 19.5, 7.2 % |
+| `crowded_frontier` | 32.4, 10 % | 21.6 / 21.7 / 21.9, 1.3 % | 19.3 / 18.6 / 18.9, 3.5 % |
+
+Reading: with the timed run pinned to cpus 4-5 and steal and swap at 0, every spread is 1.2 to 7.2 % against 10 to 24 % in the original R1, and the means are 20 to 35 % lower. Frontier gives its first reading under the 10 % line (section 9 called it INCONCLUSIVE). The 200-tick and 1000-tick sets are not interchangeable (`crowded_frontier` is 21.7 ms at 200 ticks and 18.9 ms at 1000), so they are kept apart. The phase shares in 10.1 are unchanged by this rerun. The original R1 was taken on cpus 2-3 with a births pytest running, which fits its NOISY label; this is evidence for the timing-host choice, not a baseline (`perf_baseline_policy.md` section 2.2 still asks for a quiet host).
+
 ### 10.2 resolution_overhead, broken down (R2: one py-spy run per world, 250 Hz; shares of all samples, 779 / 1444 / 912 samples, so about ±1 point)
 
 `resolution_overhead` (`kernel.py:441`) is Resolution minus the sub-phases the pipeline timed itself. The untimed `run_phase` children of `_phase_resolution` are:
@@ -269,6 +281,23 @@ Caveats: each figure comes from one noisy run on a loaded host; the exponents ar
 
 **Temporal scale is not execution cost.** The owner keeps temporal scaling (ticks per progression; audit #715 6967725212) separate from execution performance (cost per tick, semantics kept). A 13 to 29 % cut of the tick (10.6) does not change the generation horizon: it makes each tick cheaper, not each simulated span longer.
 
+#### 10.5b Rerun of R4 on loaded host, pinned cpus 4-5, steal/swap recorded (2026-11-19, tree `99a83adc9`, one run each, 1000 ticks after 20 warmup, `/data/vboxuser/perf_runs/r7`)
+
+Same gates and settings as 10.1b. Steal 0 jiffies on cpus 4 and 5 in all 8 runs. `urban_political` is **swap-touched**: one 2-second vmstat interval showed swap-out 118 pages/s (about 236 pages) near the end of the run, over the 100 pages/s mark. The other seven runs show 0. Likely cause, unverified: the kernel paging out an idle seat (the guest had 3.0 of 8 GB swap in use), since the timed process has `MemorySwapMax=0`. Its tick (19.8 ms) matches the 10.1b urban reads (18.8 to 20.2 ms).
+
+| run | mean tick ms (original R4) | p95 ms | peak RSS MB | change from original |
+|---|---|---|---|---|
+| `urban_political` (swap-touched) | 19.8 (23.0) | 28.0 | 97.6 | -14 % |
+| `crowded_frontier` | 18.5 (21.8) | 26.3 | 103.9 | -15 % |
+| `frontier_living_world` | 32.3 (38.4) | 42.4 | 111.1 | -16 % |
+| `frontier_extended` | 35.1 (44.1) | 45.5 | 131.5 | -20 % |
+| `simq_scale_stress_seed42` | 32.3 (36.2) | 44.3 | 127.8 | -11 % |
+| `mixed` 100 | 53.9 (66.1) | 97.4 | 106.5 | -18 % |
+| `mixed` 200 | 148.3 (206.9) | 296.5 | 140.7 | -28 % |
+| `mixed` 400 | 443.7 (563.7) | 792.4 | 220.3 | -21 % |
+
+Seconds per 1000 ticks are the mean tick in ms (for example `frontier_living_world` 32.3 s). The wall-clock-per-fantasy-year table above still uses the original R4 figures; scaling it by these rerun figures would shorten each row by the same percentages and is left as a later step, since this is one run per row.
+
 ### 10.6 Ranked fix list (each goes back as its own ticket, `src/` via rpg-planner; savings are shares of the tick, from this section)
 
 | rank | fix | evidence | waste or legitimate | expected saving | determinism |
@@ -288,11 +317,14 @@ None of them touches the per-tick commit sort (`kernel.py:593`) or exact replay.
 - `dataclasses._replace` frames elsewhere (strategic pass, 1 to 3 %) add to the 16 to 17 % replace-ish leaf total.
 - Not yet measured: calls per tick and fields per call, so the saving is not yet sized below "4 to 8 % of the tick"; the ticket for it starts with a call-site count. Sequencing (rpg-planner via lead): after M1 Phase 1.
 
-### 10.8 Owed runs (births slot; nothing runs until lead releases it)
+### 10.8 Runs added on 2026-11-19, and what is still owed
 
-- Quiet-host rerun of R1 (3 gate worlds x 3 runs) and R4, before anyone sets a quantitative target.
-- One py-spy run at `mixed` 400 (PROD_LARGE, 1000 ticks) and on the 3 gate worlds, with `CooperationPhase.execute` attributed by callee. It serves as the before-profile for rpg-planner's SOLO ticket (before and after on the 3 cells plus a 400-entity synthetic world); the same command, seed 42 and host conditions must be used for the after run.
+- Done: the reruns of R1 and R4 (10.1b, 10.5b) and the py-spy runs below. All are on loaded host, pinned cpus 4-5, steal/swap recorded; none is a quiet-host baseline.
+- **py-spy at `mixed` 400 (before-profile for rpg-planner's SOLO cooperation ticket).** Tree `c505357b3` (origin/main), `PROD_LARGE`, seed 42, `--contract pinned`, warmup 20, 1000 ticks, 250 Hz, cpus 4-5, `MemoryMax=1G`; wall 476 s, peak RSS 224.5 MB, steal 0, swap-out 0; data `/data/vboxuser/perf_runs/r5/mixed_400_pyspy`. Mean tick 467.7 ms (py-spy inflates it; read shares). `cooperation` is 35.0 % of the tick and 33.7 % of all samples sit under `CooperationPhase.execute`: **about 23 % at `get_candidates` (`cooperation/providers.py:111`)**, 3.4 % at `:148`, every other callee under 1 %. The after run must use the same command, seed and host conditions (tree: the SOLO branch's base).
+- **`providers.py:111` is also one of the 13 direct faction-hostility sites** that the why-it-fights code step moves into one extracted module. Whoever changes that line should read both tickets (SOLO cooperation and why-it-fights).
+- py-spy on the 3 gate worlds (`c505357b3`, 200 ticks, `/data/vboxuser/perf_runs/r5/*_pyspy`): cooperation 6.5 % (`urban_political`), 5.7 % (`crowded_frontier`), 8.6 % (`frontier_living_world`); combat_engagement 16.1 to 16.3 %; resolution_overhead 29.2, 22.9, 26.6 %. These are the SOLO ticket's before-profile for the gate worlds.
+- Still owed: a quiet-host reading (needs the timing-host choice in `TCK-20261116-TIMING-RUNS-SHARE-THEIR-CPUS-WITH-IDLE-SEATS`), and the same profiles at 500 entities.
 
 ### 10.9 Limits
 
-One py-spy run per world (779 to 1444 samples, ±1 point); corpus worlds at their compiled size of 30 to 74 entities (not 200); R1 and R2 at 200 ticks after 20 warmup, R4 at 1000 ticks, one run each; two runs for synthetic in R3; loaded host with swap activity in 4 of 21 R1 to R3 runs; no quiet-host rerun yet (waits for the births block); no py-spy run at 400 or 500 entities yet; `advancement` (20 % of the tick) is attributed only to `apply_generation` (about 10 to 13 %) and `_phase_observability` (about 7 %), no deeper.
+One py-spy run per world (779 to 1444 samples, ±1 point); corpus worlds at their compiled size of 30 to 74 entities (not 200); R1 and R2 at 200 ticks after 20 warmup, R4 at 1000 ticks, one run each; two runs for synthetic in R3; loaded host with swap activity in 4 of 21 R1 to R3 runs; reruns of R1 and R4 exist only on a loaded host, pinned cpus 4-5, steal/swap recorded (not quiet-host); no py-spy run at 400 or 500 entities yet; `advancement` (20 % of the tick) is attributed only to `apply_generation` (about 10 to 13 %) and `_phase_observability` (about 7 %), no deeper.
