@@ -21,9 +21,15 @@ per-(run_key, pillar) overrides in ``test_grade_regression``); ``in_band_after``
 
 CLI::
 
-    python -m tools.test_architecture.simq_reanchor --rows rows.jsonl --fixture grade_anchors.json --out new.json --table table.tsv [--exclude exclude.tsv] [--prior-rows earlier_rows.jsonl]
+    python -m tools.test_architecture.simq_reanchor --rows rows.jsonl --fixture grade_anchors.json --out new.json --table table.tsv [--exclude exclude.tsv] [--prior-rows earlier_rows.jsonl] [--only run_key ...]
 
 ``exclude.tsv`` has one ``run_key<TAB>pillar`` per line (``#`` comments allowed). Exit 2 when a key is missing, incomplete or not identical (nothing written).
+
+Partial re-anchor (``--only <run_key>``, repeatable; TCK-20261123-SIMQ-REANCHOR-ONLY-KEY-MODE-FOR-A-PARTIAL-RE-ANCHOR): only the named keys are re-anchored, each from the full
+pair of audit_mode runs (two isolated runs, identical, no override). Every key not named is copied from the committed fixture byte-for-byte, needs no rows and appears in no
+table row. Rows for unnamed keys are not read. A name that is not a run key is refused, and so is an exclusion on an unnamed key (exit 2, nothing written); ``--exclude``,
+``--prior-rows``, ``--score-overrides`` and ``--ruling-table`` apply to the named keys only. Splicing earlier rows in for the other keys is not a partial re-anchor: it mixes shas in
+one provenance table. The PR that commits a partial re-anchor names the sha the named keys were measured on (and that it was a git archive of a branch commit, when so) and the moved rows.
 """
 
 from __future__ import annotations
@@ -123,18 +129,34 @@ def reanchor(
     score_overrides: Optional[Mapping[Tuple[str, str], float]] = None,
     band_overrides: Optional[Mapping[Tuple[str, str], int]] = None,
     prior_rows: Optional[Mapping[str, Mapping[int, dict]]] = None,
+    only: Optional[Iterable[str]] = None,
 ) -> Tuple[Dict[str, Any], List[dict]]:
     """``(new fixture, provenance rows)``. Every run key of the fixture must have an identical pair; excluded rows keep their committed anchor.
+
+    ``only`` (a partial re-anchor, ``--only <run_key>``) names the run keys this run re-anchors: each still needs the full identical audit_mode pair, and every other key is
+    copied from the committed fixture unchanged, needs no rows and has no table row. A name that is not a run key of the fixture is refused, and so is an exclusion on a key
+    that is not named (it is not part of this run). Without ``only`` every run key is re-anchored.
 
     ``prior_rows`` (an earlier measurement, for example the one an owner ruled on before the code moved again) adds ``prior_grade``, ``prior_score``,
     ``grade_changed`` and ``changed_since_ruling`` to every table row, so a value that differs from what was ruled can be put back to the owner (rule 5)."""
     excluded = set(excluded)
+    named = None if only is None else set(only)
+    if named is not None:
+        not_keys = sorted(k for k in named if k.startswith("_") or k not in fixture)
+        if not_keys:
+            raise ReanchorRefused(f"--only names run key(s) not in the fixture: {not_keys}")
+        unnamed = sorted(f"{k}:{p}" for k, p in excluded if k in fixture and k not in named)
+        if unnamed:
+            raise ReanchorRefused(f"exclusion(s) on run key(s) not named by --only (not part of this run): {unnamed}")
     score_overrides, band_overrides = score_overrides or {}, band_overrides or {}
     new: Dict[str, Any] = {}
     table: List[dict] = []
     for run_key, pillars in fixture.items():
         if run_key.startswith("_"):
             new[run_key] = pillars
+            continue
+        if named is not None and run_key not in named:
+            new[run_key] = pillars  # a partial re-anchor: the committed anchors of a key it does not name are kept as they are
             continue
         audit = audit_values(run_key, rows.get(run_key, {}))
         prior = audit_values(run_key, prior_rows.get(run_key, {})) if prior_rows is not None else None
@@ -248,6 +270,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--table", type=Path, required=True)
     parser.add_argument("--exclude", type=Path)
+    parser.add_argument("--only", action="append", metavar="RUN_KEY", help="re-anchor only this run key (repeatable); every other key is kept byte-for-byte and needs no rows")
     parser.add_argument("--prior-rows", type=Path, help="rows.jsonl of an earlier measurement (the one an owner ruled on); adds the prior columns and the changed-since-ruling flags")
     parser.add_argument("--score-overrides", type=Path, help="JSON [[run_key, pillar, abs_floor], ...]: the COMMITTED per-row tolerance widenings, so in_band_before is judged the way the committed anchor was")
     parser.add_argument("--ruling-table", type=Path, help="write the table for the owner's ruling (needs --prior-rows): the rows the owner rules on, in two groups (changed since the ruling, unchanged since it)")
@@ -259,6 +282,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         new, table = reanchor(
             json.loads(args.fixture.read_text(encoding="utf-8")), load_rows(args.rows), load_exclusions(args.exclude), overrides,
             {("urban_political_seed123_500t", "COGNITION"): 2}, load_rows(args.prior_rows) if args.prior_rows else None,
+            only=args.only,
         )
     except ReanchorRefused as exc:
         print(f"REFUSED: {exc}", file=sys.stderr)

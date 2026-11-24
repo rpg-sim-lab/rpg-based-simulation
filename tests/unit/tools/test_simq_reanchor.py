@@ -246,3 +246,102 @@ def test_the_cli_has_no_escape_hatch_for_unaudited_runs(tmp_path, capsys):
     with pytest.raises(SystemExit) as caught:
         ra.main(["--rows", str(tmp_path / "r.jsonl"), "--fixture", str(tmp_path / "f.json"), "--out", str(tmp_path / "o.json"), "--table", str(tmp_path / "t.tsv"), "--allow-unaudited"])
     assert caught.value.code == 2 and "unrecognized arguments: --allow-unaudited" in capsys.readouterr().err
+
+
+# ---- a partial re-anchor (TCK-20261123-SIMQ-REANCHOR-ONLY-KEY-MODE-FOR-A-PARTIAL-RE-ANCHOR)
+
+def _only_rows(key="w_seed1_200t", **kw):
+    return {key: _pair(key, **kw)}
+
+
+def test_only_the_named_key_changes_and_an_unnamed_key_is_byte_identical():
+    new, table = ra.reanchor(FIXTURE, _only_rows(), only=["w_seed1_200t"])
+    assert new["w_seed1_200t"]["FACTION"] == {"grade": "C", "score": 0.0}
+    assert new["w_seed2_200t"] == FIXTURE["w_seed2_200t"] and new["_note"] == "meta"
+    assert ra.dump_fixture(new).count('"w_seed2_200t"') == 1 and json.dumps(new["w_seed2_200t"]) == json.dumps(FIXTURE["w_seed2_200t"])
+    assert {r["run_key"] for r in table} == {"w_seed1_200t"}  # no table row for an unnamed key
+
+
+def test_an_unnamed_key_needs_no_rows_and_a_bad_pair_for_it_is_not_read():
+    rows = {**_only_rows(), "w_seed2_200t": {1: {"key": "w_seed2_200t", "rep": 1, "exit": 1}}}
+    new, _ = ra.reanchor(FIXTURE, rows, only=["w_seed1_200t"])
+    assert new["w_seed2_200t"] == FIXTURE["w_seed2_200t"]
+
+
+def test_an_unknown_or_meta_key_in_only_is_refused():
+    for bad in ("nope", "_note"):
+        with pytest.raises(ra.ReanchorRefused, match="--only names run key"):
+            ra.reanchor(FIXTURE, _only_rows(), only=["w_seed1_200t", bad])
+
+
+def test_a_named_key_with_one_run_is_refused():
+    rows = _only_rows()
+    del rows["w_seed1_200t"][2]
+    with pytest.raises(ra.ReanchorRefused, match="needs 2 isolated"):
+        ra.reanchor(FIXTURE, rows, only=["w_seed1_200t"])
+
+
+def test_a_named_key_still_needs_the_full_audit_mode_pair():
+    rows = _only_rows()
+    rows["w_seed1_200t"][1]["audit_mode"] = False
+    with pytest.raises(ra.ReanchorRefused, match="not recorded as audit_mode"):
+        ra.reanchor(FIXTURE, rows, only=["w_seed1_200t"])
+    rows = _only_rows()
+    rows["w_seed1_200t"][2]["pillars"]["FACTION"]["events"] = 3
+    with pytest.raises(ra.ReanchorRefused, match="NOT identical"):
+        ra.reanchor(FIXTURE, rows, only=["w_seed1_200t"])
+
+
+def test_an_exclusion_inside_a_named_key_keeps_that_row():
+    new, table = ra.reanchor(FIXTURE, _only_rows(), excluded={("w_seed1_200t", "FACTION")}, only=["w_seed1_200t"])
+    assert new["w_seed1_200t"]["FACTION"] == {"grade": "S", "score": 2.9} and new["w_seed1_200t"]["ECONOMY"]["grade"] == "S"
+    assert next(r for r in table if r["pillar"] == "FACTION")["excluded"]
+
+
+def test_an_exclusion_on_an_unnamed_key_is_refused():
+    with pytest.raises(ra.ReanchorRefused, match=r"not named by --only.*w_seed2_200t:FACTION"):
+        ra.reanchor(FIXTURE, _only_rows(), excluded={("w_seed2_200t", "FACTION")}, only=["w_seed1_200t"])
+
+
+def test_prior_rows_apply_to_the_named_keys_only_and_a_named_key_needs_its_pair_there():
+    new, table = ra.reanchor(FIXTURE, _only_rows(), prior_rows=_only_rows(), only=["w_seed1_200t"])
+    assert all("prior_grade" in r for r in table) and new["w_seed2_200t"] == FIXTURE["w_seed2_200t"]
+    with pytest.raises(ra.ReanchorRefused, match="needs 2 isolated"):
+        ra.reanchor(FIXTURE, _only_rows(), prior_rows={}, only=["w_seed1_200t"])
+
+
+def test_without_only_every_key_is_re_anchored_and_a_missing_key_still_refuses():
+    new, table = ra.reanchor(FIXTURE, _rows())
+    assert new == ra.reanchor(FIXTURE, _rows(), only=None)[0] and {r["run_key"] for r in table} == {"w_seed1_200t", "w_seed2_200t"}
+    with pytest.raises(ra.ReanchorRefused, match="needs 2 isolated"):
+        ra.reanchor(FIXTURE, _only_rows())
+
+
+def test_the_cli_only_flag_is_repeatable_and_writes_unnamed_keys_unchanged(tmp_path):
+    fixture = tmp_path / "f.json"
+    fixture.write_text(ra.dump_fixture(FIXTURE))
+    rows = tmp_path / "rows.jsonl"
+    rows.write_text("".join(json.dumps(r) + "\n" for pair in _only_rows().values() for r in pair.values()))
+    out, table = tmp_path / "new.json", tmp_path / "t.tsv"
+    base = ["--rows", str(rows), "--fixture", str(fixture), "--out", str(out), "--table", str(table)]
+    assert ra.main([*base, "--only", "w_seed1_200t"]) == 0
+    assert json.loads(out.read_text())["w_seed2_200t"] == FIXTURE["w_seed2_200t"] and "w_seed2_200t" not in table.read_text()
+    out.unlink()
+    assert ra.main([*base, "--only", "w_seed1_200t", "--only", "nope"]) == 2 and not out.exists()
+
+
+def test_the_real_fixture_unnamed_keys_are_byte_identical_for_a_partial_re_anchor():
+    real = json.loads(gr.FIXTURE_PATH.read_text())
+    named = [k for k in real if not k.startswith("_")][:2]
+    rows = {k: _pair(k) for k in named}
+    for k in named:  # the audit values are the fixture's own, so the pair is a valid, identical, in-band one
+        for rep in (1, 2):
+            rows[k][rep]["pillars"] = {
+                p: ({"status": "no-data", "grade": None, "norm": None, "events": 0, "min_events": a["min_events"]} if a.get("status") == "no-data"
+                    else {"grade": a["grade"], "norm": a["score"], "raw": 1.0, "events": 80})
+                for p, a in real[k].items()
+            }
+    new, _ = ra.reanchor(real, rows, only=named)
+    unnamed = [k for k in real if k not in named]
+    assert len(unnamed) > 70 and all(json.dumps(new[k]) == json.dumps(real[k]) for k in unnamed)
+    assert list(new) == list(real)
