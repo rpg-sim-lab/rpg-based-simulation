@@ -6,7 +6,7 @@ from dataclasses import replace
 
 from src.core.arrival import ARRIVAL_DISTANCE, has_arrived
 from src.core.builder import V2EntityBuilder
-from src.core.navigation_experience import NavCause
+from src.core.navigation_experience import NavCause, RingEvidence
 from src.core.navigation_purpose import TargetPurpose
 from src.core.state import AuthoritativeState
 from src.engine.movement import MovementSystem, OscReplanOutcome, _wayround
@@ -80,8 +80,8 @@ def test_arrival_beats_a_boxed_in_ring_too_arrived_never_fails():
     walls = [V2EntityBuilder(10).kind("OBSTACLE").location(9, 4).build(), V2EntityBuilder(11).kind("OBSTACLE").location(9, 6).build(), V2EntityBuilder(12).kind("OBSTACLE").location(10, 5).build()]
     boxed_arrived = _replan(_hero_at(9, 5, (8, 5), 0, None, anchor=None), (9.5, 5.0), *walls)  # the ring has no legal tile (a ring-blocked give-up today)
     assert boxed_arrived.arrived is True and boxed_arrived.giveup_record is None
-    boxed_away = _replan(_hero_at(6, 5, (5, 5), 0, None, anchor=None), (9.5, 5.0), *[V2EntityBuilder(10 + i).kind("OBSTACLE").location(x, y).build() for i, (x, y) in enumerate([(6, 4), (6, 6), (7, 5)])])  # walls on the subject's own ring, none within one tile of the place (a wall there would be a body at the place: OCCUPIED)
-    assert boxed_away.arrived is False and boxed_away.gave_up is True and boxed_away.giveup_record is not None and boxed_away.giveup_record.cause == NavCause.RING_BLOCKED
+    boxed_away = _replan(_hero_at(6, 5, (5, 5), 0, None, anchor=None), (9.5, 5.0), *[V2EntityBuilder(10 + i).kind("OBSTACLE").location(x, y).build() for i, (x, y) in enumerate([(6, 4), (6, 6), (7, 5)])])  # the fixture "walls" are ENTITIES, which are bodies to the product (the occupancy map counts them): on the subject's own ring, none within one tile of the place (one there would be a body at the place: OCCUPIED; ruling 476631fe addendum 1)
+    assert boxed_away.arrived is False and boxed_away.gave_up is True and boxed_away.giveup_record is not None and boxed_away.giveup_record.cause == NavCause.RING_BLOCKED and boxed_away.giveup_record.ring_evidence == (RingEvidence.BODIES,)
 
 
 def _known_give_up_scene():
@@ -184,3 +184,15 @@ def test_each_outcome_is_byte_identical_on_a_repeat():
     assert repr(MovementSystem.resolve_move(state, h, (9.5, 5.0))) == repr(MovementSystem.resolve_move(state, h, (9.5, 5.0)))
     a, b = _applied(NavigationUpdate(arrived_this_attempt_set=True), h), _applied(NavigationUpdate(arrived_this_attempt_set=True), h)
     assert a.to_canonical_dict() == b.to_canonical_dict()
+
+
+def test_walls_fail_and_bodies_wait_building_tiles_never_occupy_an_entity_beside_the_place_does():
+    """Ruling 476631fe addendum 1: a place walled by BUILDINGS (not entities, never in the occupancy map) with no entity within one tile of it still fails: RING_BLOCKED with STATIC evidence. The same scene with one entity beside the place files OCCUPIED."""
+    hero = _hero_at(6, 5, (5, 5), 0, None, anchor=None)  # 3.5 tiles from the place (9,5): not arrived; its own ring: (5,5) is the tile just left, the other three are building tiles
+    walled = replace(AuthoritativeState(entities={1: hero}, tick=TICK, seed=1), building_tiles={(6, 4): "house", (6, 6): "house", (7, 5): "house"})
+    last = (float(hero.navigation.last_position[0]), float(hero.navigation.last_position[1]))
+    out = MovementSystem._oscillation_replan(hero, last, (9.5, 5.0), walled, 1.0)
+    assert out.arrived is False and out.gave_up is True and out.giveup_record.cause == NavCause.RING_BLOCKED and out.giveup_record.ring_evidence == (RingEvidence.STATIC,)
+    crowded = replace(walled, entities={1: hero, 20: _body(10, 5, 20)})  # one entity beside the place
+    waiting = MovementSystem._oscillation_replan(hero, last, (9.5, 5.0), crowded, 1.0)
+    assert waiting.giveup_record.cause == NavCause.OCCUPIED and waiting.giveup_record.ring_evidence == (RingEvidence.BODIES,)
