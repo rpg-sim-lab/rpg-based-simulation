@@ -567,12 +567,6 @@ rows:
   group: F
   reason: the name is read outside observability, model definitions, harness and compile-time code (grep; unverified as a cross-tick decision read)
   reader: grep (unverified) src/systems/strategic_systems/detour.py:297
-- path: state.groups[].member_ids
-  status: GAP
-  group: F
-  reason: 'hashed only conditionally (samples disagree): a path whose hashing depends on state'
-  reader: grep (unverified) src/systems/social_systems/group_service.py:16
-  note: 'samples disagree: unhashed vs covered'
 - path: state.home_storage[].items[].properties
   status: GAP
   group: F
