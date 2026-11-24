@@ -108,7 +108,7 @@ def test_the_canonical_form_and_the_fingerprint_omit_the_field_while_empty_and_s
     state = AuthoritativeState(entities={1: hero}, tick=0, seed=1)
     assert "giveup_records" not in hero.navigation.to_canonical_dict()
     held = replace(hero, navigation=replace(hero.navigation, giveup_records=(GiveUpRecord((9, 5), 7),)))
-    assert held.navigation.to_canonical_dict()["giveup_records"] == [{"anchor": [9, 5], "tick": 7, "cause": "oscillation", "ring_evidence": [], "from_position": None, "target_tile": None, "purpose": None}]  # every field is hashed (the #996 rework); a bare record carries the defaults
+    assert held.navigation.to_canonical_dict()["giveup_records"] == [{"anchor": [9, 5], "tick": 7, "cause": "oscillation", "ring_evidence": [], "from_position": None, "target_tile": None, "purpose": None, "need_services": []}]  # every field is hashed (the #996 rework); a bare record carries the defaults
     empty_fp = StateFingerprinter.get_fingerprint(state)["state_hash"]
     held_fp = StateFingerprinter.get_fingerprint(AuthoritativeState(entities={1: held}, tick=0, seed=1))["state_hash"]
     assert empty_fp != held_fp
