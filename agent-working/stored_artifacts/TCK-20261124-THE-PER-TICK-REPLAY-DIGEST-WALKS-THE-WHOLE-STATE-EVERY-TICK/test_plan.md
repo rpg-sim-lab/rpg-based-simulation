@@ -1,5 +1,5 @@
 ---
-status: active
+status: historical
 layer: performance
 authority: P2
 audience: agent
@@ -49,3 +49,10 @@ perf-planner measures before and after with its own GO; this ticket reports.
 | E15 | `dataclasses.replace` of a component whose memo is populated gives a component with memo None (option B), or a new key with no entry (option A) | equal digest |
 
 Worlds for AC1: `frontier_living_world` and `crowded_frontier` (bonds on 293 and 287 of 300 ticks; trust_history on 68 and 181 ticks); betrayal, nemesis and marriage are hand-built only (no world produced one in 300 ticks).
+
+## Proof Plan
+- **Level:** unit and integration (equality against a verbatim reference), plus one sealed two-arm run for the replay bytes (AC2).
+- **Proof kind:** differential equality against the old build (digest, compact JSON, pretty JSON, data dict, every tick of two real worlds), mutation proofs M1 to M7 that each fail the equality file, and a byte comparison of replay chunks NEW vs BASE with the wall-clock leaves masked and positive controls.
+- **Oracle source:** tests/unit/engine/canonical_reference.py (EntityState.to_canonical_dict as on origin/main, no memo of any kind); for AC2 the BASE tree 36a7e2089 (the merge base) produces the oracle chunks and final hash, and a second BASE smoke proves the masked key list complete.
+- **Expected effect:** every digest, JSON form and chunk (masked) equal; a poisoned memo entry or an in-place write is found by the audit; the memo path never leaks a dict into the plain path; no checkpoint, replay or fingerprint change.
+- **Selected commands:** python -m pytest tests/unit/engine tests/tools/test_replay_digest_kit.py tests/architecture tests/integration/kernel (from the repo root, under a 3G scope); tools/rpg_measure/replay_digest_launch.sh run <GO> for AC2 (heavy, own GO).
