@@ -211,7 +211,7 @@ class CanonicalStateHasher:
         def canon(mapping: Dict[Any, Any]) -> Dict[str, Any]:
             return {str(k): v.to_canonical_dict() for k, v in sorted(mapping.items())}
 
-        data: Dict[str, Any] = {"entities": {str(eid): state.entities[eid].to_canonical_dict(memo) for eid in sorted(state.entities.keys())}}
+        data: Dict[str, Any] = {"entities": {str(eid): (state.entities[eid].to_canonical_dict() if memo is None else state.entities[eid].to_canonical_dict(memo)) for eid in sorted(state.entities.keys())}}
         data["regions"] = {k: v.to_canonical_dict() for k, v in sorted(state.regions.items())}
         data["places"] = {k: v.to_canonical_dict() for k, v in sorted(state.places.items())}  # Idea 66
         data["local_scars"] = canon(state.local_scars)
