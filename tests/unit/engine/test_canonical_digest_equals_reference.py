@@ -17,6 +17,7 @@ from unittest.mock import patch
 
 import pytest
 
+from src.core.protocol_validator import ProtocolViolationError
 from src.core.death_cause import DeathCause, DeathRecord
 from src.core.grief_triggers import pending_grief_triggers
 from src.core.models.social import BetrayalRecord, SocialBond
@@ -406,5 +407,100 @@ def test_the_grief_flush_on_a_warm_kernel_digests_to_the_reference():
         assert memo.audit() == []
         kernel.tick_once()
         assert CanonicalStateHasher.get_hash(kernel.state, memo) == reference_digest(kernel.state)
+    finally:
+        run.close()
+
+
+# ---------------------------------------------------------------------------
+# The periodic memo audit (audit_mode only, every CANONICAL_MEMO_AUDIT_PERIOD ticks)
+# ---------------------------------------------------------------------------
+
+def _plant(kernel):
+    """An in-place write into a memoized strategic component; returns an undo."""
+    state, memo = kernel.state, kernel._canonical_memo
+    victim = next(e for e in state.entities.values() if memo._strategic.get(id(e.strategic)))
+    victim.strategic.boredom["__planted__"] = 9.0
+    return lambda: victim.strategic.boredom.pop("__planted__", None)
+
+
+def test_the_audit_period_is_a_named_constant_and_the_cadence_is_the_tick():
+    import src.engine.kernel as kernel_module
+    assert kernel_module.CANONICAL_MEMO_AUDIT_PERIOD == 100
+
+
+def test_a_planted_in_place_write_raises_on_an_audit_tick_under_audit_mode(monkeypatch):
+    import src.engine.kernel as kernel_module
+    run = _Run("frontier_living_world")
+    kernel = run.kernel
+    try:
+        for _ in range(8):
+            kernel.tick_once()
+        assert kernel._audit_mode is True
+        undo = _plant(kernel)
+        monkeypatch.setattr(kernel_module, "CANONICAL_MEMO_AUDIT_PERIOD", kernel.state.tick)  # this tick is an audit tick
+        with pytest.raises(ProtocolViolationError, match="Canonical digest memo is stale"):
+            kernel._phase_persistence()
+        undo()
+        kernel._phase_persistence()  # clean again: the audit passes
+    finally:
+        run.close()
+
+
+def test_the_same_plant_without_audit_mode_raises_nothing_and_that_is_the_stated_limit(monkeypatch):
+    import src.engine.kernel as kernel_module
+    run = _Run("frontier_living_world")
+    kernel = run.kernel
+    try:
+        for _ in range(8):
+            kernel.tick_once()
+        kernel._audit_mode = False
+        undo = _plant(kernel)
+        monkeypatch.setattr(kernel_module, "CANONICAL_MEMO_AUDIT_PERIOD", kernel.state.tick)
+        kernel._phase_persistence()  # no audit: nothing raised
+        undo()
+    finally:
+        run.close()
+
+
+def test_a_clean_audit_mode_run_digests_the_same_with_and_without_the_audit(monkeypatch):
+    import src.engine.kernel as kernel_module
+
+    def digests(period: int):
+        monkeypatch.setattr(kernel_module, "CANONICAL_MEMO_AUDIT_PERIOD", period)
+        run = _Run("frontier_living_world")
+        seen = []
+        try:
+            with patch.object(run.kernel._replay, "emit", side_effect=lambda event, policy: seen.append(event.payload.get("hash") if isinstance(event.payload, dict) else None)):
+                for _ in range(14):
+                    run.kernel.tick_once()
+        finally:
+            run.close()
+        return seen
+
+    with_audit, without = digests(3), digests(10 ** 9)
+    assert len(with_audit) >= 14 and with_audit == without
+
+
+def test_a_tick_that_is_not_a_multiple_of_the_period_runs_no_audit_and_the_audit_changes_nothing(monkeypatch):
+    import src.engine.kernel as kernel_module
+    calls = []
+    real = CanonicalFragmentMemo.audit
+    monkeypatch.setattr(CanonicalFragmentMemo, "audit", lambda self: (calls.append(1), real(self))[1])
+    monkeypatch.setattr(kernel_module, "CANONICAL_MEMO_AUDIT_PERIOD", 4)
+    run = _Run("frontier_living_world")
+    kernel, ticks = run.kernel, []
+    try:
+        for _ in range(9):
+            before = len(calls)
+            kernel.tick_once()
+            ticks.append((kernel.state.tick, len(calls) - before))
+        assert [t for t, n in ticks if n] == [t for t, _ in ticks if t % 4 == 0]
+        assert all(n in (0, 1) for _, n in ticks)
+        memo = kernel._canonical_memo
+        before_tables = ({k: v[1] for k, v in memo._strategic.items()}, {k: v[1] for k, v in memo._social.items()})
+        digest = CanonicalStateHasher.get_hash(kernel.state, memo)
+        memo.audit()
+        assert ({k: v[1] for k, v in memo._strategic.items()}, {k: v[1] for k, v in memo._social.items()}) == before_tables
+        assert CanonicalStateHasher.get_hash(kernel.state, memo) == digest == reference_digest(kernel.state)
     finally:
         run.close()

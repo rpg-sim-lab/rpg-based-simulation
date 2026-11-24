@@ -39,6 +39,11 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# Under audit_mode the per-tick digest memo (`CanonicalFragmentMemo`) is audited every this many ticks: every entry is recomputed from its component and compared, and a mismatch
+# (an in-place write into a memoized component) raises ProtocolViolationError. The cadence is the tick number, never the wall clock. One audit costs about one cold rebuild of the strategic
+# and social strata of every entity, so 100 keeps it near 1 % of the per-tick saving (TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK).
+CANONICAL_MEMO_AUDIT_PERIOD = 100
+
 
 class Kernel:
     """
@@ -1109,6 +1114,16 @@ class Kernel:
                 f"Full isolation enforcement requires audit_mode=True."
             )
 
+    def _audit_canonical_memo(self, tick: int) -> None:
+        """Read-only check of the per-tick digest memo (audit_mode only, every CANONICAL_MEMO_AUDIT_PERIOD ticks): any entry that differs from a fresh recompute of its component raises."""
+        from src.core.protocol_validator import ProtocolViolationError
+        mismatches = self._canonical_memo.audit()
+        if mismatches:
+            raise ProtocolViolationError(
+                f"Canonical digest memo is stale at tick {tick}: {len(mismatches)} memoized stratum dict(s) differ from a recompute "
+                f"(a strategic or social component was mutated in place). First: {mismatches[0]}"
+            )
+
     def _phase_persistence(self) -> None:
         from src.engine.checkpoint import CanonicalHashScheduler
         tick = self._state.tick
@@ -1116,6 +1131,9 @@ class Kernel:
             digest = CanonicalHashScheduler().compute_digest(self._state, tick, reason="replay", memo=self._canonical_memo)
         else:
             digest = CanonicalHashScheduler.not_computed_by_policy(tick)
+
+        if self._audit_mode and tick % CANONICAL_MEMO_AUDIT_PERIOD == 0:
+            self._audit_canonical_memo(tick)
 
         if self._current_policy.replay_allowed:
             self._replay.emit(TraceEvent(
