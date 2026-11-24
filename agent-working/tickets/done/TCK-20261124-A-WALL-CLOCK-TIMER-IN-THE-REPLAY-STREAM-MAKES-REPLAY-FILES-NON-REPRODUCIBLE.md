@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: observability
 authority: P1
 audience: agent
 ticket_id: TCK-20261124-A-WALL-CLOCK-TIMER-IN-THE-REPLAY-STREAM-MAKES-REPLAY-FILES-NON-REPRODUCIBLE
-phase: open
+phase: done
 date: 2026-11-24
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 A wall-clock timer inside every replay update makes replay files differ byte for byte between two runs of the same world and seed
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -52,6 +52,7 @@ Found by lead-planner while reviewing the AC2 record set of TCK-20261124-THE-PER
 - docs/engine/deterministic_execution.md
 
 ## Related Stored Artifacts
+- agent-working/stored_artifacts/TCK-20261124-A-WALL-CLOCK-TIMER-IN-THE-REPLAY-STREAM-MAKES-REPLAY-FILES-NON-REPRODUCIBLE/approach_note.md, pr_notes.md
 
 ## Related Code Areas
 - src/domains/cooperation/phase.py
@@ -62,6 +63,9 @@ Found by lead-planner while reviewing the AC2 record set of TCK-20261124-THE-PER
 ## Assumptions / Open Questions
 - Not verified yet: whether perf or a dashboard reads cooperation_phase_ms from the replay. AC3 answers it before the change.
 
+## Durable state, lifecycle and clocks
+N/A: nothing durable is added. `replay_form()` returns a short-lived copy of the tick's update for the replay emit; the replay chunks lose their timer values (they were never authoritative state), and no clock is added or read differently: the phases still read `perf_counter_ns` and the kernel still keeps those values in `_phase_costs` and `_metrics`.
+
 ## Implementation Notes
 - 2026-11-24, from the replay-digest AC2 key scan (BASE 36a7e2089 smoke, #715 7132066246, proven complete by a second smoke): a SECOND wall-clock field is in every REFINED_UPDATE: `payload.update.sub_phase_costs.<23 phase names>` (src/core/updates.py:359 `sub_phase_costs: Dict[str, float]`, per-phase durations such as combat_engagement 17.316701). It is not named *_ms and is not in metric_counters. Scope covers it too: both timer groups leave the replayed payload. Frozen list: tools/rpg_measure/replay_digest_wall_clock_keys.jsonl on rpg-ubuntu-replay-digest.
 
@@ -70,7 +74,11 @@ Found by lead-planner while reviewing the AC2 record set of TCK-20261124-THE-PER
 - The sealed AC2 kit (tools/rpg_measure/replay_digest_*) is unchanged; its mask is a no-op on new chunks and still correct on old ones.
 
 ## Test Summary
+- New: tests/unit/engine/test_replay_chunks_are_reproducible.py (16 tests; 13 red on main, all green now): byte-equal chunks with and without ENABLE_WORLD_EMERGENCE, no float timer leaf, counts kept, the kernel keeps `_metrics` and `_phase_costs`, TICK_END hashes and the final digest equal between the new emit and the old (replay_form patched to self), `replay_form` drops exactly WALL_CLOCK_METRIC_KEYS, handles None and empty, never mutates self, leaves is_noop alone.
+- Pre-push set: unit/engine 1329, unit/core+kernel+replay 567, perf cooperation budget 1, integration 12, architecture 260, static 176, tests/tools all pass except 4 live docs-index build timeouts in test_knowledge_search.py on this host (environmental). code-health OK, import contracts 17 kept 0 broken.
 
 ## Files Changed
+src/core/updates.py (WALL_CLOCK_METRIC_KEYS, StateUpdate.replay_form, metric_counters typed Dict[str, float]), src/engine/kernel.py (emit replay_form), tests/unit/engine/test_replay_chunks_are_reproducible.py, docs/engine/contracts/replay_contract.md, docs/engine/deterministic_execution.md, docs/performance/wall_clock_inventory.md (T8, T10), this ticket and its stored artifacts.
 
 ## Completion Summary
+Replay chunks carry no wall-clock value: two runs of one world and seed write byte-equal chunk_*.json, with the world-emergence flag on and off. The kernel's own update, `_metrics`, `_phase_costs`, the governor input, the final hash and the TICK_END hashes are unchanged. Known gaps are in pr_notes.md.
