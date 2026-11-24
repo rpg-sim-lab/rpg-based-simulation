@@ -8,7 +8,7 @@ import json
 from enum import Enum
 from typing import Any, Dict, Optional
 
-from src.core.state import GROUP_ID_BASE, AuthoritativeState
+from src.core.state import GROUP_ID_BASE, AuthoritativeState, social_canonical_dict, strategic_canonical_dict
 
 # PERF-D5 point 2: the proof digest is named and versioned. A stored or emitted digest of a
 # different scheme is never compared with this one.
@@ -97,25 +97,86 @@ def _canonical_owed(state: AuthoritativeState) -> Dict[str, Any]:
     return {"owed": {k: v.to_canonical_dict() for k, v in sorted(state.owed.items())}} if state.owed else {}
 
 
+class CanonicalFragmentMemo:
+    """The canonical dicts of the strategic and social strata, kept across ticks for the kernel's per-tick replay digest (TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK).
+
+    Why: every entity object is replaced every tick, so the entity's own memo never hits, but about 72 % of an entity's components are the same objects as last tick. Building a strategic
+    stratum's dict (`dataclasses.asdict` over every record) is the dominant cold cost, and an unchanged component gives the same dict.
+
+    Owner and lifecycle: ONE instance, held by one Kernel for its whole life and used only inside `Kernel._phase_persistence` (the thread that calls `tick_once`). It is never module-level, never
+    pickled (a checkpoint is a pickle of the state, which does not reach the kernel), never replayed and never shown by a presenter; a restored or new kernel starts empty. An entry is
+    `(component, canonical dict)` and holds a STRONG reference to the component, so the component's `id()` cannot be recycled while the entry lives; a hit requires `entry component is the component`.
+    After every digest `prune` keeps only the components of the state just digested, so the size is at most 2 x the entity count.
+
+    Limit (stated in docs/engine/deterministic_execution.md): a memoized component whose container is mutated IN PLACE keeps its old dict here, so that change stays invisible to the per-tick digest for the
+    component's life. Components are rebuilt with `replace()` and `audit` recomputes every entry; the final digest is taken without this memo.
+    """
+
+    __slots__ = ("_strategic", "_social", "hits", "misses")
+
+    def __init__(self) -> None:
+        self._strategic: Dict[int, Any] = {}
+        self._social: Dict[int, Any] = {}
+        self.hits = 0
+        self.misses = 0
+
+    def _get(self, table: Dict[int, Any], component: Any, build: Any) -> Dict[str, Any]:
+        entry = table.get(id(component))
+        if entry is not None and entry[0] is component:
+            self.hits += 1
+            return entry[1]
+        self.misses += 1
+        built = build(component)
+        table[id(component)] = (component, built)
+        return built
+
+    def strategic(self, component: Any) -> Dict[str, Any]:
+        """The strategic stratum's canonical dict: the memoized one for this very component object, else a fresh build that is remembered."""
+        return self._get(self._strategic, component, strategic_canonical_dict)
+
+    def social(self, component: Any) -> Dict[str, Any]:
+        """The social stratum's canonical dict: the memoized one for this very component object, else a fresh build that is remembered."""
+        return self._get(self._social, component, social_canonical_dict)
+
+    def prune(self, state: AuthoritativeState) -> None:
+        """Keep only the entries whose component is held by an entity of `state`, so the memo never outgrows one state."""
+        live_strategic = {id(e.strategic) for e in state.entities.values()}
+        live_social = {id(e.social) for e in state.entities.values()}
+        self._strategic = {k: v for k, v in self._strategic.items() if k in live_strategic}
+        self._social = {k: v for k, v in self._social.items() if k in live_social}
+
+    def __len__(self) -> int:
+        return len(self._strategic) + len(self._social)
+
+    def audit(self) -> list:
+        """Recompute every entry from its component and compare the JSON: a description of each entry that differs (empty when every entry is current)."""
+        mismatches = []
+        for kind, table, build in (("strategic", self._strategic, strategic_canonical_dict), ("social", self._social, social_canonical_dict)):
+            for component, cached in table.values():
+                if json.dumps(build(component), sort_keys=True, default=str) != json.dumps(cached, sort_keys=True, default=str):
+                    mismatches.append(f"CanonicalFragmentMemo {kind}: a memoized dict differs from a fresh recompute of its component")
+        return mismatches
+
+
 class CanonicalStateHasher:
     """
     Deterministic hasher for AuthoritativeState.
     """
 
     @staticmethod
-    def get_hash(state: AuthoritativeState) -> str:
+    def get_hash(state: AuthoritativeState, memo: Optional[CanonicalFragmentMemo] = None) -> str:
         """
-        Produce a SHA256 hash of the compact canonical JSON representation.
+        Produce a SHA256 hash of the compact canonical JSON representation. `memo` (None: the plain path) is only the kernel's per-tick replay digest's.
         """
-        compact_json = CanonicalStateHasher.to_canonical_json(state, pretty=False)
+        compact_json = CanonicalStateHasher.to_canonical_json(state, pretty=False, memo=memo)
         return hashlib.sha256(compact_json.encode("utf-8")).hexdigest()
 
     @staticmethod
-    def to_canonical_json(state: AuthoritativeState, pretty: bool = False) -> str:
+    def to_canonical_json(state: AuthoritativeState, pretty: bool = False, memo: Optional[CanonicalFragmentMemo] = None) -> str:
         """
         Convert AuthoritativeState into a canonical JSON representation.
         """
-        data = CanonicalStateHasher.to_canonical_data(state)
+        data = CanonicalStateHasher.to_canonical_data(state, memo)
         
         if pretty:
             return json.dumps(data, sort_keys=True, indent=2)
@@ -145,12 +206,12 @@ class CanonicalStateHasher:
         return data
 
     @staticmethod
-    def _entity_and_world_fields(state: AuthoritativeState) -> Dict[str, Any]:
+    def _entity_and_world_fields(state: AuthoritativeState, memo: Optional[CanonicalFragmentMemo] = None) -> Dict[str, Any]:
         """Entities (sorted by id) and the global collections, each sorted by key and rendered through its own canonical dict."""
         def canon(mapping: Dict[Any, Any]) -> Dict[str, Any]:
             return {str(k): v.to_canonical_dict() for k, v in sorted(mapping.items())}
 
-        data: Dict[str, Any] = {"entities": {str(eid): state.entities[eid].to_canonical_dict() for eid in sorted(state.entities.keys())}}
+        data: Dict[str, Any] = {"entities": {str(eid): state.entities[eid].to_canonical_dict(memo) for eid in sorted(state.entities.keys())}}
         data["regions"] = {k: v.to_canonical_dict() for k, v in sorted(state.regions.items())}
         data["places"] = {k: v.to_canonical_dict() for k, v in sorted(state.places.items())}  # Idea 66
         data["local_scars"] = canon(state.local_scars)
@@ -209,14 +270,16 @@ class CanonicalStateHasher:
         }
 
     @staticmethod
-    def to_canonical_data(state: AuthoritativeState) -> Dict[str, Any]:
+    def to_canonical_data(state: AuthoritativeState, memo: Optional[CanonicalFragmentMemo] = None) -> Dict[str, Any]:
         """
-        Convert AuthoritativeState into a sortable dictionary structure.
+        Convert AuthoritativeState into a sortable dictionary structure. `memo` is None except in the kernel's per-tick replay digest; the data is equal either way.
         """
         data = CanonicalStateHasher._scalar_fields(state)
-        data.update(CanonicalStateHasher._entity_and_world_fields(state))
+        data.update(CanonicalStateHasher._entity_and_world_fields(state, memo))
         data.update(CanonicalStateHasher._bridge_fields(state))
         data.update(CanonicalStateHasher._carried_fields(state))
+        if memo is not None:
+            memo.prune(state)
         return data
 
 
@@ -256,14 +319,14 @@ class CanonicalHashScheduler:
         """The digest record for a tick whose live policy does not hash (PERF-D5 point 4: the cadence is unchanged)."""
         return ProofDigest(PROOF_DIGEST_SCHEME, tick, DigestStatus.NOT_COMPUTED_LIVE_POLICY)
 
-    def compute_digest(self, state: AuthoritativeState, tick: int, reason: str = "") -> ProofDigest:
+    def compute_digest(self, state: AuthoritativeState, tick: int, reason: str = "", memo: Optional[CanonicalFragmentMemo] = None) -> ProofDigest:
         """Return the proof digest of *state* with its scheme, tick and status.
 
         An unsanctioned boundary is reported as NOT_COMPUTED_UNSANCTIONED_BOUNDARY, not raised.
         """
         if not self.allow_full_hash_at(tick, reason):
             return ProofDigest(PROOF_DIGEST_SCHEME, tick, DigestStatus.NOT_COMPUTED_UNSANCTIONED_BOUNDARY)
-        return ProofDigest(PROOF_DIGEST_SCHEME, tick, DigestStatus.COMPUTED, CanonicalStateHasher.get_hash(state))
+        return ProofDigest(PROOF_DIGEST_SCHEME, tick, DigestStatus.COMPUTED, CanonicalStateHasher.get_hash(state, memo))
 
     def compute_hash(
         self,
