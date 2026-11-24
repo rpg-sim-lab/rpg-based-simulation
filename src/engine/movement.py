@@ -245,6 +245,17 @@ class MovementSystem:
         return OscReplanOutcome(None, osc_delta, wait_delta, None, True, record)
 
     @staticmethod
+    def _osc_outcome(entity: EntityState, osc: OscReplanOutcome, success: bool, reason_code: Optional[ReasonCode]) -> Tuple[Optional[Dict[int, EntityUpdate]], bool, bool, Optional[ReasonCode], bool, Optional[GiveUpRecord]]:
+        """What `resolve_move` does with an oscillation replan's outcome: ``(early update, replan, success, reason_code, wayround_clear, giveup_record)``. ARRIVED (`osc.arrived`, "arrived never fails"): the early update ends the walk
+        (`_arrived_update`) and nothing else changes. GAVE UP: the walk is a replan that did not succeed, with the typed code WAYROUND_GIVE_UP (2.213 item 6: the give-up is not a legal step, so it writes its own code, which replaces any
+        older one), the way-round count ended and the record the outcome carries. Otherwise (a way-round step) ``success`` and ``reason_code`` pass through unchanged and nothing is set. The same assignments `resolve_move` made inline."""
+        if osc.arrived:
+            return MovementSystem._arrived_update(entity, osc), False, success, reason_code, False, None
+        if osc.gave_up:
+            return None, True, False, ReasonCode.WAYROUND_GIVE_UP, True, osc.giveup_record
+        return None, False, success, reason_code, False, None
+
+    @staticmethod
     def _arrived_update(entity: EntityState, osc: OscReplanOutcome) -> Dict[int, EntityUpdate]:
         """The update of a walk that ends ARRIVED when its way-round count runs out (`osc.arrived`, owner #715 7128509663, "arrived never fails"): the same shape as the beside-unenterable arrival in `resolve_move` (the walk is over:
         `target_clear`), plus the pursuit's counters ended (`wayround_clear`, the oscillation and wait counters back to 0). No give-up code, no record, no step."""
@@ -452,14 +463,9 @@ class MovementSystem:
                 if entity.navigation.oscillation_count >= 3:
                     osc = MovementSystem._oscillation_replan(entity, effective_target, target_pos, state_or_context, move_speed_mult)
                     effective_target, osc_delta, wait_delta, wayround_set = osc.effective_target, osc.osc_delta, osc.wait_delta, osc.wayround_set
-                    if osc.arrived:
-                        return MovementSystem._arrived_update(entity, osc)
-                    if osc.gave_up:
-                        replan = True
-                        success = False
-                        reason_code = ReasonCode.WAYROUND_GIVE_UP  # 2.213 item 6: the give-up is not a legal step; it writes its own typed code, which replaces any older one
-                        wayround_clear = True
-                        giveup_record = osc.giveup_record
+                    early, replan, success, reason_code, wayround_clear, giveup_record = MovementSystem._osc_outcome(entity, osc, success, reason_code)
+                    if early is not None:
+                        return early
                 else:
                     osc_delta = 1
             else:
