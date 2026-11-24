@@ -245,6 +245,12 @@ class MovementSystem:
         return OscReplanOutcome(None, osc_delta, wait_delta, None, True, record)
 
     @staticmethod
+    def _arrived_update(entity: EntityState, osc: OscReplanOutcome) -> Dict[int, EntityUpdate]:
+        """The update of a walk that ends ARRIVED when its way-round count runs out (`osc.arrived`, owner #715 7128509663, "arrived never fails"): the same shape as the beside-unenterable arrival in `resolve_move` (the walk is over:
+        `target_clear`), plus the pursuit's counters ended (`wayround_clear`, the oscillation and wait counters back to 0). No give-up code, no record, no step."""
+        return {entity.id: EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(target_clear=True, wayround_clear=True, oscillation_count_delta=osc.osc_delta, wait_count_delta=osc.wait_delta))}
+
+    @staticmethod
     def _yield_update(entity: EntityState, effective_target: Tuple[float, float], state_or_context: Any, current_tick: int) -> Optional[EntityUpdate]:
         """The displacement of the lower-priority occupant of `effective_target` to a free neighbouring tile, or None (3.2 of the congestion ladder).
         The occupant pays the step time of the tile it is moved onto (D75), and one that is still taking its previous step is not displaced."""
@@ -446,8 +452,8 @@ class MovementSystem:
                 if entity.navigation.oscillation_count >= 3:
                     osc = MovementSystem._oscillation_replan(entity, effective_target, target_pos, state_or_context, move_speed_mult)
                     effective_target, osc_delta, wait_delta, wayround_set = osc.effective_target, osc.osc_delta, osc.wait_delta, osc.wayround_set
-                    if osc.arrived:  # the same shape as the beside-unenterable arrival above (the walk is over: target_clear), plus the pursuit's counters ended; no give-up code and no record
-                        return {entity.id: EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(target_clear=True, wayround_clear=True, oscillation_count_delta=osc_delta, wait_count_delta=wait_delta))}
+                    if osc.arrived:
+                        return MovementSystem._arrived_update(entity, osc)
                     if osc.gave_up:
                         replan = True
                         success = False

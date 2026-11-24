@@ -168,7 +168,7 @@ class TestReplan:
             4: make_entity(4, (4.0, 5.0), mode=MovementMode.HOLD),
         }
         state = make_state(entities={1: e, **blockers})
-        result = MovementSystem.resolve_move(state, e, (6.0, 5.0))
+        result = MovementSystem.resolve_move(state, e, (7.0, 5.0))
         
         # Should detect oscillation and trigger replan
         assert result[1].navigation.clear_target is True
