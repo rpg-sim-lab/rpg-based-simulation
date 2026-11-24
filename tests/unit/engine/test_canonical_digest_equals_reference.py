@@ -246,7 +246,7 @@ def test_a_poisoned_memo_entry_and_a_caller_editing_the_returned_dict_are_found(
     try:
         found = memo.audit()
         assert any("strategic" in m for m in found) and any("social" in m for m in found)
-        assert audit_cached_canonical_dicts(state), "the entity memo embeds the shared dict, so the existing audit also sees the edit"
+        assert audit_cached_canonical_dicts(state) == [], "the memo path no longer stores its dicts in any entity cache, so only the memo audit sees the edit"
     finally:
         returned.pop("__caller_edit__")
         memo.social(social)["bonds"].pop("__poison__")
@@ -515,5 +515,79 @@ def test_a_real_audit_mode_run_passes_the_audit_at_the_real_period(world: str):
             run.kernel.tick_once()
         assert run.kernel.state.tick >= 200
         assert run.kernel._canonical_memo.audit() == []
+    finally:
+        run.close()
+
+
+# ---------------------------------------------------------------------------
+# E18: the memo path never leaks its dicts into the plain path (the final digest, certification, the pretty dump)
+# ---------------------------------------------------------------------------
+
+def test_a_poisoned_memo_entry_never_reaches_the_plain_final_digest_nor_an_entity_cache():
+    run = _Run("frontier_living_world")
+    kernel = run.kernel
+    try:
+        for _ in range(12):
+            kernel.tick_once()
+        state, memo = kernel.state, kernel._canonical_memo
+        victim = next(e for e in state.entities.values() if memo._strategic.get(id(e.strategic)))
+        memo._strategic[id(victim.strategic)][1]["boredom"] = {"__poison__": 1.0}  # the memo's dict now lies about a component that is itself unchanged
+        with_memo = CanonicalStateHasher.get_hash(state, memo)
+        assert with_memo != reference_digest(state), "the poison must reach the memo-path digest (this is what the test pins)"
+        t = state.tick
+        plain_final = CanonicalHashScheduler(t).compute_digest(state, t).require_value()
+        assert plain_final == reference_digest(state), "the plain final digest read the memo's poisoned dict"
+        assert CanonicalStateHasher.get_hash(state) == reference_digest(state)
+        assert CanonicalStateHasher.to_canonical_json(state, pretty=True) == reference_json(state, pretty=True)
+        memo_dicts = {id(v[1]) for v in memo._strategic.values()} | {id(v[1]) for v in memo._social.values()}
+        for ent in state.entities.values():
+            cached = ent._canonical_cache
+            if cached is not None:
+                assert id(cached["strategic"]) not in memo_dicts and id(cached["social"]) not in memo_dicts, "an entity cache shares a dict with the memo"
+    finally:
+        run.close()
+
+
+def _dict_ids(obj, out=None):
+    """The id of every dict and list reachable inside a canonical value."""
+    out = set() if out is None else out
+    if isinstance(obj, dict):
+        out.add(id(obj))
+        for v in obj.values():
+            _dict_ids(v, out)
+    elif isinstance(obj, (list, tuple)):
+        out.add(id(obj))
+        for v in obj:
+            _dict_ids(v, out)
+    return out
+
+
+def test_no_cache_written_on_the_memo_path_holds_a_dict_the_memo_owns():
+    """Clears every `_canonical_cache` in the state, runs ONLY the memo path, then walks every cache it (or anything it called) filled: none may share a dict or list with the memo's tables."""
+    run = _Run("frontier_living_world")
+    kernel = run.kernel
+    try:
+        for _ in range(12):
+            kernel.tick_once()
+        state, memo = kernel.state, kernel._canonical_memo
+        saved = _clear_memos(state)
+        try:
+            fresh = CanonicalFragmentMemo()
+            top_before = {f.name: id(getattr(state, f.name)) for f in dataclasses.fields(state) if f.name != "_canonical_cache"}
+            ent_before = {e: {f.name: id(getattr(ent, f.name)) for f in dataclasses.fields(ent) if f.name != "_canonical_cache"} for e, ent in state.entities.items()}
+            CanonicalStateHasher.get_hash(state, fresh)
+            owned = set()
+            for _, d in list(fresh._strategic.values()) + list(fresh._social.values()):
+                _dict_ids(d, owned)
+            filled = _cached_objects(state)
+            assert filled, "the memo path filled no cache at all: this test would pass vacuously"
+            for holder in filled:
+                assert not (_dict_ids(holder._canonical_cache) & owned), f"{type(holder).__name__}._canonical_cache holds a memo-owned dict"
+            assert not any(isinstance(h, type(next(iter(state.entities.values())))) for h in filled), "an entity cache was filled by the memo path"
+            assert {f.name: id(getattr(state, f.name)) for f in dataclasses.fields(state) if f.name != "_canonical_cache"} == top_before, "the memo path rebound a state field"
+            for e, ent in state.entities.items():
+                assert {f.name: id(getattr(ent, f.name)) for f in dataclasses.fields(ent) if f.name != "_canonical_cache"} == ent_before[e], "the memo path rebound an entity field"
+        finally:
+            _restore_memos(saved)
     finally:
         run.close()

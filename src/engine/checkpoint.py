@@ -109,7 +109,9 @@ class CanonicalFragmentMemo:
     After every digest `prune` keeps only the components of the state just digested, so the size is at most 2 x the entity count.
 
     Limit (stated in docs/engine/deterministic_execution.md): a memoized component whose container is mutated IN PLACE keeps its old dict here, so that change stays invisible to the per-tick digest for the
-    component's life. Components are rebuilt with `replace()` and `audit` recomputes every entry; the final digest is taken without this memo.
+    component's life. Components are rebuilt with `replace()`; under audit_mode the kernel runs `audit` every CANONICAL_MEMO_AUDIT_PERIOD ticks (src/engine/kernel.py) and raises on a stale entry, so the write is
+    detected within that many ticks, and not at all outside audit_mode. The final digest is taken without this memo and never reads a dict built by it: `EntityState.to_canonical_dict(memo)` does not store its
+    result in the entity's own `_canonical_cache`.
     """
 
     __slots__ = ("_strategic", "_social", "hits", "misses")

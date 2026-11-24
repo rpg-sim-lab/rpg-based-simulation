@@ -983,7 +983,8 @@ class EntityState:
 
     def to_canonical_dict(self, memo: Any = None) -> Dict[str, Any]:
         """The canonical dict. `memo` (a CanonicalFragmentMemo, from the kernel's per-tick replay digest only) supplies the strategic and social blocks of components it has already
-        built; None is the plain path. The value is the same either way."""
+        built; None is the plain path. The value is the same either way. A memo-path build is NOT stored in `_canonical_cache` (it would carry the memo's dicts into every later memo-free
+        call on this entity, the final digest included); an existing cache, which only a plain build can have set, is still read."""
         if self._canonical_cache is not None:
             return self._canonical_cache
         
@@ -1014,7 +1015,8 @@ class EntityState:
             "self_model": self.self_model.to_canonical_dict(),
             "cognition": self.cognition.to_canonical_dict(),
         }
-        object.__setattr__(self, "_canonical_cache", res)
+        if memo is None:  # a memo-path dict holds the memo's shared stratum dicts: it is never kept as this entity's own memo, so a later plain call (the final digest) builds from the state
+            object.__setattr__(self, "_canonical_cache", res)
         return res
     
     # Legacy properties for backward compatibility
