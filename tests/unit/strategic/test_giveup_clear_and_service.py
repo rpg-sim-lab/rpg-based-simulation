@@ -196,6 +196,7 @@ def test_the_fused_pass_clears_a_stored_target_near_an_active_experience_of_its_
     from src.strategy.destination_suppression import suppression_anchors
     anchor = (20, 20)
     e = refuse(_holding(V2EntityBuilder(1).kind("worker").location(10.0, 10.0).build(), (20.0, 20.0)), anchor)
+    e = _with_records(e, [GiveUpRecord((90, 90), 3)])  # a far pending record with no purpose files nothing and forces the slow pass (an active experience alone raises no tier; #715 7123503340)
     assert suppression_anchors(e, (21.0, 20.0), 5, WANDER) == (anchor,) and suppression_anchors(e, (40.0, 40.0), 5, WANDER) == ()
     upd = _pass(e).entity_updates.get(1)
     assert upd is not None and upd.navigation is not None and upd.navigation.target_clear is True and upd.navigation.target_clear_anchors == (anchor,)
@@ -205,6 +206,7 @@ def test_a_stored_target_of_another_purpose_at_the_anchor_is_not_cleared():
     """Design section 7, the purpose-scoped source: the experience is of PURSUE, the stored target walks for WANDER, so the gate for the stored purpose does not refuse it and the pass clears nothing."""
     anchor = (20, 20)
     e = refuse(_holding(V2EntityBuilder(1).kind("worker").location(10.0, 10.0).build(), (20.0, 20.0)), anchor, purpose=TargetPurpose("none", "PURSUE"))
+    e = _with_records(e, [GiveUpRecord((90, 90), 3)])  # the same slow-pass forcing as the test above (#715 7123503340)
     upd = _pass(e).entity_updates.get(1)
     assert upd is None or upd.navigation is None or (upd.navigation.target_clear is False and not upd.navigation.target_clear_anchors)
 
