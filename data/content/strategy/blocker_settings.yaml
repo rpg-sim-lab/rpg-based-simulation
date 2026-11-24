@@ -2,8 +2,8 @@
 # Blocker settings that are balance values, not law (F2, TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON; divergence 2.220). A one-record catalog family like defaults.yaml, so the value is
 # part of the catalog fingerprint (the run's identity); read through the warmed catalog by src/content/blocker_settings.py, never from the file at tick time.
 #
-# access_giveup_limit: how many times a subject may give up reaching one destination (a give-up-filed ACCESS blocker's giveup_count) before the project that wanted it ends
-# (ProjectEnd.DESTINATION_GIVEN_UP). 4 is where the backoff 100*2^(n-1) reaches its 800 cap; more waiting gains nothing. An integer >= 1.
+# access_giveup_limit: how many times a subject may give up reaching one destination (the navigation experience's project_giveups, counted per place and purpose within one project) before that project ends
+# (ProjectEnd.DESTINATION_GIVEN_UP). 4: the fourth failed try of one plan at one place ends it; every earlier retry is already gated by the due rule of its reason. An integer >= 1.
 - id: "blocker_settings"
   display_name: "Blocker settings"
   description: "Balance values of the blocker lifecycle that live in data"

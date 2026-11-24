@@ -8,18 +8,17 @@ from typing import Any, Dict, Optional, Tuple
 from src.content.blocker_settings import access_giveup_limit
 from src.content.navigation_experience_settings import navigation_experience_settings
 from src.core.giveup_records import HeldTargetAtAnchorCounts, near_anchor
+from src.core.navigation_experience import NavigationExperienceUpdate
 from src.core.inventory import InventoryService
 from src.core.state import AuthoritativeState, EntityState
 from src.core.strategic import (
     CONGESTION_BLOCKER_ID,
-    BlockerKind,
     BlockerRemoval,
     BlockerState,
     ObjectiveStatus,
     ProjectEnd,
     ProjectState,
     ProjectStatus,
-    blocker_timeout_suppression,
     end_record,
     merge_inferred_blocker,
     quiet_blockers,
@@ -31,7 +30,6 @@ from src.core.updates import (
     StateUpdate,
     StrategicUpdate,
 )
-from src.strategy.destination_suppression import access_blocker_id, access_subject
 from src.systems.strategic_systems.navigation_experience_step import (
     navigation_experience_update,
 )
@@ -347,45 +345,31 @@ def resolve_blockers(
     return replace(update, entity_updates=refined_entity_updates, metric_counters=metric_counters)
 
 
-def giveup_filing_update(entity: EntityState, staged: StrategicUpdate, tick: int, limit: int) -> Optional[StrategicUpdate]:
-    """The consume step of the way-round give-up records (F2, divergence 2.220; rpg-designer v2.1b): for each record the subject holds, the ACCESS blocker ``blocker_access_<x>_<y>`` of its anchor,
-    MERGED into the stored one, never replaced: a new blocker gets ``failure_count`` 1, an existing one n + 1, and ``suppression_until_tick`` = ``tick`` + `blocker_timeout_suppression(failure_count)`
-    (100, 200, 400, 800, capped) so no writer re-targets the tile meanwhile (`destination_suppressed`). The blocker belongs to the SUBJECT, so the count accumulates across its projects. When a
-    blocker's ``failure_count`` reaches ``limit`` (``ACCESS_GIVEUP_LIMIT``), the project CURRENT at this pass ends, typed `DESTINATION_GIVEN_UP`, with its current project and objective cleared in
-    the same update. Nothing is filed when the subject has no current project (the caller still clears the records, so a record never outlives one pass). Reads only; None when nothing is to be written."""
-    records = entity.navigation.giveup_records
-    if not records:
-        return None
+def giveup_project_end_update(entity: EntityState, staged: StrategicUpdate, experience: NavigationExperienceUpdate, tick: int, limit: int) -> Optional[StrategicUpdate]:
+    """The project end of the give-up consume step (design section 8; divergence 2.220): when an experience the pass files has ``project_giveups`` at ``limit`` (``access_giveup_limit``), the number of give-ups of one
+    place for one purpose within the project CURRENT at this pass, that project ends, typed `DESTINATION_GIVEN_UP`, with its current project and objective cleared in the same update. Nothing ends when the subject has no
+    current project, or when its project already ended. Files NO ACCESS blocker: the memory of the place is the experience. Reads only; None when nothing ends."""
     project_id = staged.current_project_id_set if staged.current_project_id_set is not None else entity.strategic.current_project_id
-    project = (next((p for p in reversed(staged.projects_add_or_update) if p.id == project_id), None) or entity.strategic.projects.get(project_id)) if project_id else None  # D3: no project still files
-    blockers = {**entity.strategic.blockers, **{b.id: b for b in staged.blockers_add_or_update}}
-    filed: Dict[str, BlockerState] = {}
-    reached = False
-    for record in records:
-        bid = access_blocker_id(record.anchor)
-        stored = filed.get(bid) or blockers.get(bid)
-        base = stored if stored is not None else BlockerState(id=bid, kind=BlockerKind.ACCESS, subject=access_subject(record.anchor), severity=0.8)
-        count = (stored.giveup_count if stored is not None else 0) + 1  # D4: its own counter, failure_count keeps its timeout meaning
-        until = max(stored.suppression_until_tick if stored is not None else 0, tick + blocker_timeout_suppression(count))
-        filed[bid] = replace(base, resolved=False, giveup_count=count, suppression_until_tick=until, last_seen_tick=tick)
-        reached = reached or count >= limit
-    update = StrategicUpdate(blockers_add_or_update=list(filed.values()))
-    if reached and project is not None and project.ended_by is None:
-        update = replace(
-            update,
-            projects_add_or_update=[end_record(project, ProjectStatus.ABANDONED, ProjectEnd.DESTINATION_GIVEN_UP, tick)],
-            current_project_id_set="",
-            current_objective_id_set="",
-        )
-    return update
+    if not project_id or not any(r.project_giveups >= limit for r in experience.upserts):
+        return None
+    project = next((p for p in reversed(staged.projects_add_or_update) if p.id == project_id), None) or entity.strategic.projects.get(project_id)
+    if project is None or project.ended_by is not None:
+        return None
+    return StrategicUpdate(
+        projects_add_or_update=[end_record(project, ProjectStatus.ABANDONED, ProjectEnd.DESTINATION_GIVEN_UP, tick)],
+        current_project_id_set="",
+        current_objective_id_set="",
+    )
 
 
 def consume_giveup_records(entity: EntityState, staged: StrategicUpdate, ent_upd: Optional[EntityUpdate], tick: int) -> Tuple[StrategicUpdate, EntityUpdate]:
-    """The give-up consume step of one strategic pass (F2, divergence 2.220): ``staged`` with the ACCESS blockers (and the typed end) of `giveup_filing_update` folded in, and ``ent_upd`` carrying the
+    """The give-up consume step of one strategic pass (F2, divergence 2.220): ``staged`` with the typed project end of `giveup_project_end_update` folded in, and ``ent_upd`` carrying the
     typed clear of the records, so none outlives a pass (also when no project is current). A subject holding no record is returned unchanged; the limit is read from the catalog only then.
     The #996 rework: the same step also computes the subject's navigation experience update (`navigation_experience_update`: reviews of due records, an upsert per pending give-up, evictions at the cap) and
-    stages it on ``ent_upd``; it runs whenever the subject holds a pending record or an experience, so a due record is reviewed on any pass that serves the subject."""
+    stages it on ``ent_upd``; it runs whenever the subject holds a pending record or an experience, so a due record is reviewed on any pass that serves the subject. It files NO ACCESS blocker: ``staged`` gets only
+    the typed project end (`giveup_project_end_update`)."""
     cur = ent_upd if ent_upd is not None else EntityUpdate(entity_id=entity.id)
+    nx = NavigationExperienceUpdate()
     if entity.navigation.giveup_records or entity.cognition.memory.navigation.records:
         project_id = (staged.current_project_id_set if staged.current_project_id_set is not None else entity.strategic.current_project_id) or ""
         nx = navigation_experience_update(entity, tick, project_id, navigation_experience_settings())
@@ -396,7 +380,7 @@ def consume_giveup_records(entity: EntityState, staged: StrategicUpdate, ent_upd
     held = entity.navigation.target
     if held is not None and any(near_anchor(held, r.anchor) for r in entity.navigation.giveup_records):
         HeldTargetAtAnchorCounts.note()  # v2.1c: report only, never cleared here: only a writer that skips `destination_suppressed` can hold a target at the anchor
-    filed = giveup_filing_update(entity, staged, tick, access_giveup_limit())
+    filed = giveup_project_end_update(entity, staged, nx, tick, access_giveup_limit())
     clear = NavigationUpdate(giveup_records_clear=True)
     return (staged if filed is None else staged.merge(filed)), replace(cur, navigation=(cur.navigation or NavigationUpdate()).merge(clear))
 

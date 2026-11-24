@@ -120,7 +120,6 @@ FIELD_RULES: List[FieldRule] = [
     # 2.214: a state that predates the blocker lifecycle never timed a blocker out and never stamped when one was last inferred.
     FieldRule("failure_count", _blockers, "failure_count", fill=lambda state, owner: 0, ruling="rpg-designer 2026-11-17, blocker churn: a state that predates the blocker lifecycle had no timeouts", record="BlockerState"),
     FieldRule("last_project_end_tick", _blockers, "last_project_end_tick", fill=lambda state, owner: None, ruling="rpg-designer 2026-11-18, churn: a blocker that predates the field had no project end recorded", record="BlockerState"),
-    FieldRule("giveup_count", _blockers, "giveup_count", fill=lambda state, owner: 0, ruling="rpg-designer 2026-11-21, F2 v2.2a D4: a state that predates the give-up counter filed no give-up blocker", record="BlockerState"),
     FieldRule("last_seen_tick", _blockers, "last_seen_tick", fill=lambda state, owner: None, ruling="rpg-designer 2026-11-17, blocker churn: a state that predates the last-seen tick had none", record="BlockerState"),
     # The group rows (2.146). next_group_id stays the LAST AuthoritativeState field and the three group fields stay after _canonical_cache (an insert is refused by the schema check).
     FieldRule("next_group_id", _state_itself, "next_group_id", fill=_seed_next_group_id, ruling="rpg-designer 2026-10-31, group id allocation (addition 4)", record="AuthoritativeState"),

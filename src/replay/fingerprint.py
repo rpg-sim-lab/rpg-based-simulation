@@ -20,14 +20,13 @@ def _navigation_tail(nav: "NavigationComponent") -> str:
 
 
 def _blocker_ident(blockers: "Dict[str, BlockerState]") -> str:
-    """The blockers' fragment of an entity's strategic identity, in id order. ``giveup_count`` (F2 v2.2a D4) adds ``:g<n>`` only while it is above 0, so a state that predates it hashes unchanged."""
+    """The blockers' fragment of an entity's strategic identity, in id order."""
     return "|".join(
         f"{blocker_id}:"
         f"{blocker.kind}:"
         f"{blocker.subject}:"
         f"{blocker.severity:.3f}:"
         f"{blocker.resolved}"
-        f"{':g%d' % blocker.giveup_count if blocker.giveup_count > 0 else ''}"
         for blocker_id, blocker in sorted(blockers.items())
     )
 

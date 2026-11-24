@@ -511,7 +511,7 @@ CONTENT_USAGE_MATRIX: Dict[str, ContentFamilyMatrixEntry] = {
         test_coverage="tests/unit/content/test_blocker_settings.py",
         evidence_tests="tests/unit/content/test_blocker_settings.py::test_changing_the_limit_changes_the_catalog_fingerprint",
         resolver_evidence="None",
-        runtime_consumer_evidence="giveup_filing_update ends the current project DESTINATION_GIVEN_UP when a give-up-filed ACCESS blocker reaches access_giveup_limit",
+        runtime_consumer_evidence="giveup_project_end_update ends the current project DESTINATION_GIVEN_UP when a navigation experience's project_giveups reaches access_giveup_limit",
         implementation_state="RESOLVED_PARTIALLY",
         content_maturity="REDESIGNED-CORE",
     ),

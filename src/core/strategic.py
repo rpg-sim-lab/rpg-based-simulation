@@ -315,15 +315,10 @@ class BlockerState:
     # The tick the latest resolve_blocker project naming this blocker ended (any typed end), written by the SAME update that ends it (`ended_blocker_stamps`), so the quiet spell still holds
     # when the capacity trim drops the ended record in its end tick. None until a project naming it ends. Appended LAST; omitted from the canonical dict while None.
     last_project_end_tick: Optional[int] = None
-    # F2 (divergence 2.220, v2.2a D4): the way-round GIVE-UPS filed on this blocker's anchor, a counter of its own (`failure_count` keeps its timeout meaning above). Written ONLY by the strategic
-    # patch through `giveup_filing_update`; `ACCESS_GIVEUP_LIMIT` reads it and the filed suppression is `blocker_timeout_suppression(giveup_count)`. Appended LAST; omitted from the canonical dict at 0.
-    giveup_count: int = 0
 
     def canonical_dict(self) -> Dict[str, Any]:
-        """The canonical-dict entry of this blocker: every field, `failure_count`, `last_seen_tick`, `last_project_end_tick` and `giveup_count` omitted while at their default."""
+        """The canonical-dict entry of this blocker: every field, `failure_count`, `last_seen_tick` and `last_project_end_tick` omitted while at their default."""
         out = dataclasses.asdict(self)
-        if self.giveup_count == 0:
-            del out["giveup_count"]
         if self.failure_count == 0:
             del out["failure_count"]
         if self.last_seen_tick is None:

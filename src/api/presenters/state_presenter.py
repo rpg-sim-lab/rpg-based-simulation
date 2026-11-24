@@ -176,7 +176,7 @@ class StatePresenter:
                 "boredom": entity.strategic.boredom,
                 "primary_overload": entity.strategic.primary_overload_source,
                 "blockers": [
-                    {"id": b.id, "kind": b.kind, "subject": b.subject, "severity": b.severity, "resolved": b.resolved, "failure_count": b.failure_count, "giveup_count": b.giveup_count}
+                    {"id": b.id, "kind": b.kind, "subject": b.subject, "severity": b.severity, "resolved": b.resolved, "failure_count": b.failure_count}
                     for b in open_blockers
                 ],
                 "blockers_resolved_count": len(entity.strategic.blockers) - len(open_blockers),

@@ -417,7 +417,7 @@ class DefaultCompileProfile(CatalogBaseDefinition):
 
 class BlockerSettingsDefinition(CatalogBaseDefinition):
     """Schema for the blocker settings that are balance values, not law (F2, divergence 2.220): a one-record family like `defaults`, so the value is part of the catalog fingerprint (the run's identity)."""
-    access_giveup_limit: int = Field(..., ge=1, strict=True, description="Give-ups of one destination (a give-up-filed ACCESS blocker's giveup_count) that end the project that wanted it; an integer >= 1")
+    access_giveup_limit: int = Field(..., ge=1, strict=True, description="Give-ups of one place for one purpose within one project (the navigation experience's project_giveups) that end that project; an integer >= 1")
 
 
 class NavigationExperienceSettingsDefinition(CatalogBaseDefinition):

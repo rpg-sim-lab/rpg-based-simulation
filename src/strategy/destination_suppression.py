@@ -1,16 +1,18 @@
-"""Destination suppression (F2, TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON; rpg-designer FINAL v2.1): READ-ONLY helpers over a subject's ACCESS blockers.
+"""Destination suppression (F2, TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON; reworked by TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON): READ-ONLY helpers over a subject's give-up records and navigation experiences.
 
-A way-round give-up files an ACCESS blocker ``blocker_access_<x>_<y>`` for the anchor tile (the strategic pass's consume step); while that blocker is suppressed no writer may re-target a tile within
-Chebyshev 1 of its anchor. Everything here is pure: it reads the entity and a tick and returns a value; nothing is written, there is no RNG, and every comparison is on integer tiles by the id, never
-by the subject text."""
+A way-round give-up is held as a PENDING record until the strategic pass consumes it into a navigation experience (design section 4). No writer may re-target a tile within Chebyshev 1 of a pending record's anchor, nor of an ACTIVE
+experience's anchor of the SAME purpose that is not yet due and not latched. Everything here is pure: it reads the entity and a tick and returns a value; nothing is written, there is no RNG, and every comparison is on
+integer tiles and typed purposes, never on the subject text."""
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass, replace
-from typing import Dict, Iterable, Mapping, Optional, Tuple
+from typing import Dict, FrozenSet, Iterable, Optional, Tuple
 
+from src.content.navigation_experience_settings import navigation_experience_settings
 from src.core.giveup_records import GiveUpRecord, near_anchor
 from src.core.movement_modes import MovementMode
+from src.core.navigation_experience import NavExperienceStatus, NavigationExperience, NavigationExperienceUpdate
 from src.core.navigation_purpose import TargetPurpose, stored_purpose
 from src.core.state import EntityState
 from src.core.strategic import BlockerState
@@ -18,9 +20,9 @@ from src.core.updates import (
     EntityUpdate,
     InteractionUpdate,
     NavigationUpdate,
-    StrategicUpdate,
     TaskUpdate,
 )
+from src.strategy.experience_due import due_reason
 
 ACCESS_BLOCKER_ID_PREFIX = "blocker_access_"
 _ACCESS_ID = re.compile(r"^blocker_access_(-?\d+)_(-?\d+)$")
@@ -47,25 +49,12 @@ def access_blocker_tile(blocker: BlockerState) -> Optional[Tuple[int, int]]:
 
 @dataclass(frozen=True, slots=True)
 class SuppressionHit:
-    """Why a tile is forbidden as a destination: the ACCESS blocker id of the anchor, the anchor tile, how long (``suppressed_until``, None while only PENDING), whether the forbidding record is a
-    still-unconsumed give-up record (``pending``, v2.1c) or a filed blocker, and the blocker's ``giveup_count`` (0 while pending)."""
+    """Why a tile is forbidden as a destination: the id of the refusing record (``blocker_access_<x>_<y>`` for a pending give-up record, the ``nx_`` experience id for an experience), the anchor tile, the tick
+    the refusal ends (``suppressed_until``; None while only PENDING or while the experience is trigger-only), and whether the refusing record is a still-unconsumed give-up record (``pending``)."""
     blocker_id: str
     anchor: Tuple[int, int]
     suppressed_until: Optional[int]
     pending: bool
-    giveup_count: int
-
-
-def _blocker_hit(blockers: Mapping[str, BlockerState], tx: int, ty: int, tick: int) -> Optional[SuppressionHit]:
-    """The lowest-id unresolved ACCESS blocker still suppressed at ``tick`` whose anchor is within Chebyshev 1 of (tx, ty), or None."""
-    hit: Optional[SuppressionHit] = None
-    for blocker in blockers.values():
-        tile = access_blocker_tile(blocker)
-        if tile is None or blocker.resolved or tick >= blocker.suppression_until_tick:
-            continue
-        if near_anchor((tx, ty), tile) and (hit is None or blocker.id < hit.blocker_id):
-            hit = SuppressionHit(blocker.id, tile, blocker.suppression_until_tick, False, blocker.giveup_count)
-    return hit
 
 
 def _record_hit(records: Iterable[GiveUpRecord], tx: int, ty: int) -> Optional[SuppressionHit]:
@@ -73,33 +62,52 @@ def _record_hit(records: Iterable[GiveUpRecord], tx: int, ty: int) -> Optional[S
     for record in records:
         anchor = (int(record.anchor[0]), int(record.anchor[1]))
         if near_anchor((tx, ty), anchor):
-            return SuppressionHit(access_blocker_id(anchor), anchor, None, True, 0)
+            return SuppressionHit(access_blocker_id(anchor), anchor, None, True)
+    return None
+
+
+def _latched(entity: EntityState, record: NavigationExperience) -> bool:
+    """True when the subject's STORED target was accepted through the gate at this record's anchor with this record's purpose (design section 4, the latch): a target accepted while the record was due, which a later
+    non-monotone rule must not re-refuse."""
+    target = entity.navigation.target
+    return target is not None and entity.navigation.target_gated and near_anchor(target, record.anchor) and stored_purpose(entity) == record.purpose
+
+
+def _experience_hit(entity: EntityState, tx: int, ty: int, tick: int, purpose: Optional[TargetPurpose], reviewed: FrozenSet[Tuple[str, int]]) -> Optional[SuppressionHit]:
+    """The lowest-id ACTIVE experience of the subject with this ``purpose`` whose anchor is within Chebyshev 1 of (tx, ty), that is not due at ``tick`` (`due_reason`, a pure read of the subject's own state), not
+    latched, and not reviewed by the staged update (``reviewed``: ids and cycles), or None. A REVIEWED record never refuses; a call with no purpose (an old checkpoint's target) is refused by no experience."""
+    records = entity.cognition.memory.navigation.records
+    if purpose is None or not records:
+        return None
+    settings = navigation_experience_settings()
+    for record in sorted(records, key=lambda r: r.experience_id):
+        if record.status != NavExperienceStatus.ACTIVE or record.purpose != purpose or (record.experience_id, record.cycle) in reviewed or not near_anchor((tx, ty), record.anchor):
+            continue
+        if due_reason(record, entity, tick, settings) is None and not _latched(entity, record):
+            return SuppressionHit(record.experience_id, (int(record.anchor[0]), int(record.anchor[1])), record.next_review_tick, False)
     return None
 
 
 def destination_suppressed(entity: EntityState, pos: Tuple[float, float], tick: int, purpose: Optional[TargetPurpose], staged: Optional[EntityUpdate] = None) -> Optional[SuppressionHit]:
-    """The reason ``pos`` is forbidden as a destination for this subject at ``tick``, or None. Sources, all within Chebyshev 1 of an anchor (integer tiles; the +-1 covers the task layer's one-tile
-    jitter of the objective's target): (1) an unresolved ``blocker_access_<x>_<y>`` ACCESS blocker of the subject with ``tick`` before its ``suppression_until_tick``; (2) v2.1c, the subject's own PENDING
-    give-up records (``navigation.giveup_records``, held until the strategic pass consumes them). v2.2 D1, the FUSED STRATEGIC PASS only: ``staged`` is the subject's update staged so far this tick, and
-    its ``navigation.giveup_record_add`` (movement_routing stages it before the pass) and its ``strategic.blockers_add_or_update`` / ``blockers_remove`` (the pass's own consume step files them) count as (2)
-    and (1) too, so a target cannot be re-set to the anchor in the pass that learns of the give-up. A filed blocker wins over a pending record, and the lowest blocker id wins among blockers, so the answer
-    does not depend on dict order."""
+    """The reason ``pos`` is forbidden as a destination for this subject at ``tick``, or None. Sources, all within Chebyshev 1 of an anchor (integer tiles; the +-1 covers the task layer's one-tile jitter of the
+    objective's target), in order: (1) the subject's own PENDING give-up records (``navigation.giveup_records``, held until the strategic pass consumes them), any purpose; (2) an ACTIVE navigation experience of
+    the SAME ``purpose`` that is not yet due and not latched (`_experience_hit`). The FUSED STRATEGIC PASS only: ``staged`` is the subject's update staged so far this tick; its ``navigation.giveup_record_add``
+    (movement_routing stages it before the pass) counts as (1), and the reviews on its ``navigation_experience`` lift the refusal of the records they review for the pass. A staged experience UPSERT does not refuse
+    in the pass that files it (it applies from the next read). Pure: reads, never writes."""
     tx, ty = int(pos[0]), int(pos[1])
-    blockers = entity.strategic.blockers
     records = entity.navigation.giveup_records
+    reviewed: FrozenSet[Tuple[str, int]] = frozenset()
     if staged is not None:
-        if staged.strategic is not None:
-            blockers = {**blockers, **{b.id: b for b in staged.strategic.blockers_add_or_update}}
-            for removed in staged.strategic.blockers_remove:
-                blockers.pop(removed, None)
         if staged.navigation is not None and staged.navigation.giveup_record_add is not None:
             records = (*records, staged.navigation.giveup_record_add)
-    return _blocker_hit(blockers, tx, ty, tick) or _record_hit(records, tx, ty)
+        if staged.navigation_experience is not None:
+            reviewed = frozenset((r.experience_id, r.cycle) for r in staged.navigation_experience.reviews)
+    return _record_hit(records, tx, ty) or _experience_hit(entity, tx, ty, tick, purpose, reviewed)
 
 
 @dataclass(frozen=True, slots=True)
 class ObjectiveDestinationSuppressed(EntityUpdate):
-    """The typed outcome OBJECTIVE_DESTINATION_SUPPRESSED (F2, divergence 2.220): the objective's destination lies within Chebyshev 1 of a give-up-filed ACCESS blocker that is still suppressed, so the
+    """The typed outcome OBJECTIVE_DESTINATION_SUPPRESSED (F2, divergence 2.220): the objective's destination lies within Chebyshev 1 of a pending give-up record, or of an active navigation experience of its purpose, so the
     step writes NO target and NO navigation update. It is an empty `EntityUpdate` (the tactical pass returns it as handled: the subject stays idle for the brain, as a held step does, and does
     not fall through to the role and cohesion branches), a subclass only so the own-job spy and the tests can tell it from any other empty update by type."""
 
@@ -117,7 +125,7 @@ def suppressed_move_end(entity_id: int) -> DestinationSuppressedEnd:
 
 
 def destination_open(entity: EntityState, pos: Tuple[float, float], tick: int, purpose: Optional[TargetPurpose], staged: Optional[EntityUpdate] = None) -> bool:
-    """True when no suppressed give-up ACCESS blocker forbids ``pos`` as a destination."""
+    """True when no pending give-up record or active experience forbids ``pos`` as a destination."""
     return destination_suppressed(entity, pos, tick, purpose, staged) is None
 
 
@@ -128,25 +136,21 @@ def suppression_anchors(entity: EntityState, pos: Tuple[float, float], tick: int
     return () if hit is None else (hit.anchor,)
 
 
-def filed_suppression_anchors(entity: EntityState, staged: Optional[StrategicUpdate], tick: int) -> Tuple[Tuple[int, int], ...]:
-    """The anchors of every ACCESS suppression the pass FILES or EXTENDS for this subject at ``tick`` (a staged ``blockers_add_or_update`` blocker, unresolved, not removed by the same update, suppressed past ``tick`` and past its
-    stored suppression), sorted and de-duplicated: the filer's own fact. Written only by the strategic pass, which is the only writer of blocker extensions. () when the pass filed none."""
-    if staged is None:
+def filed_suppression_anchors(entity: EntityState, experience: Optional[NavigationExperienceUpdate]) -> Tuple[Tuple[int, int], ...]:
+    """The anchors of every experience the pass FILES or RENEWS for this subject (an upsert of ``experience``, ACTIVE, not evicted by the same update) whose purpose equals the subject's STORED target purpose (design
+    section 7, the purpose-scoped filing source), sorted and de-duplicated: the filer's own fact. A stored target moving for ANOTHER purpose stays. () when the pass filed none."""
+    if experience is None or not experience.upserts:
         return ()
-    found = set()
-    for blocker in staged.blockers_add_or_update:
-        tile = access_blocker_tile(blocker)
-        stored = entity.strategic.blockers.get(blocker.id)
-        if tile is None or blocker.id in staged.blockers_remove or blocker.resolved or blocker.suppression_until_tick <= tick or (stored is not None and blocker.suppression_until_tick <= stored.suppression_until_tick):
-            continue
-        found.add(tile)
-    return tuple(sorted(found))
+    held = stored_purpose(entity)
+    if held is None:
+        return ()
+    return tuple(sorted({(int(r.anchor[0]), int(r.anchor[1])) for r in experience.upserts if r.status == NavExperienceStatus.ACTIVE and r.experience_id not in experience.evictions and r.purpose == held}))
 
 
-def navigation_with_filing_anchor(entity: EntityState, nav: Optional[NavigationUpdate], staged: Optional[StrategicUpdate], tick: int) -> Optional[NavigationUpdate]:
-    """``nav`` carrying the anchors of the suppressions the pass filed this tick in `target_clear_anchors` WITHOUT `target_clear` (the navigation patch then drops a same-update set near any of them and clears a stored target near
-    any of them, and nothing else), united with the anchors it already carries (the refusal clear's). ``nav`` is returned as it is when the pass filed nothing."""
-    filed = filed_suppression_anchors(entity, staged, tick)
+def navigation_with_filing_anchor(entity: EntityState, nav: Optional[NavigationUpdate], experience: Optional[NavigationExperienceUpdate]) -> Optional[NavigationUpdate]:
+    """``nav`` carrying the anchors of the experiences the pass filed this tick in `target_clear_anchors` WITHOUT `target_clear` (the navigation patch then drops a same-update set near any of them and clears a stored
+    target near any of them, and nothing else), united with the anchors it already carries (the refusal clear's). ``nav`` is returned as it is when the pass filed nothing."""
+    filed = filed_suppression_anchors(entity, experience)
     if not filed:
         return nav
     held = nav.target_clear_anchors if nav is not None else ()

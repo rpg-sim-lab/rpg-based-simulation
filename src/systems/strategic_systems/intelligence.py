@@ -381,7 +381,7 @@ class StrategicIntelligenceSystem:
             )
             
             strat_up = reinferred_blockers_update(entity, strat_up, inferred_up, state.tick)
-            strat_up, ent_upd = consume_giveup_records(entity, strat_up, ent_upd, state.tick)  # F2 (divergence 2.220): file the give-up records' ACCESS blockers and clear them
+            strat_up, ent_upd = consume_giveup_records(entity, strat_up, ent_upd, state.tick)  # F2 (divergence 2.220), the #996 rework: file the give-up records as navigation experiences, end the project at the give-up limit, clear the records
             removals = set(strat_up.blockers_remove)
             resolved_ids = set()
             for b_id, b in entity.strategic.blockers.items():
@@ -512,7 +512,7 @@ class StrategicIntelligenceSystem:
             # (Hoisted logic from StrategicRedirectionSystem)
             
             has_nav_update = lodged_stayer or (ent_upd.navigation and ent_upd.navigation.target_set is not None)
-            _staged = lambda: replace(ent_upd, strategic=strat_up)  # D1: the update staged so far this tick (the give-up record movement_routing staged, the blockers consume filed)
+            _staged = lambda: replace(ent_upd, strategic=strat_up)  # D1: the update staged so far this tick (the give-up record movement_routing staged, the reviews the consume step staged)
             if entity.navigation.target is not None and not destination_open(entity, entity.navigation.target, state.tick, stored_purpose(entity), _staged()): ent_upd = replace(ent_upd, navigation=replace(ent_upd.navigation or NavigationUpdate(), target_clear=True, target_clear_anchors=suppression_anchors(entity, entity.navigation.target, state.tick, stored_purpose(entity), _staged())))  # D2(B) + A'': a stored target at a suppressed anchor is cleared, typed, and the clear carries that anchor
             current_project_id = strat_up.current_project_id_set if strat_up.current_project_id_set is not None else entity.strategic.current_project_id
             
@@ -579,7 +579,7 @@ class StrategicIntelligenceSystem:
                     prop_updates["last_routing_family"] = strat_up.last_routing_family_set
                 if strat_up is not None and strat_up.last_routing_tick_set is not None:
                     prop_updates["last_routing_tick"] = strat_up.last_routing_tick_set
-                final_upd = replace(ent_upd, identity=final_identity_upd, strategic=strat_up, property_updates=prop_updates, navigation=navigation_with_filing_anchor(entity, ent_upd.navigation, strat_up, state.tick))  # F2 v2.2a: the pass that files a suppression says so (the anchor, no clear)
+                final_upd = replace(ent_upd, identity=final_identity_upd, strategic=strat_up, property_updates=prop_updates, navigation=navigation_with_filing_anchor(entity, ent_upd.navigation, ent_upd.navigation_experience))  # F2 v2.2a: the pass that files a suppression says so (the anchor, no clear)
                 refined_entity_updates[e_id] = final_upd
         
         if state.tick % 10 == 0:
