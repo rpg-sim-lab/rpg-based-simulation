@@ -8025,6 +8025,21 @@
   - agent-working/stored_artifacts/TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261124-A-WALL-CLOCK-TIMER-IN-THE-REPLAY-STREAM-MAKES-REPLAY-FILES-NON-REPRODUCIBLE.md
+  ticket_id: TCK-20261124-A-WALL-CLOCK-TIMER-IN-THE-REPLAY-STREAM-MAKES-REPLAY-FILES-NON-REPRODUCIBLE
+  title: A wall-clock timer inside every replay update makes replay files differ byte
+    for byte between two runs of the same world and seed
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-24'
+  related_code_areas:
+  - src/domains/cooperation/phase.py
+  - src/core/updates.py (metric_counters)
+  - src/engine/kernel.py (_metrics)
+  - src/engine/replay_manager.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261124-FRONTEND-LINT-IS-RED-ON-MAIN-AND-CI-DOES-NOT-RUN-IT.md
   ticket_id: TCK-20261124-FRONTEND-LINT-IS-RED-ON-MAIN-AND-CI-DOES-NOT-RUN-IT
   title: Frontend lint is red on main (17 errors, 4 warnings), and CI's Frontend job
