@@ -893,6 +893,65 @@ class IntentResult:
     source_kind: str
     source_id: str | int
 
+def strategic_canonical_dict(strategic: "StrategicComponent") -> Dict[str, Any]:
+    """The canonical dict of an entity's strategic stratum (moved verbatim out of `EntityState.to_canonical_dict`, TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK; the same value, so the digest is unchanged)."""
+    return {
+        "current_project_id": strategic.current_project_id,
+        "current_objective_id": strategic.current_objective_id,
+        "home_region_id": strategic.home_region_id,
+        "primary_overload_source": strategic.primary_overload_source,
+        "last_overload_tick": strategic.last_overload_tick,
+        # "profile" is intentionally excluded: CognitionProfile is derived from
+        # entity attributes (WIS/INT/level/archetype), which are already covered
+        # above -- a divergence there cannot be independent of already-detected state.
+        "projects": {k: {
+            "kind": v.kind,
+             "status": str(v.status),
+            "active_objective_id": v.active_objective_id,
+            "objectives": v.canonical_objectives(),
+            **v.canonical_extra(),
+        } for k, v in sorted(strategic.projects.items())},
+        "directives": {k: asdict(v) for k, v in sorted(strategic.directives.items())},
+        "blockers": {k: v.canonical_dict() for k, v in sorted(strategic.blockers.items())},
+        "leads": {k: asdict(v) for k, v in sorted(strategic.leads.items())},
+        "concerns": {k: asdict(v) for k, v in sorted(strategic.concerns.items())},
+        "candidate_zones": {k: asdict(v) for k, v in sorted(strategic.candidate_zones.items())},
+        "hypotheses": {k: asdict(v) for k, v in sorted(strategic.hypotheses.items())},
+        "source_trust": {str(k): asdict(v) for k, v in sorted(strategic.source_trust.items())},
+        "contracts": {k: {**asdict(v), "kind": str(v.kind), "status": str(v.status)}
+                      for k, v in sorted(strategic.contracts.items())},
+        "turning_points": [{**asdict(tp), "kind": str(tp.kind)} for tp in strategic.turning_points],
+        "committed_intentions": [asdict(ci) for ci in strategic.committed_intentions],
+        "boredom": dict(sorted(strategic.boredom.items())),
+        "beliefs": {k: asdict(v) for k, v in sorted(strategic.beliefs.items())},
+        "marriages": {k: asdict(v) for k, v in sorted(strategic.marriages.items())}
+    }
+
+
+def social_canonical_dict(social: "SocialComponent") -> Dict[str, Any]:
+    """The canonical dict of an entity's social stratum (moved verbatim out of `EntityState.to_canonical_dict`, TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK; the same value, so the digest is unchanged)."""
+    return {
+        "trust_history": {str(k): v for k, v in sorted(social.trust_history.items())},
+        "familiarity_history": {str(k): v for k, v in sorted(social.familiarity_history.items())},
+        "debt_history": {str(k): v for k, v in sorted(social.debt_history.items())},
+        "fear_history": {str(k): v for k, v in sorted(social.fear_history.items())},
+        "grudge_history": {str(k): v for k, v in sorted(social.grudge_history.items())},
+        "combat_loss_counts": {str(k): v for k, v in sorted(social.combat_loss_counts.items())},
+        "salience_history": {str(k): v for k, v in sorted(social.salience_history.items())},
+        "bonds": {str(k): asdict(v) for k, v in sorted(social.bonds.items())},
+        "nemesis_ids": sorted(social.nemesis_ids),
+        "place_attachment": dict(sorted(social.place_attachment.items())),
+        "regional_reputation": dict(sorted(social.regional_reputation.items())),
+        "betrayal_count": social.betrayal_count,
+        "betrayal_records": [asdict(b) for b in social.betrayal_records],
+        "public_reputation": social.public_reputation,
+        "heroism_score": social.heroism_score,
+        "notoriety_score": social.notoriety_score,
+        "last_offer_tick": social.last_offer_tick,
+        "rejection_count": {str(k): v for k, v in sorted(social.rejection_count.items())},
+    }
+
+
 @dataclass(frozen=True, slots=True)
 class EntityState:
     """The authoritative atom of the simulation."""
@@ -922,7 +981,10 @@ class EntityState:
     _canonical_cache: Any = field(default=None, init=False, repr=False, compare=False)
     timeline: Any = field(default=None, init=False, repr=False, compare=False)
 
-    def to_canonical_dict(self) -> Dict[str, Any]:
+    def to_canonical_dict(self, memo: Any = None) -> Dict[str, Any]:
+        """The canonical dict. `memo` (a CanonicalFragmentMemo, from the kernel's per-tick replay digest only) supplies the strategic and social blocks of components it has already
+        built; None is the plain path. The value is the same either way. A memo-path build is NOT stored in `_canonical_cache` (it would carry the memo's dicts into every later memo-free
+        call on this entity, the final digest included); an existing cache, which only a plain build can have set, is still read."""
         if self._canonical_cache is not None:
             return self._canonical_cache
         
@@ -938,57 +1000,8 @@ class EntityState:
             "aptitude": self.aptitude.to_canonical_dict(),
             "inventory": self.inventory.to_canonical_dict(),
             "equipment": {str(k): v for k, v in sorted(self.equipment.slots.items())},
-            "strategic": {
-                "current_project_id": self.strategic.current_project_id,
-                "current_objective_id": self.strategic.current_objective_id,
-                "home_region_id": self.strategic.home_region_id,
-                "primary_overload_source": self.strategic.primary_overload_source,
-                "last_overload_tick": self.strategic.last_overload_tick,
-                # "profile" is intentionally excluded: CognitionProfile is derived from
-                # entity attributes (WIS/INT/level/archetype), which are already covered
-                # above -- a divergence there cannot be independent of already-detected state.
-                "projects": {k: {
-                    "kind": v.kind,
-                     "status": str(v.status),
-                    "active_objective_id": v.active_objective_id,
-                    "objectives": v.canonical_objectives(),
-                    **v.canonical_extra(),
-                } for k, v in sorted(self.strategic.projects.items())},
-                "directives": {k: asdict(v) for k, v in sorted(self.strategic.directives.items())},
-                "blockers": {k: v.canonical_dict() for k, v in sorted(self.strategic.blockers.items())},
-                "leads": {k: asdict(v) for k, v in sorted(self.strategic.leads.items())},
-                "concerns": {k: asdict(v) for k, v in sorted(self.strategic.concerns.items())},
-                "candidate_zones": {k: asdict(v) for k, v in sorted(self.strategic.candidate_zones.items())},
-                "hypotheses": {k: asdict(v) for k, v in sorted(self.strategic.hypotheses.items())},
-                "source_trust": {str(k): asdict(v) for k, v in sorted(self.strategic.source_trust.items())},
-                "contracts": {k: {**asdict(v), "kind": str(v.kind), "status": str(v.status)}
-                              for k, v in sorted(self.strategic.contracts.items())},
-                "turning_points": [{**asdict(tp), "kind": str(tp.kind)} for tp in self.strategic.turning_points],
-                "committed_intentions": [asdict(ci) for ci in self.strategic.committed_intentions],
-                "boredom": dict(sorted(self.strategic.boredom.items())),
-                "beliefs": {k: asdict(v) for k, v in sorted(self.strategic.beliefs.items())},
-                "marriages": {k: asdict(v) for k, v in sorted(self.strategic.marriages.items())}
-            },
-            "social": {
-                "trust_history": {str(k): v for k, v in sorted(self.social.trust_history.items())},
-                "familiarity_history": {str(k): v for k, v in sorted(self.social.familiarity_history.items())},
-                "debt_history": {str(k): v for k, v in sorted(self.social.debt_history.items())},
-                "fear_history": {str(k): v for k, v in sorted(self.social.fear_history.items())},
-                "grudge_history": {str(k): v for k, v in sorted(self.social.grudge_history.items())},
-                "combat_loss_counts": {str(k): v for k, v in sorted(self.social.combat_loss_counts.items())},
-                "salience_history": {str(k): v for k, v in sorted(self.social.salience_history.items())},
-                "bonds": {str(k): asdict(v) for k, v in sorted(self.social.bonds.items())},
-                "nemesis_ids": sorted(self.social.nemesis_ids),
-                "place_attachment": dict(sorted(self.social.place_attachment.items())),
-                "regional_reputation": dict(sorted(self.social.regional_reputation.items())),
-                "betrayal_count": self.social.betrayal_count,
-                "betrayal_records": [asdict(b) for b in self.social.betrayal_records],
-                "public_reputation": self.social.public_reputation,
-                "heroism_score": self.social.heroism_score,
-                "notoriety_score": self.social.notoriety_score,
-                "last_offer_tick": self.social.last_offer_tick,
-                "rejection_count": {str(k): v for k, v in sorted(self.social.rejection_count.items())},
-            },
+            "strategic": memo.strategic(self.strategic) if memo is not None else strategic_canonical_dict(self.strategic),
+            "social": memo.social(self.social) if memo is not None else social_canonical_dict(self.social),
             "combat": self.combat.to_canonical_dict(),
             "biological": self.biological.to_canonical_dict(),
             "lifecycle": self.lifecycle.to_canonical_dict(),
@@ -1002,7 +1015,8 @@ class EntityState:
             "self_model": self.self_model.to_canonical_dict(),
             "cognition": self.cognition.to_canonical_dict(),
         }
-        object.__setattr__(self, "_canonical_cache", res)
+        if memo is None:  # a memo-path dict holds the memo's shared stratum dicts: it is never kept as this entity's own memo, so a later plain call (the final digest) builds from the state
+            object.__setattr__(self, "_canonical_cache", res)
         return res
     
     # Legacy properties for backward compatibility

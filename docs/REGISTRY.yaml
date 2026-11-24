@@ -8005,6 +8005,26 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK.md
+  ticket_id: TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK
+  title: 'The per-tick replay digest rebuilds and re-sorts the whole canonical state
+    every tick: make it cheaper with byte-identical digests'
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-24'
+  related_code_areas:
+  - src/engine/checkpoint.py (CanonicalStateHasher, CanonicalHashScheduler)
+  - src/engine/kernel.py (_phase_persistence, line ~1113)
+  - src/core/dirty.py, src/core/state.py (to_canonical_dict producers)
+  - tests/unit/engine (hash tests)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK/investigation.md
+  - agent-working/stored_artifacts/TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK/owner_decision_2026-11-24.md
+  - agent-working/stored_artifacts/TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK/plan.md
+  - agent-working/stored_artifacts/TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK/pr_notes.md
+  - agent-working/stored_artifacts/TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261124-FRONTEND-LINT-IS-RED-ON-MAIN-AND-CI-DOES-NOT-RUN-IT.md
   ticket_id: TCK-20261124-FRONTEND-LINT-IS-RED-ON-MAIN-AND-CI-DOES-NOT-RUN-IT
   title: Frontend lint is red on main (17 errors, 4 warnings), and CI's Frontend job
