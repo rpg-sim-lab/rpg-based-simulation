@@ -8002,6 +8002,20 @@
   - agent-working/stored_artifacts/TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK/owner_decision_2026-11-24.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261124-FRONTEND-LINT-IS-RED-ON-MAIN-AND-CI-DOES-NOT-RUN-IT.md
+  ticket_id: TCK-20261124-FRONTEND-LINT-IS-RED-ON-MAIN-AND-CI-DOES-NOT-RUN-IT
+  title: Frontend lint is red on main (17 errors, 4 warnings), and CI's Frontend job
+    does not run it
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-24'
+  related_code_areas:
+  - frontend/src/components/GameCanvas.tsx, InspectPanel.tsx, Sidebar.tsx
+  - frontend/src/hooks/useCanvas.ts, useSimulation.ts
+  - .github/workflows/test.yml (Frontend job)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261123-FOUR-CORPUS-GRADE-STABILITY-GUARDS-PASS-AND-FAIL-ON-THE-SAME-SHA-GET-FLAKY-ENTRIES.md
   ticket_id: TCK-20261123-FOUR-CORPUS-GRADE-STABILITY-GUARDS-PASS-AND-FAIL-ON-THE-SAME-SHA-GET-FLAKY-ENTRIES
   title: Four corpus grade-stability guards that pass and fail on the same sha in
@@ -8541,6 +8555,19 @@
   - create-tickets
   - ticket-scoper
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261119-FRONTEND-MAJORS-FROM-THE-CLOSED-DEPENDABOT-811-MOVE-ONE-AT-A-TIME.md
+  ticket_id: TCK-20261119-FRONTEND-MAJORS-FROM-THE-CLOSED-DEPENDABOT-811-MOVE-ONE-AT-A-TIME
+  title: 'Move the frontend majors from the closed Dependabot #811 one at a time,
+    holding TypeScript at 5.9 until typescript-eslint supports 7'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-19'
+  related_code_areas:
+  - frontend/package.json, frontend/package-lock.json
+  artifact_files: []
+  tags:
+  - security
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS.md
   ticket_id: TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS
   title: 'navigation.py and threat.py compare the occupation with "world_boss", but
@@ -8786,19 +8813,6 @@
     (the apply clamp), src/engine/action_intent.py:217
   artifact_files: []
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261119-FRONTEND-MAJORS-FROM-THE-CLOSED-DEPENDABOT-811-MOVE-ONE-AT-A-TIME.md
-  ticket_id: TCK-20261119-FRONTEND-MAJORS-FROM-THE-CLOSED-DEPENDABOT-811-MOVE-ONE-AT-A-TIME
-  title: 'Move the frontend majors from the closed Dependabot #811 one at a time,
-    holding TypeScript at 5.9 until typescript-eslint supports 7'
-  tier: hotfix
-  ticket_type: chore
-  date: '2026-11-19'
-  related_code_areas:
-  - frontend/package.json, frontend/package-lock.json
-  artifact_files: []
-  tags:
-  - security
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261119-LAIR-SPAWNED-COPIES-LOSE-THE-PARENTS-CATALOG-FACTION.md
   ticket_id: TCK-20261119-LAIR-SPAWNED-COPIES-LOSE-THE-PARENTS-CATALOG-FACTION
