@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261123-STATE-DIGEST-PROBE-SET-PERTURBATION-MUST-CHANGE-THE-SET
-phase: open
+phase: done
 date: 2026-11-23
 tags: [testing]
 ---
@@ -15,7 +15,7 @@ tags: [testing]
 The state-digest probe changes a set or frozenset field by a union that can equal the original, so a hashed enum-set field reads as unhashed
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -70,10 +70,10 @@ None. Test-only change.
 Pytest on taskset -c 0-3, --basetemp on /data, no uv sync, no bare git stash.
 
 ## Test Summary
-Not run yet.
+tests/architecture/test_state_digest_probe_perturb.py: 14 passed (7 new); against the old union 4 of the new tests fail; a mutation (remove-first instead of deterministic, no other-member add) fails a test. tests/architecture/test_state_digest_covers_every_field.py: 10 of 11 pass; the one failure is a CHANGED VERDICT, not a probe defect: `state.groups[].member_ids` (`Set[int]`, allowlist row GAP, "hashed only conditionally: samples disagree") now reads covered in every sample, because the old union with the synthesized 1 could equal the original. Known gap: that allowlist row is now stale and must be deleted by the owner's decision; this ticket does not edit the allowlist (out of scope), so the digest test file is red on this branch until that row is removed. The enum row that motivated the ticket (#996 need_services) is not on origin/main.
 
 ## Files Changed
-None yet.
+tests/architecture/state_digest_probe.py (`_perturb_set`), tests/architecture/test_state_digest_probe_perturb.py (7 tests), this ticket and its artifacts.
 
 ## Completion Summary
-Open.
+`perturb` now always changes a set or frozenset: union when it differs, else another member of the enum (or a perturbed element), else a deterministic removal; the added element is returned for an add and None for a removal. One allowlist row changed verdict (state.groups[].member_ids) and is reported to testing-planner for the owner.
