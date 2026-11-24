@@ -13,7 +13,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from src.core.need_lines import STARVING_LINE as _STARVING_LINE  # the ONE source of 95.0 (foundation layer)
+from src.core.need_lines import (
+    STARVING_LINE as _STARVING_LINE,  # the ONE source of 95.0 (foundation layer)
+)
 
 
 @dataclass(frozen=True, slots=True)

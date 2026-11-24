@@ -18,7 +18,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Tuple
 
-from src.core.need_lines import SLEEP_LINE, STARVING_LINE  # SLEEP_LINE is re-exported under its old name
+from src.core.need_lines import (  # SLEEP_LINE is re-exported under its old name
+    SLEEP_LINE,
+    STARVING_LINE,
+)
 
 if TYPE_CHECKING:
     from src.core.state import EntityState

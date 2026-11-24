@@ -8,8 +8,8 @@ from typing import Any, Dict, Optional, Tuple
 from src.content.blocker_settings import access_giveup_limit
 from src.content.navigation_experience_settings import navigation_experience_settings
 from src.core.giveup_records import HeldTargetAtAnchorCounts, near_anchor
-from src.core.navigation_experience import NavigationExperienceUpdate
 from src.core.inventory import InventoryService
+from src.core.navigation_experience import NavigationExperienceUpdate
 from src.core.state import AuthoritativeState, EntityState
 from src.core.strategic import (
     CONGESTION_BLOCKER_ID,

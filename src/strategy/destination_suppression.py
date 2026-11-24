@@ -12,7 +12,11 @@ from typing import Dict, FrozenSet, Iterable, Optional, Tuple
 from src.content.navigation_experience_settings import navigation_experience_settings
 from src.core.giveup_records import GiveUpRecord, near_anchor
 from src.core.movement_modes import MovementMode
-from src.core.navigation_experience import NavExperienceStatus, NavigationExperience, NavigationExperienceUpdate
+from src.core.navigation_experience import (
+    NavExperienceStatus,
+    NavigationExperience,
+    NavigationExperienceUpdate,
+)
 from src.core.navigation_purpose import TargetPurpose, stored_purpose
 from src.core.state import EntityState
 from src.core.strategic import BlockerState
@@ -73,15 +77,15 @@ def _latched(entity: EntityState, record: NavigationExperience) -> bool:
     return target is not None and entity.navigation.target_gated and near_anchor(target, record.anchor) and stored_purpose(entity) == record.purpose
 
 
-def _experience_hit(entity: EntityState, tx: int, ty: int, tick: int, purpose: Optional[TargetPurpose], reviewed: FrozenSet[Tuple[str, int]]) -> Optional[SuppressionHit]:
-    """The lowest-id ACTIVE experience of the subject with this ``purpose`` whose anchor is within Chebyshev 1 of (tx, ty), that is not due at ``tick`` (`due_reason`, a pure read of the subject's own state), not
+def _experience_hit(entity: EntityState, tile: Tuple[int, int], tick: int, purpose: Optional[TargetPurpose], reviewed: FrozenSet[Tuple[str, int]]) -> Optional[SuppressionHit]:
+    """The lowest-id ACTIVE experience of the subject with this ``purpose`` whose anchor is within Chebyshev 1 of ``tile``, that is not due at ``tick`` (`due_reason`, a pure read of the subject's own state), not
     latched, and not reviewed by the staged update (``reviewed``: ids and cycles), or None. A REVIEWED record never refuses; a call with no purpose (an old checkpoint's target) is refused by no experience."""
     records = entity.cognition.memory.navigation.records
     if purpose is None or not records:
         return None
     settings = navigation_experience_settings()
     for record in sorted(records, key=lambda r: r.experience_id):
-        if record.status != NavExperienceStatus.ACTIVE or record.purpose != purpose or (record.experience_id, record.cycle) in reviewed or not near_anchor((tx, ty), record.anchor):
+        if record.status != NavExperienceStatus.ACTIVE or record.purpose != purpose or (record.experience_id, record.cycle) in reviewed or not near_anchor(tile, record.anchor):
             continue
         if due_reason(record, entity, tick, settings) is None and not _latched(entity, record):
             return SuppressionHit(record.experience_id, (int(record.anchor[0]), int(record.anchor[1])), record.next_review_tick, False)
@@ -102,7 +106,7 @@ def destination_suppressed(entity: EntityState, pos: Tuple[float, float], tick: 
             records = (*records, staged.navigation.giveup_record_add)
         if staged.navigation_experience is not None:
             reviewed = frozenset((r.experience_id, r.cycle) for r in staged.navigation_experience.reviews)
-    return _record_hit(records, tx, ty) or _experience_hit(entity, tx, ty, tick, purpose, reviewed)
+    return _record_hit(records, tx, ty) or _experience_hit(entity, (tx, ty), tick, purpose, reviewed)
 
 
 @dataclass(frozen=True, slots=True)
