@@ -224,6 +224,7 @@ class NavigationExperienceMemory:
 ## 7. Retiring ACCESS suppression for give-ups (owner constraint 6; verifier gap 3)
 
 - The consume step files NO ACCESS blocker for a give-up. These #996-new parts are DROPPED; none is on main, so no checkpoint compatibility is needed:
+- **Implemented (step (e), 381a646bc; the approved text above is unchanged):** `_blocker_hit`, `BlockerState.giveup_count` with its FIELD_RULES row, the `:g<n>` fingerprint part and the presenter key are gone; `giveup_filing_update` is now `giveup_project_end_update` (it ends the project and files no blocker); `filed_suppression_anchors` and `navigation_with_filing_anchor` read the experience update and are purpose-scoped. The statements below are the record of what was dropped.
   - `_blocker_hit` (the gate's blocker branch);
   - `BlockerState.giveup_count` and its FIELD_RULES row;
   - `giveup_filing_update`'s blocker filing;
@@ -238,6 +239,7 @@ class NavigationExperienceMemory:
 
 - #996 counts give-ups per ANCHOR across all the subject's projects (`giveup_count`, blocker_lifecycle.py:364 (i)), then ends the CURRENT project at `access_giveup_limit` 4.
 - v2's recommendation: `project_giveups` counts per (anchor, purpose) within ONE project_id and resets under another project. At `access_giveup_limit`, THAT project ends, typed `DESTINATION_GIVEN_UP`.
+- **Implemented (step (e), 381a646bc; the approved text is unchanged):** `giveup_project_end_update` ends the project current at the pass when an upserted experience's `project_giveups` reaches `access_giveup_limit` (4); `project_giveups` is per (anchor, purpose) within the experience's `project_id` and restarts under another project. The "#996 counts per ANCHOR" bullet above describes the dropped behaviour.
 - Liveness when projects re-form: a re-formed project restarts the count, but every retry is still gated by §5's due rule. So retries per (anchor, purpose) are bounded by the due rules, not by the limit.
 - This is measured, not assumed: R3 reports give-ups per (anchor, purpose) per 2400 t (the max and the distribution). If R3 shows a loop, the owner sees it before landing.
 
