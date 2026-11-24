@@ -7986,6 +7986,22 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261124-STATE-DIGEST-PROBE-SKIPS-A-SYNTHESIZED-RECORD-WHOSE-ID-WAS-REUSED.md
+  ticket_id: TCK-20261124-STATE-DIGEST-PROBE-SKIPS-A-SYNTHESIZED-RECORD-WHOSE-ID-WAS-REUSED
+  title: The state-digest probe's visited set holds ids of freed synthesized records,
+    so a new record that reuses an id is skipped and its field paths vanish from one
+    run to the next
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-24'
+  related_code_areas:
+  - probe_state
+  - tests/architecture/test_state_digest_covers_every_field.py
+  - tests/architecture/state_digest_allowlist.yaml (read only)
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
   path: agent-working/tickets/done/TCK-20261123-FOUR-CORPUS-GRADE-STABILITY-GUARDS-PASS-AND-FAIL-ON-THE-SAME-SHA-GET-FLAKY-ENTRIES.md
   ticket_id: TCK-20261123-FOUR-CORPUS-GRADE-STABILITY-GUARDS-PASS-AND-FAIL-ON-THE-SAME-SHA-GET-FLAKY-ENTRIES
   title: Four corpus grade-stability guards that pass and fail on the same sha in
