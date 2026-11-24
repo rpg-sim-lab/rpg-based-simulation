@@ -525,7 +525,7 @@ CONTENT_USAGE_MATRIX: Dict[str, ContentFamilyMatrixEntry] = {
         test_coverage="tests/unit/content/test_navigation_experience_settings.py",
         evidence_tests="tests/unit/content/test_navigation_experience_settings.py::test_changing_a_value_changes_the_catalog_fingerprint",
         resolver_evidence="None",
-        runtime_consumer_evidence="the consume step derives each record's next review tick from the two delays and the cap; the gate's due read uses the approach radius",
+        runtime_consumer_evidence="the consume step derives each record's next review tick from the three delays (oscillation, bodies, occupied) and the cap; the gate's due read uses the approach radius",
         implementation_state="RESOLVED_PARTIALLY",
         content_maturity="REDESIGNED-CORE",
     ),

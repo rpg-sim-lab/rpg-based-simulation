@@ -1,4 +1,4 @@
-"""The #996 rework (design section 9): the navigation experience settings are a one-record catalog family, so the four values are validated by their schema (integers >= 1) and are part of the catalog
+"""The #996 rework (design section 9): the navigation experience settings are a one-record catalog family, so the five values are validated by their schema (integers >= 1) and are part of the catalog
 fingerprint (the run's identity). The accessor reads the catalog, holds no state, and raises a typed error naming the file when the record is absent."""
 import shutil
 from pathlib import Path
@@ -12,7 +12,7 @@ from src.content.schema import NavigationExperienceSettingsDefinition
 
 REAL = Path("data/content")
 FILE = "strategy/navigation_experience_settings.yaml"
-KEYS = ("oscillation_review_delay", "bodies_review_delay", "approach_change_radius", "navigation_experience_cap")
+KEYS = ("oscillation_review_delay", "bodies_review_delay", "approach_change_radius", "navigation_experience_cap", "occupied_review_delay")
 
 
 def _content_with(tmp_path, name="c", **values):
@@ -31,10 +31,10 @@ def _load(root):
     return repo, repo.load_all()
 
 
-def test_the_shipped_catalog_says_100_50_5_8_and_loads_without_a_schema_error():
+def test_the_shipped_catalog_says_100_50_5_8_10_and_loads_without_a_schema_error():
     repo, report = _load(REAL)
     assert FILE not in report.schema_errors
-    assert navigation_experience_settings(repo) == NavigationExperienceSettings(100, 50, 5, 8)
+    assert navigation_experience_settings(repo) == NavigationExperienceSettings(100, 50, 5, 8, 10)
 
 
 @pytest.mark.parametrize("key", KEYS)

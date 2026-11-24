@@ -9,7 +9,7 @@ from src.content.blocker_settings import access_giveup_limit
 from src.content.navigation_experience_settings import navigation_experience_settings
 from src.core.giveup_records import HeldTargetAtAnchorCounts, near_anchor
 from src.core.inventory import InventoryService
-from src.core.navigation_experience import NavigationExperienceUpdate
+from src.core.navigation_experience import NavCause, NavigationExperienceUpdate
 from src.core.state import AuthoritativeState, EntityState
 from src.core.strategic import (
     CONGESTION_BLOCKER_ID,
@@ -350,7 +350,7 @@ def giveup_project_end_update(entity: EntityState, staged: StrategicUpdate, expe
     place for one purpose within the project CURRENT at this pass, that project ends, typed `DESTINATION_GIVEN_UP`, with its current project and objective cleared in the same update. Nothing ends when the subject has no
     current project, or when its project already ended. Files NO ACCESS blocker: the memory of the place is the experience. Reads only; None when nothing ends."""
     project_id = staged.current_project_id_set if staged.current_project_id_set is not None else entity.strategic.current_project_id
-    if not project_id or not any(r.project_giveups >= limit for r in experience.upserts):
+    if not project_id or not any(r.cause != NavCause.OCCUPIED and r.project_giveups >= limit for r in experience.upserts):
         return None
     project = next((p for p in reversed(staged.projects_add_or_update) if p.id == project_id), None) or entity.strategic.projects.get(project_id)
     if project is None or project.ended_by is not None:

@@ -20,17 +20,18 @@ class NavigationExperienceSettingsError(ValueError):
 
 @dataclass(frozen=True, slots=True)
 class NavigationExperienceSettings:
-    """The four balance values of the navigation experience memory (data/content/strategy/navigation_experience_settings.yaml)."""
+    """The five balance values of the navigation experience memory (data/content/strategy/navigation_experience_settings.yaml)."""
     oscillation_review_delay: int
     bodies_review_delay: int
     approach_change_radius: int
     navigation_experience_cap: int
+    occupied_review_delay: int
 
 
 def navigation_experience_settings(catalog: Optional[Any] = None) -> NavigationExperienceSettings:
-    """The four balance values of the experience memory, from ``catalog`` (default: the warmed catalog)."""
+    """The five balance values of the experience memory, from ``catalog`` (default: the warmed catalog)."""
     cat = warmed_catalog() if catalog is None else catalog
     record = getattr(cat, "navigation_experience_settings", {}).get(NAVIGATION_EXPERIENCE_SETTINGS_ID)
     if record is None:
         raise NavigationExperienceSettingsError(f"{NAVIGATION_EXPERIENCE_SETTINGS_FILE}: no record with id {NAVIGATION_EXPERIENCE_SETTINGS_ID!r}; the catalog did not load it or it failed its schema")
-    return NavigationExperienceSettings(int(record.oscillation_review_delay), int(record.bodies_review_delay), int(record.approach_change_radius), int(record.navigation_experience_cap))
+    return NavigationExperienceSettings(int(record.oscillation_review_delay), int(record.bodies_review_delay), int(record.approach_change_radius), int(record.navigation_experience_cap), int(record.occupied_review_delay))

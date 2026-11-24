@@ -421,11 +421,12 @@ class BlockerSettingsDefinition(CatalogBaseDefinition):
 
 
 class NavigationExperienceSettingsDefinition(CatalogBaseDefinition):
-    """Schema for the navigation experience memory's balance values (the #996 rework, design section 9): a one-record family like `blocker_settings`, so the values are part of the catalog fingerprint (the run's identity). All are integers >= 1."""
+    """Schema for the navigation experience memory's balance values (the #996 rework, design section 9): a one-record family like `blocker_settings`, so the values are part of the catalog fingerprint (the run's identity). All five are integers >= 1."""
     oscillation_review_delay: int = Field(..., ge=1, strict=True, description="Ticks after an oscillation give-up before the place is due for another try; an integer >= 1")
     bodies_review_delay: int = Field(..., ge=1, strict=True, description="Ticks after a ring block with bodies among its evidence before the place is due; an integer >= 1")
     approach_change_radius: int = Field(..., ge=1, strict=True, description="Tiles (Chebyshev) from where the subject gave up that count as a changed approach; an integer >= 1")
     navigation_experience_cap: int = Field(..., ge=1, strict=True, description="Navigation experiences one subject keeps; an integer >= 1")
+    occupied_review_delay: int = Field(..., ge=1, strict=True, description="Ticks after an OCCUPIED give-up (other bodies at the place: waiting, not failure) before the place is due for another try; an integer >= 1")
 
 
 class WayroundSettingsDefinition(CatalogBaseDefinition):

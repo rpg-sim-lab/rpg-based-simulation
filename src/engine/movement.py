@@ -9,7 +9,7 @@ from src.content.common_knowledge_seed import warmed_catalog
 from src.content.wayround_settings import WayroundSettings, wayround_settings
 from src.core.arrival import has_arrived
 from src.core.giveup_records import GiveUpRecord
-from src.core.navigation_experience import NavCause, NeedService, ring_evidence_of
+from src.core.navigation_experience import NavCause, NeedService, RingEvidence, ring_evidence_of
 from src.core.movement_modes import MovementMode
 from src.core.updates import EntityUpdate, NavigationUpdate, StaminaUpdate, LifecycleUpdate
 from src.core.enums import ReasonCode
@@ -222,7 +222,7 @@ class MovementSystem:
 
         The rung ladder runs before the replan gives up (TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK): a step back onto the tile just left is the A-B loop, so look for a
         legal tile that is neither it nor the current tile before dropping the target. The bounded give-up (2.213): a way-round that makes no net progress on this target counts; the count past
-        the step limit (`wayround_limit`) is the real replan. A give-up whose target tile is HELD by another body drops the target but files no record (a full spot is not a failed spot). A body ARRIVED at the walk's nav target when the count runs out does not give up at all (arrived never fails): the outcome is `arrived`. Pure: it reads the entity and the state and returns the outcome."""
+        the step limit (`wayround_limit`) is the real replan. The precedence at the give-up (ruling 476631fe): ARRIVED THIS ATTEMPT (within `has_arrived` of the walk's nav target now, or at any tick since the target last took its value: nothing filed, the outcome is `arrived`) > OCCUPIED (another body on the target tile or within Chebyshev 1 of it: a wait, filed with BODIES evidence) > RING_BLOCKED > OSCILLATION. Pure: it reads the entity and the state and returns the outcome."""
         target_tile = (int(target_pos[0]), int(target_pos[1]))
         current_tick = state_or_context.tick  # the kernel's tick, explicitly: a context with none raises, it never stamps 0 (the #996 rework)
         refusals: List[ReasonCode] = []
@@ -233,16 +233,22 @@ class MovementSystem:
         wayround_count, wayround_best, wayround_anchor = wayround_after_event(entity.navigation, target_tile, dist_now, current_tick)
         if way_round is not None and wayround_count <= _wayround().limit:
             return OscReplanOutcome(way_round, osc_delta, wait_delta, (wayround_count, wayround_best, wayround_anchor, current_tick), False)
-        if has_arrived(entity.navigation.position, target_pos):  # arrived never fails: ``target_pos`` is the walk's own nav target (movement sees no objective), the structural adjacency of `src/core/arrival.py`
+        if entity.navigation.arrived_this_attempt or has_arrived(entity.navigation.position, target_pos):  # arrived never fails, at the instant or at any tick of this attempt (owner #715 7128509663 and 7130852946): ``target_pos`` is the walk's own nav target (movement sees no objective), the structural adjacency of `src/core/arrival.py`; the flag is measured from the pre-step position
             return OscReplanOutcome(None, osc_delta, wait_delta, None, False, None, True)
         anchor = entity.navigation.wayround_anchor
         kept = (int(anchor[0]), int(anchor[1])) if anchor is not None else target_tile
-        if LegalityServiceV2.get_occupant(target_tile, state_or_context, ignore_entity_id=entity.id) is not None:
-            return OscReplanOutcome(None, osc_delta, wait_delta, None, True)  # a full spot is not a failed spot (owner, #996): another body HOLDS the target tile, so the target is dropped as before but NO give-up record is filed and no memory follows
-        ring_blocked = way_round is None  # the one-ring check found no legal tile (else the bounded way-round count was spent: OSCILLATION, with no ring evidence)
-        record = GiveUpRecord(kept, int(current_tick), NavCause.RING_BLOCKED if ring_blocked else NavCause.OSCILLATION, ring_evidence_of(refusals) if ring_blocked else (),
+        occupied = MovementSystem._place_occupied(target_tile, entity, state_or_context)  # OCCUPIED outranks the two failure causes: other bodies at the place is waiting, not failure (owner #715 7130979190, ruling 476631fe)
+        ring_blocked = way_round is None and not occupied  # the one-ring check found no legal tile (else the bounded way-round count was spent: OSCILLATION, with no ring evidence)
+        cause = NavCause.OCCUPIED if occupied else NavCause.RING_BLOCKED if ring_blocked else NavCause.OSCILLATION
+        evidence = (RingEvidence.BODIES,) if occupied else ring_evidence_of(refusals) if ring_blocked else ()
+        record = GiveUpRecord(kept, int(current_tick), cause, evidence,
                               (int(entity.navigation.position[0]), int(entity.navigation.position[1])), target_tile, entity.navigation.target_purpose, need_services_at(state_or_context, kept))
         return OscReplanOutcome(None, osc_delta, wait_delta, None, True, record)
+
+    @staticmethod
+    def _place_occupied(target_tile: Tuple[int, int], entity: EntityState, state_or_context: Any) -> bool:
+        """True when another body (never the subject) stands on the target tile or on any tile within Chebyshev 1 of it: the place's own one-ring, the radius of `near_anchor`. The existing `get_occupant`, no new occupancy rule."""
+        return any(LegalityServiceV2.get_occupant((target_tile[0] + dx, target_tile[1] + dy), state_or_context, ignore_entity_id=entity.id) is not None for dx in (-1, 0, 1) for dy in (-1, 0, 1))
 
     @staticmethod
     def _osc_outcome(entity: EntityState, osc: OscReplanOutcome, success: bool, reason_code: Optional[ReasonCode]) -> Tuple[Optional[Dict[int, EntityUpdate]], bool, bool, Optional[ReasonCode], bool, Optional[GiveUpRecord]]:
@@ -367,6 +373,24 @@ class MovementSystem:
 
     @staticmethod
     def resolve_move(
+        state_or_context: Any,
+        entity: EntityState,
+        target_pos: Tuple[float, float],
+        mode: MovementMode = MovementMode.WANDER
+    ) -> Dict[int, EntityUpdate]:
+        """Evaluate a move intent (`_resolve_move_ladder`) and note, in the same update, that the body is ARRIVED at its stored target (ruling 476631fe, owner #715 7130852946: "arrived this attempt").
+        The arrival is measured from the position the body holds BEFORE the step (never from the proposed step: occupancy can reject the move yet keep the navigation update), against the walk's own nav target
+        (`has_arrived`, `src/core/arrival.py`), and only while the flag is not already set; the navigation patch stores it with the target it keeps and clears it with any other target."""
+        result = MovementSystem._resolve_move_ladder(state_or_context, entity, target_pos, mode)
+        nav = entity.navigation
+        if not entity.lifecycle.active or nav.target is None or nav.arrived_this_attempt or tuple(nav.target) != tuple(target_pos) or not has_arrived(nav.position, target_pos):
+            return result
+        own = result.get(entity.id) or EntityUpdate(entity_id=entity.id)
+        result[entity.id] = replace(own, navigation=replace(own.navigation or NavigationUpdate(), arrived_this_attempt_set=True))
+        return result
+
+    @staticmethod
+    def _resolve_move_ladder(
         state_or_context: Any,
         entity: EntityState,
         target_pos: Tuple[float, float],

@@ -15,6 +15,7 @@ from src.core.navigation_experience import (
     NeedService,
     ReviewReason,
     RingEvidence,
+    apply_experience_update,
     experience_id_of,
 )
 from src.core.navigation_purpose import TargetPurpose
@@ -23,7 +24,7 @@ from src.engine.starvation import STARVING_LINE
 from src.strategy.experience_due import due_reason, next_review_tick_of
 from src.systems.strategic_systems import navigation_experience_step as step
 
-S = NavigationExperienceSettings(oscillation_review_delay=100, bodies_review_delay=50, approach_change_radius=5, navigation_experience_cap=8)
+S = NavigationExperienceSettings(oscillation_review_delay=100, bodies_review_delay=50, approach_change_radius=5, navigation_experience_cap=8, occupied_review_delay=10)
 P = TargetPurpose("hunger", "WANDER")
 
 
@@ -48,6 +49,8 @@ def test_the_review_delay_follows_the_cause_and_the_evidence_never_the_cycle():
     assert next_review_tick_of(NavCause.RING_BLOCKED, (RingEvidence.STATIC,), 10, S) is None  # terrain: only a trigger makes it due
     assert next_review_tick_of(NavCause.RING_BLOCKED, (RingEvidence.OTHER,), 10, S) == 110
     assert next_review_tick_of(NavCause.RING_BLOCKED, (), 10, S) == 110
+    assert next_review_tick_of(NavCause.OCCUPIED, (RingEvidence.BODIES,), 10, S) == 20  # waiting, not failure: the short occupied delay (owner #715 7130979190), whatever the cycle
+    assert next_review_tick_of(NavCause.OCCUPIED, (), 10, S) == 20
 
 
 # --- the due rule, in the table's order -----------------------------------------------------------------------------------------------------------
@@ -134,7 +137,7 @@ def test_a_reviewed_record_is_not_reviewed_again():
 
 
 def test_the_cap_evicts_the_oldest_reviewed_then_a_due_active_then_the_oldest_active_and_counts_only_that_last():
-    small = NavigationExperienceSettings(100, 50, 5, 2)
+    small = NavigationExperienceSettings(100, 50, 5, 2, 10)
     reviewed_old = _rec(1, 1, status=NavExperienceStatus.REVIEWED, reviewed=40, observed=1)
     reviewed_new = _rec(2, 2, status=NavExperienceStatus.REVIEWED, reviewed=60, observed=2)
     e = _subject(records=(reviewed_old, reviewed_new), giveups=(_giveup(),))
@@ -149,7 +152,7 @@ def test_the_cap_evicts_the_oldest_reviewed_then_a_due_active_then_the_oldest_ac
 
 
 def test_a_record_filed_this_pass_is_never_the_one_evicted():
-    small = NavigationExperienceSettings(100, 50, 5, 1)
+    small = NavigationExperienceSettings(100, 50, 5, 1, 10)
     e = _subject(records=(_rec(1, 1, status=NavExperienceStatus.REVIEWED, reviewed=40),), giveups=(_giveup(),))
     out = step.navigation_experience_update(e, 100, "", small)
     assert out.evictions == ("nx_1_1_hunger_WANDER",) and [r.experience_id for r in out.upserts] == ["nx_9_5_hunger_WANDER"]
@@ -165,10 +168,65 @@ def test_the_filed_record_keeps_the_needs_the_give_up_record_carries():
 
 def test_a_reviewed_record_is_evicted_before_a_due_active_one_even_when_the_active_one_is_older():
     """New with the #996 `_evictions` split: the reviewed-first preference holds against a due ACTIVE record that was observed earlier, and the eviction is not counted as a live one."""
-    small = NavigationExperienceSettings(100, 50, 5, 2)
+    small = NavigationExperienceSettings(100, 50, 5, 2, 10)
     NavigationExperienceCounts.reset()
     due_active = _rec(3, 3, observed=1, nxt=60)
     reviewed = _rec(2, 2, status=NavExperienceStatus.REVIEWED, reviewed=90, observed=50)
     e = _subject(records=(due_active, reviewed), giveups=(_giveup(),))
     assert step.navigation_experience_update(e, 100, "", small).evictions == (reviewed.experience_id,)
     assert NavigationExperienceCounts.live_evictions() == 0
+
+
+# --- OCCUPIED: waiting, not failure (owner #715 7130979190; ruling 476631fe) ------------------------------------------------------------------------
+OCC_EV = (RingEvidence.BODIES,)
+
+
+def test_an_occupied_record_is_due_at_observed_plus_the_occupied_delay_at_cycle_one_and_cycle_five_and_the_early_rules_still_apply():
+    e = _subject()
+    for cycle in (1, 5):
+        r = _rec(cycle=cycle, observed=10, nxt=20, cause=NavCause.OCCUPIED, ev=OCC_EV)
+        assert due_reason(r, e, 19, S) is None and due_reason(r, e, 20, S) == ReviewReason.DUE_TICK
+    r = _rec(observed=10, nxt=20, cause=NavCause.OCCUPIED, ev=OCC_EV)
+    assert due_reason(r, _subject(pos=(9.0, 3.0)), 12, S) == ReviewReason.APPROACH_CHANGED  # failing control for the time rule: the approach rule is still first-come
+    food = _rec(observed=10, nxt=20, cause=NavCause.OCCUPIED, ev=OCC_EV, need=frozenset({NeedService.EAT}))
+    assert due_reason(food, _subject(hunger=STARVING_LINE), 12, S) == ReviewReason.NEED_SEVERE and due_reason(food, _subject(hunger=STARVING_LINE - 1.0), 12, S) is None
+
+
+def _file(entity, rec, tick, project="p1"):
+    """The subject after the consume step filed ``rec`` at ``tick`` (the experience applied)."""
+    out = step.navigation_experience_update(replace(entity, navigation=replace(entity.navigation, giveup_records=(rec,))), tick, project, S)
+    memory = apply_experience_update(entity.cognition.memory.navigation, out)
+    return replace(entity, cognition=replace(entity.cognition, memory=replace(entity.cognition.memory, navigation=memory))), out.upserts[0]
+
+
+def test_an_occupied_filing_keeps_project_giveups_unchanged_zero_on_a_first_record_and_the_stored_count_after_a_failure():
+    occ = _giveup(cause=NavCause.OCCUPIED, ev=OCC_EV)
+    first = step.navigation_experience_update(_subject(giveups=(occ,)), 10, "p1", S).upserts[0]
+    assert (first.cause, first.ring_evidence, first.project_giveups, first.next_review_tick) == (NavCause.OCCUPIED, OCC_EV, 0, 20)
+    held = _subject(records=(_rec(giveups=3, project="p1"),), giveups=(_giveup(tick=300, cause=NavCause.OCCUPIED, ev=OCC_EV),))
+    kept = step.navigation_experience_update(held, 300, "p1", S).upserts[0]
+    assert (kept.cycle, kept.project_giveups, kept.cause) == (2, 3, NavCause.OCCUPIED)  # carried, not +1
+    other_project = step.navigation_experience_update(held, 300, "p2", S).upserts[0]
+    assert other_project.project_giveups == 0  # a new project starts from 0; the control for the same-project carry above
+
+
+def test_six_occupied_give_ups_in_one_project_never_reach_the_limit_and_failures_around_them_count_only_themselves():
+    e = _subject()
+    for k in range(6):
+        e, rec = _file(e, _giveup(tick=10 + 20 * k, cause=NavCause.OCCUPIED, ev=OCC_EV), 10 + 20 * k)
+    assert (rec.cycle, rec.project_giveups) == (6, 0)
+    mixed = _subject()
+    counts = []
+    for k, cause in enumerate((NavCause.OSCILLATION, NavCause.OSCILLATION, NavCause.OSCILLATION, NavCause.OCCUPIED, NavCause.OCCUPIED, NavCause.OSCILLATION)):
+        mixed, rec = _file(mixed, _giveup(tick=10 + 5 * k, cause=cause, ev=OCC_EV if cause == NavCause.OCCUPIED else ()), 10 + 5 * k)
+        counts.append(rec.project_giveups)
+    assert counts == [1, 2, 3, 3, 3, 4]  # 3 OSCILLATION + 2 OCCUPIED + 1 OSCILLATION reaches the limit 4 at the 4th failure
+
+
+def test_a_fresh_occupied_cycle_replaces_an_oscillation_record_and_a_later_oscillation_replaces_it_and_counts():
+    e, osc = _file(_subject(), _giveup(tick=10), 10)
+    assert osc.next_review_tick == 110
+    e, occ = _file(e, _giveup(tick=20, cause=NavCause.OCCUPIED, ev=OCC_EV), 20)
+    assert (occ.cause, occ.next_review_tick, occ.cycle, occ.project_giveups) == (NavCause.OCCUPIED, 30, 2, 1)  # the latest evidence decides the wait; the earlier failure stays counted
+    _, again = _file(e, _giveup(tick=40), 40)
+    assert (again.cause, again.next_review_tick, again.project_giveups) == (NavCause.OSCILLATION, 140, 2)

@@ -17,6 +17,7 @@ class NavCause(str, Enum):
     """Why the subject could not get there. Slice 1 writes the first two."""
     OSCILLATION = "oscillation"      # a way-round tile existed, but the bounded count passed `wayround_limit` with no net progress
     RING_BLOCKED = "ring_blocked"    # the ONE-RING check (the sidestep plus the 4 orthogonal neighbours) found no legal tile; not a route search
+    OCCUPIED = "occupied"            # other bodies are AT the place (on the target tile or within Chebyshev 1 of it): waiting, not failure (owner #715 7130979190; ruling 476631fe)
     UNCLASSIFIED = "unclassified"    # reserved; slice 1 writes none
 
 

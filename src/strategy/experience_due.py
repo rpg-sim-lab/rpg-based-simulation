@@ -19,8 +19,10 @@ from src.core.need_lines import SLEEP_LINE, STARVING_LINE
 
 
 def next_review_tick_of(cause: NavCause, evidence: tuple, observed_tick: int, settings: NavigationExperienceSettings) -> Optional[int]:
-    """The tick a record filed at ``observed_tick`` is due by time, or None when only a trigger can make it due. An oscillation waits the oscillation delay; a ring block with BODIES among its evidence waits the
+    """The tick a record filed at ``observed_tick`` is due by time, or None when only a trigger can make it due. An OCCUPIED record (other bodies at the place) waits the short occupied delay; an oscillation waits the oscillation delay; a ring block with BODIES among its evidence waits the
     (shorter) bodies delay; a ring block of STATIC evidence only is trigger-only (terrain does not change on its own); any other ring block (OTHER, or no evidence) takes the oscillation delay."""
+    if cause == NavCause.OCCUPIED:
+        return observed_tick + settings.occupied_review_delay  # waiting, not failure: the short wait, never growing (owner #715 7130979190)
     if cause == NavCause.RING_BLOCKED:
         if RingEvidence.BODIES in evidence:
             return observed_tick + settings.bodies_review_delay

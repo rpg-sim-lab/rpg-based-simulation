@@ -281,6 +281,15 @@ def _purpose_and_gate(u_nav: Any, stored_nav: Any, final_target: Any) -> tuple:
     return stored_nav.target_purpose, stored_nav.target_gated
 
 
+def _arrived_flag(u_nav: Any, stored_nav: Any, final_target: Any) -> bool:
+    """The arrived-this-attempt flag a navigation update leaves (ruling 476631fe, owner #715 7130852946): it belongs to the target the patch KEEPS, decided here next to `_purpose_and_gate` from ``final_target``. No target
+    kept: False. A kept target that is not the stored one (a new value, or the update's set replacing it): False, so a True measured on the old target is dropped with it (safe: the next resolve measures again). The target that
+    stays the stored one keeps the stored flag, or takes True when movement measured the arrival in this update. Covers target_clear, clear_target, the give-up drops, the A'' anchor clears and lodging's `_without_walk` in one place."""
+    if final_target is None or final_target != stored_nav.target:
+        return False
+    return bool(stored_nav.arrived_this_attempt or u_nav.arrived_this_attempt_set)
+
+
 @dataclass(frozen=True, slots=True)
 class NavigationPatch(ComponentPatch):
     navigation: Optional[Any] = None # NavigationUpdate
@@ -313,6 +322,7 @@ class NavigationPatch(ComponentPatch):
                 target=final_target,
                 target_purpose=final_purpose,
                 target_gated=final_gated,
+                arrived_this_attempt=_arrived_flag(u_nav, new_nav, final_target),
                 movement_mode=u_nav.movement_mode_set if u_nav.movement_mode_set is not None else new_nav.movement_mode,
                 path=final_path,
                 moved_recently=u_nav.moved_recently_set if u_nav.moved_recently_set is not None else new_nav.moved_recently,

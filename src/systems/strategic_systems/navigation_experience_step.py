@@ -5,11 +5,12 @@ field derived afresh from THAT give-up's evidence and the data values (nothing f
 whose stored purpose is None files nothing and is counted. No kind, role, faction or name is read: the inputs are the subject's own position, needs, projects and records, and the needs the give-up record carries (read by the producer, at the give-up, through the building-kind service table)."""
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from src.content.navigation_experience_settings import NavigationExperienceSettings
 from src.core.navigation_experience import (
     ExperienceReview,
+    NavCause,
     NavExperienceStatus,
     NavigationExperience,
     NavigationExperienceCounts,
@@ -54,6 +55,15 @@ def _evictions(entity: Any, memory: NavigationExperienceMemory, kept_ids: set, t
     return tuple(out)
 
 
+def _project_giveups(prev: Optional[NavigationExperience], cause: NavCause, project_id: str) -> int:
+    """The give-ups of this place for this purpose within the project: one more for a real failure (OSCILLATION, RING_BLOCKED), and UNCHANGED for an OCCUPIED filing, which is waiting and never counts toward
+    `access_giveup_limit` (ruling 476631fe, owner #715 7130979190): the stored count within the same project, 0 for a first record or another project."""
+    same = prev is not None and prev.project_id == project_id
+    if cause == NavCause.OCCUPIED:
+        return prev.project_giveups if same else 0
+    return (prev.project_giveups + 1) if same else 1
+
+
 def navigation_experience_update(entity: Any, tick: int, project_id: str, settings: NavigationExperienceSettings) -> NavigationExperienceUpdate:
     """The experience update of one strategic pass for ``entity``: reviews, the upserts its pending give-up records file, and the evictions the cap needs. ``project_id`` is the project current at this pass ("" when none)."""
     memory = entity.cognition.memory.navigation
@@ -77,7 +87,7 @@ def navigation_experience_update(entity: Any, tick: int, project_id: str, settin
             from_position=rec.from_position if rec.from_position is not None else here, target_tile=rec.target_tile if rec.target_tile is not None else anchor,
             need_services=rec.need_services, project_id=project_id, observed_tick=tick, cycle=(prev.cycle + 1) if prev is not None else 1,
             next_review_tick=next_review_tick_of(rec.cause, tuple(rec.ring_evidence), tick, settings), status=NavExperienceStatus.ACTIVE, reviewed_tick=None, review_reason=None,
-            project_giveups=(prev.project_giveups + 1) if prev is not None and prev.project_id == project_id else 1)
+            project_giveups=_project_giveups(prev, rec.cause, project_id))
     upserts = tuple(filed[k] for k in sorted(filed))
     after = apply_experience_update(memory, NavigationExperienceUpdate(reviews=reviews, upserts=upserts))
     evictions = _evictions(entity, after, set(filed), tick, settings)

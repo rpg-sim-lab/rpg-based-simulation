@@ -92,6 +92,7 @@ class NavigationUpdate:
     giveup_records_clear: bool = False  # F2: the subject's strategic pass has consumed the held records (written by the strategic pass only; applied before an add of the same update)
     target_clear_anchors: Tuple[Tuple[int, int], ...] = ()  # F2 v2.2a A'': the anchor tiles of suppressions, written by the strategic pass only: with ``target_clear`` when it refused the stored target at an anchor, and alone when it filed or extended a suppression; merged as the sorted, de-duplicated union; a transient update field, never stored or serialised
     target_purpose_set: Optional[TargetPurpose] = None  # the #996 rework: what a NEW target_set was chosen for, written WITH it by the writer (the same bound name as the gate's purpose argument); the patch stores it only with the target it keeps
+    arrived_this_attempt_set: bool = False  # the #996 rework (ruling 476631fe): movement measured the body within `has_arrived` of its target (from the PRE-step position); the patch stores the flag only with the target it keeps; merged as "True wins"
     target_gated_set: Optional[bool] = None  # the #996 rework: True when the target_set position passed a gate call, False for a by-value own-tile write that skipped it; None = not stated (a re-emission keeps the stored flag)
 
     def __post_init__(self) -> None:
@@ -109,7 +110,7 @@ class NavigationUpdate:
                 self.wait_count_delta == 0 and self.oscillation_count_delta == 0 and 
                 self.last_position_set is None and self.region_id_set is None and self.lodged_in_set is None and not self.lodged_in_clear and self.last_moved_tick_set is None and
                 self.wayround_count_set is None and self.wayround_best_distance_set is None and self.wayround_anchor_set is None and
-                self.wayround_last_tick_set is None and not self.wayround_clear and self.giveup_record_add is None and not self.giveup_records_clear and not self.target_clear_anchors and self.target_purpose_set is None and self.target_gated_set is None)
+                self.wayround_last_tick_set is None and not self.wayround_clear and self.giveup_record_add is None and not self.giveup_records_clear and not self.target_clear_anchors and self.target_purpose_set is None and self.target_gated_set is None and not self.arrived_this_attempt_set)
 
     def merge(self, other: NavigationUpdate) -> NavigationUpdate:
         if not other or other.is_noop():
@@ -124,6 +125,7 @@ class NavigationUpdate:
         changes.update(other._wayround_changes())
         changes.update(other._giveup_changes())
         changes.update(other._purpose_changes())
+        if other.arrived_this_attempt_set: changes["arrived_this_attempt_set"] = True  # True wins
         if other.target_clear_anchors: changes["target_clear_anchors"] = tuple(sorted(set(self.target_clear_anchors) | set(other.target_clear_anchors)))  # the union, sorted and de-duplicated: the same whatever the writer order
         return replace(self, **changes)
 

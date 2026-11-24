@@ -42,7 +42,7 @@ def test_a_navigation_without_lodged_in_restores_to_none_keeps_every_other_field
         st = k._state
         nav = st.entities[1].navigation
         # lodged_in is no longer the last slot: PERC-02 appended last_moved_tick and the 2.213 way-round fields (count, best, and the F1 anchor and last tick) follow it, so the pre-F3 shape lacks all seven trailing fields
-        trailing = ["lodged_in", "last_moved_tick", "wayround_count", "wayround_best_distance", "wayround_anchor", "wayround_last_tick", "giveup_records", "target_purpose", "target_gated"]
+        trailing = ["lodged_in", "last_moved_tick", "wayround_count", "wayround_best_distance", "wayround_anchor", "wayround_last_tick", "giveup_records", "target_purpose", "target_gated", "arrived_this_attempt"]
         old = _old_shape(nav, trailing)
         with pytest.raises(AttributeError):
             old.lodged_in
@@ -138,7 +138,7 @@ def test_a_navigation_without_last_moved_tick_restores_to_never_stepped_and_keep
         st = k._state
         nav = st.entities[1].navigation
         # an old save without last_moved_tick also predates every field appended after it (the 2.213 way-round fields and the F2 give-up records), so those are dropped too
-        trailing = ["last_moved_tick", "wayround_count", "wayround_best_distance", "wayround_anchor", "wayround_last_tick", "giveup_records", "target_purpose", "target_gated"]
+        trailing = ["last_moved_tick", "wayround_count", "wayround_best_distance", "wayround_anchor", "wayround_last_tick", "giveup_records", "target_purpose", "target_gated", "arrived_this_attempt"]
         old = _old_shape(nav, trailing)
         with pytest.raises(AttributeError):
             old.last_moved_tick
