@@ -48,6 +48,9 @@ Today timing runs go to CPUs 4-5 (`systemd-run --user --scope ... taskset -c 4-5
 
 Recommendation: A, with B as a stopgap until A lands. Either way, add steal time (`/proc/stat` steal or `vmstat` st) and the swap counters to every timing run's record (perf, no host change), so host stalls can be told apart from guest contention.
 
+## Evidence added 2026-11-19 (rerun on a loaded host, pinned cpus 4-5, steal/swap recorded)
+Reran the stage 0 worlds on tree `99a83adc9` with the timed run pinned to cpus 4-5 (`taskset -c 4-5`, `MemoryMax=1G`, `MemorySwapMax=0`), the quiet gate before each run, and about 16 seats up (not a quiet host). Steal was 0 jiffies on cpus 4 and 5 and real swap-out was 0 in 26 runs (one 118 pages/s interval in one R4 run, `urban_political`). Spreads: 200 ticks 1.2 to 3.4 %, 1000 ticks 3.5 to 7.2 %, against 10 to 24 % in the original R1 on cpus 2-3. `frontier_living_world` came out at 31.1 to 32.0 ms with spread 1.2 to 5.1 %, the first reading under the 10 % line. Means are 20 to 35 % lower than the original R1. Detail: `docs/performance/tick_cost_growth.md` sections 10.1b and 10.5b. What this shows: pinning to 4-5 with the gate already removes most of the noise seen on the original run, which bears on the owner's choice between options A to D. What it does not show: which cause (seat load on 4-5, or cpus 2-3 contention) the original spread had; the comparison also changes the CPUs. It is still not a quiet-host baseline.
+
 ## What this does not fix
 - **Swap pressure**: swap held 3.9 of 8 GB. `MemorySwapMax=0` keeps the timed process off swap, but not reclaim by the rest of the guest.
 - **Host-side vCPU stalls**: the ubuntu VM has shown idle vCPUs stuck 21 to 163 s in earlier journals. A guest-side CPU fence cannot reach the hypervisor. Candidate cause for the frontier spread, unverified.
