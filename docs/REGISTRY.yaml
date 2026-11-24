@@ -7986,6 +7986,79 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261124-A-CROWDED-PLACE-HAS-A-REAL-QUEUE.md
+  ticket_id: TCK-20261124-A-CROWDED-PLACE-HAS-A-REAL-QUEUE
+  title: 'A crowded place keeps a real queue: order and places in line, not only a
+    recheck'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-24'
+  related_code_areas:
+  - src/engine/movement.py, src/core/navigation_experience.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261124-A-WAITING-BODY-TRIES-ANOTHER-PLACE.md
+  ticket_id: TCK-20261124-A-WAITING-BODY-TRIES-ANOTHER-PLACE
+  title: A body waiting on an occupied place can try another place that serves the
+    same purpose
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-24'
+  related_code_areas:
+  - src/strategy/, src/systems/strategic_systems/intelligence.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261124-BUILDINGS-AND-FACTIONS-START-WITH-GOLD.md
+  ticket_id: TCK-20261124-BUILDINGS-AND-FACTIONS-START-WITH-GOLD
+  title: Wage-paying buildings and factions start with declared gold, so the money
+    loop does not run dry at the start
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-24'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261124-THE-STARVING-AND-SLEEP-NEED-LINES-COME-FROM-DATA.md
+  ticket_id: TCK-20261124-THE-STARVING-AND-SLEEP-NEED-LINES-COME-FROM-DATA
+  title: The starving line and the sleep line come from a data file, not from code
+    constants
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-24'
+  related_code_areas:
+  - 'src/core/need_lines.py (after #996), the StarvationTable defaults, src/strategy/experience_due.py
+    HUNGER_LINE, need_services_at'
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261124-THE-THREE-WITHHELD-995-CORPUS-RE-PINS.md
+  ticket_id: TCK-20261124-THE-THREE-WITHHELD-995-CORPUS-RE-PINS
+  title: 'The three corpus re-pins withheld from #995 (urban SOCIAL, hero COGNITION,
+    unit ECONOMY) are re-pinned once guard (ii) is clean'
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-24'
+  related_code_areas:
+  - tests/ corpus diversity pins (exact ids recorded by lane A at planning)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261123-A-BODY-KEEPS-ITS-FOOD-AND-SELLS-ONLY-FOR-A-PURPOSE-IT-HAS-FOR-THE-COIN.md
+  ticket_id: TCK-20261123-A-BODY-KEEPS-ITS-FOOD-AND-SELLS-ONLY-FOR-A-PURPOSE-IT-HAS-FOR-THE-COIN
+  title: A body keeps its food for eating and sells food only when it has a purpose
+    for the coin
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-23'
+  related_code_areas:
+  - src/engine/shop_sale.py; src/ai/goals/opening_steps.py (SELL / EARN_THEN_BUY);
+    src/engine/shop.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261123-A-BROKE-BODY-CAN-EARN-BY-TAKING-A-QUEST.md
   ticket_id: TCK-20261123-A-BROKE-BODY-CAN-EARN-BY-TAKING-A-QUEST
   title: A broke body that can take quests earns money by taking one at a guild or
@@ -7997,6 +8070,70 @@
   - src/ai/goals/ways.py, src/ai/goals/opening_steps.py, src/ai/goals/scorers.py,
     src/quests/,
   - src/engine/quests.py, src/engine/service_admission.py (keeps_coin)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261123-A-KILL-LEAVES-TYPED-LOOT-OF-FOOD-AND-RESOURCES-ON-THE-CORPSE.md
+  ticket_id: TCK-20261123-A-KILL-LEAVES-TYPED-LOOT-OF-FOOD-AND-RESOURCES-ON-THE-CORPSE
+  title: A kill's corpse carries resources from body properties beside its meat, and
+    a quest-evidence category is defined for the quest ticket
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-23'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261123-A-LARGE-PLANT-EATER-AND-AN-OMNIVORE-JOIN-THE-WILD-KINDS-BY-PROPERTIES.md
+  ticket_id: TCK-20261123-A-LARGE-PLANT-EATER-AND-AN-OMNIVORE-JOIN-THE-WILD-KINDS-BY-PROPERTIES
+  title: A large generic plant-eater and a generic omnivore join the wild kinds, declared
+    by properties only
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-23'
+  related_code_areas:
+  - data/content/living/species.yaml (small_plant_eater, l.307), body_models.yaml,
+    items.yaml
+  - data/content/world/ecologies.yaml, data/content/entities/populations.yaml
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261123-A-SECOND-WORKER-STARTS-A-MAINTENANCE-SHIFT-ANOTHER-ALREADY-HOLDS-AND-LOSES-IT-UNPAID.md
+  ticket_id: TCK-20261123-A-SECOND-WORKER-STARTS-A-MAINTENANCE-SHIFT-ANOTHER-ALREADY-HOLDS-AND-LOSES-IT-UNPAID
+  title: A second worker starts a maintenance shift that another worker already holds,
+    and loses it unpaid when the other finishes first
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-23'
+  related_code_areas:
+  - src/engine/work_shift.py (shift_startable, can_pay_shift, work_update:146-147);
+    src/engine/serves.py; src/core/state.py (BuildingState); the apply step
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261123-AN-ENTITY-ITINERARY-IS-READ-FROM-A-RUNS-REPLAY-CHUNKS-EVENTS-AND-DEATH-LEDGER.md
+  ticket_id: TCK-20261123-AN-ENTITY-ITINERARY-IS-READ-FROM-A-RUNS-REPLAY-CHUNKS-EVENTS-AND-DEATH-LEDGER
+  title: An entity's itinerary (its key moments) and its full route (every tick) are
+    read from a finished run's replay chunks, events and death ledger
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-23'
+  related_code_areas:
+  - src/observability/reporting/ (history_query.py, run_report.py, run_determinism.py);
+    src/cli/entry.py; src/core/updates.py; src/engine/kernel.py; src/worldbuilding/compiler.py;
+    the replay manager
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261123-AN-EXHAUSTED-BODY-WITH-NO-BED-SLEEPS-ONLY-BY-COLLAPSE.md
+  ticket_id: TCK-20261123-AN-EXHAUSTED-BODY-WITH-NO-BED-SLEEPS-ONLY-BY-COLLAPSE
+  title: An exhausted body with no bed way never chooses to sleep; it sleeps only
+    by collapsing
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-23'
+  related_code_areas:
+  - src/ai/goals/ (the fatigue goal); the tactical collapse sleep; the bed admission
   artifact_files: []
   tags: []
 - type: ticket

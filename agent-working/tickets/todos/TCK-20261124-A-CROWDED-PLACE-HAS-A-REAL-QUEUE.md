@@ -45,6 +45,7 @@ Owner direction #715 7130838054 (2): crowding around a free tile is 'like a queu
 ## Related Tickets
 - TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON (#996)
 - TCK-20261124-A-WAITING-BODY-TRIES-ANOTHER-PLACE
+- overlap scan: 1 hit (TCK-20261124-BUILDINGS-AND-FACTIONS-START-WITH-GOLD), none duplicate: that one is building and faction start money, and this one is turn-taking at a crowded place.
 
 ## Related Docs
 - docs/plans/systemic_world/experience_memory_design.md
