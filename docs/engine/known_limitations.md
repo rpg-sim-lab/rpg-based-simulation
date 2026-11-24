@@ -144,6 +144,8 @@ In **SURVIVAL** mode, `replay_allowed = False`: no TICK_END event is emitted at 
 The **final canonical hash** (`CanonicalHashScheduler.compute_digest` at the run-end boundary in `Kernel.shutdown()`)
 is always computed regardless of mode — it is not gated on `replay_richness`.
 
+**Limit (`TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK`): the per-tick digest memoizes the strategic and social strata.** The kernel's per-tick replay digest reuses the canonical dict of a strategic or social component it has already built (`CanonicalFragmentMemo`). A component whose container (a dict, list or set inside the frozen record) is mutated in place keeps its old dict for as long as that component object lives, so that change is invisible to the per-tick digest. No such write exists in `src/` today (an AST scan of every write to a field of the two components found none); The rule that components are rebuilt with `replace()` is the first guard. Under `audit_mode` the kernel also runs `CanonicalFragmentMemo.audit()` every `CANONICAL_MEMO_AUDIT_PERIOD` ticks (100) and raises `ProtocolViolationError` on a stale entry, so the write is detected within that many ticks; outside `audit_mode` it is not detected, and a component mutated in place and replaced within one period is not seen. The final digest is called without the memo argument.
+
 #### Lightweight fingerprint (`StateFingerprinter`)
 
 In all modes where `replay_allowed = True` (NORMAL, CONSTRAINED, DEGRADED), the

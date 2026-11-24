@@ -11,6 +11,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, Mapping, Optional, Tuple, TYPE_CHECKING
 
+from src.core.navigation_experience import NavigationExperienceMemory
+
 from src.core.self_model import (
     KnowledgeModelComponent,
     KnowledgeFact,
@@ -344,9 +346,10 @@ class MemoryModel:
     habit: HabitMemory = field(default_factory=HabitMemory)
     combat: CombatMemory = field(default_factory=CombatMemory)
     social: SocialMemory = field(default_factory=SocialMemory)
+    navigation: NavigationExperienceMemory = field(default_factory=NavigationExperienceMemory)  # the #996 rework (design section 2.2): the subject's own failed approaches, scoped to the purpose they were made for; written only by its strategic consume step; LAST
 
     def to_canonical_dict(self) -> Dict[str, Any]:
-        return {
+        res = {
             "experience": self.experience.to_canonical_dict(),
             "causal": self.causal.to_canonical_dict(),
             "spatial": self.spatial.to_canonical_dict(),
@@ -354,6 +357,9 @@ class MemoryModel:
             "combat": self.combat.to_canonical_dict(),
             "social": self.social.to_canonical_dict()
         }
+        if self.navigation.records:
+            res["navigation"] = self.navigation.to_canonical_dict()  # present only while the subject holds a navigation experience, so the form of one that never gave up is unchanged
+        return res
 
 
 # ─────────────────────────────────────────────────────────────────────────────

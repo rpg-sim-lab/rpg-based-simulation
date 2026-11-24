@@ -21,6 +21,7 @@ This rulebook defines the authoritative contract for structured runtime observab
 | **Yielding** | `YIELDING` | `blocker_id: int` | Waiting: Higher priority entity has right-of-way. |
 | **Sidestepping** | `SIDESTEPPING` | - | Moving to a cardinal neighbor to avoid a temporary obstacle. |
 | **Waiting** | `WAITING` | - | Stay put because the ideal next tile is blocked. |
+| **Give-up** | `WAYROUND_GIVE_UP` | - | The way-round give-up dropped the target; it replaces any older failure code and files no blocker (divergence 2.213, item 6). |
 
 ### B. Combat Reasons
 | Category | ReasonCode | Metadata Fields | Description |

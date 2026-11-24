@@ -105,9 +105,9 @@ def test_certification_harness_takes_its_digests_from_the_scheduler(tmp_path: Pa
     reasons = []
     original = CanonicalHashScheduler.compute_digest
 
-    def spy(self, st, tick, reason=""):
+    def spy(self, st, tick, reason="", **kwargs):  # the kernel's per-tick call also passes memo=
         reasons.append(reason)
-        return original(self, st, tick, reason)
+        return original(self, st, tick, reason, **kwargs)
 
     with patch.object(CanonicalHashScheduler, "compute_digest", spy):
         baseline = harness._get_baseline_hash(state, 1)

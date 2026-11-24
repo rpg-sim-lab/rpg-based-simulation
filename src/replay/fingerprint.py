@@ -1,9 +1,34 @@
 from __future__ import annotations
 
 import hashlib
-from typing import Any, Dict
+from typing import TYPE_CHECKING, Any, Dict
 
 from src.core.state import GROUP_ID_BASE, AuthoritativeState
+
+if TYPE_CHECKING:
+    from src.core.state import NavigationComponent
+    from src.core.strategic import BlockerState
+
+
+def _navigation_tail(nav: "NavigationComponent") -> str:
+    """The optional navigation fragments of an entity's fingerprint: ``lodged_in`` only while lodged (F3), the way-round count, best distance, anchor and last tick only while a count is open (2.213)."""
+    lodged = "" if nav.lodged_in is None else "lodged_in=%s:" % nav.lodged_in
+    wayround = "wayround=%s@%s:%s:%s:" % (nav.wayround_count, nav.wayround_best_distance, nav.wayround_anchor, nav.wayround_last_tick) if nav.wayround_count else ""
+    giveups = "giveups=%s:" % (tuple((r.anchor, r.tick) for r in nav.giveup_records),) if nav.giveup_records else ""  # F2: only while a give-up record is held
+    purpose = "purpose=%s/%s%s:" % (nav.target_purpose.project_kind, nav.target_purpose.movement_mode, "+gated" if nav.target_gated else "") if nav.target_purpose is not None else ("gated:" if nav.target_gated else "")  # the #996 rework: only while the target carries a purpose or a gate flag
+    return lodged + wayround + giveups + purpose
+
+
+def _blocker_ident(blockers: "Dict[str, BlockerState]") -> str:
+    """The blockers' fragment of an entity's strategic identity, in id order."""
+    return "|".join(
+        f"{blocker_id}:"
+        f"{blocker.kind}:"
+        f"{blocker.subject}:"
+        f"{blocker.severity:.3f}:"
+        f"{blocker.resolved}"
+        for blocker_id, blocker in sorted(blockers.items())
+    )
 
 
 class StateFingerprinter:
@@ -58,7 +83,7 @@ class StateFingerprinter:
                 f"{ent.kind}:"
                 f"role={ent.identity.role}:"
                 f"faction={ent.identity.faction}:"
-                f"pos={ent.navigation.position}:" f"{'' if ent.navigation.lodged_in is None else 'lodged_in=%s:' % ent.navigation.lodged_in}"  # lodged_in only while lodged (F3)
+                f"pos={ent.navigation.position}:" f"{_navigation_tail(ent.navigation)}"  # lodged_in only while lodged (F3); the way-round count only while one is open (2.213)
                 f"hp={ent.combat.hp}:"
                 f"gold={ent.inventory.gold}:"
                 f"current_project={ent.strategic.current_project_id}:"
@@ -172,14 +197,7 @@ class StateFingerprinter:
             for project_id, project in sorted(strategic.projects.items())
         )
 
-        blocker_ident = "|".join(
-            f"{blocker_id}:"
-            f"{blocker.kind}:"
-            f"{blocker.subject}:"
-            f"{blocker.severity:.3f}:"
-            f"{blocker.resolved}"
-            for blocker_id, blocker in sorted(strategic.blockers.items())
-        )
+        blocker_ident = _blocker_ident(strategic.blockers)
 
         lead_ident = "|".join(
             f"{lead_id}:"

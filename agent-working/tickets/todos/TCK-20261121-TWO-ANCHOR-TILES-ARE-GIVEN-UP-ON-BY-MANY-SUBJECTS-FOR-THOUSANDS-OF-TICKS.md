@@ -71,6 +71,7 @@ None yet. The evidence is in `/mnt/data2/rpg-measure/f2/cells_f1f2_b` and `/mnt/
 None expected. This is a read-first content check.
 
 ## Implementation Notes
+- CARRIED G3 ITEM from F2 (owner ruling, #715 ask 7078451773, answer 7078467940: "Land, carry to D6"): F2 (TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON) lands with its G3 bar (a subject-anchor given up on 5 or more times since its last DESTINATION_GIVEN_UP) not 0 in the post-fix full run (crowded / flw / up = 1 / 6 / 12). The scoped, EXPIRING item names these (subject, anchor) tiles: up (25,25), (40,31), (38,30), (35,27); flw (40,82), (87,50); crowded (110,37). It expires when this ticket's fix lands; G3 is re-judged then and stays a HARD bar after. Evidence: F2's evidence_v22b/g3_up_read.out (the up rows, approximate reconstruction: of the new run's 12 rows, 24 give-ups fall inside the reconstructed suppression window and 37 at or after expiry; the old run's 4 rows 10 and 12).
 
 ## Test Summary
 

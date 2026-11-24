@@ -1,0 +1,14 @@
+# data/content/movement/wayround_settings.yaml
+# The way-round law's two numbers (F1, divergence 2.213; moved out of src/engine/movement.py by the F2 v2.2 build, rpg-designer 2026-11-21). A movement law, so it is its own file, not
+# blocker_settings. A one-record catalog family like defaults.yaml: the values are part of the catalog fingerprint (the run's identity); read through the warmed catalog by
+# src/content/wayround_settings.py, bound once by src/engine/movement.py, never from the file at tick time.
+#
+# wayround_limit: way-round steps allowed on one target with no net progress before the oscillation replan is the real one (the give-up). An integer >= 1.
+# wayround_quiet_ticks: the longest gap between two events of one pursuit; past it the next event opens a fresh count. An integer >= 1, in ticks. 200t = 1/12 day at 2400 t/day.
+# No cross-check between the two: one counts steps, the other ticks.
+- id: "wayround_settings"
+  display_name: "Way-round settings"
+  description: "The way-round law's step limit and quiet window"
+  schema_version: "wayroundsettings.v1"
+  wayround_limit: 2
+  wayround_quiet_ticks: 200

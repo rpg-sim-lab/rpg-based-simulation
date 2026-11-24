@@ -20,6 +20,8 @@ import pytest
 from src.config.profiles import PROD_SMALL
 from src.core.enums import EntityRole
 from src.core.items import food_hunger_recovery
+from src.core.movement_modes import MovementMode
+from src.core.navigation_purpose import purpose_of
 from src.core.state import AuthoritativeState, TaskComponent
 from src.engine.kernel import Kernel
 from src.engine.legality import LegalityServiceV2
@@ -57,7 +59,7 @@ def _carried(entity) -> int:
 
 
 def _move_to(entity, destination):
-    return replace(entity, navigation=replace(entity.navigation, target=destination),
+    return replace(entity, navigation=replace(entity.navigation, target=destination, target_purpose=purpose_of(entity, None, MovementMode.WANDER), target_gated=True),  # the #996 rework: the held move carries its stored purpose
                    task=TaskComponent(work_kind="ENTITY_MOVE", payload={"reason": "STAGED_ROUTE", "target_position": destination}))
 
 

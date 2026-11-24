@@ -24,6 +24,7 @@ from src.engine.run_identity import create_run_directory, new_run_id
 from src.engine.executor import IWorkExecutor, LocalSequentialExecutor, ConcurrentExecutionAdapter
 from src.engine.cache_registry import CacheRegistry, CacheBudgetPolicy
 from src.engine.cadence import should_run
+from src.engine.checkpoint import CANONICAL_MEMO_AUDIT_PERIOD, CanonicalFragmentMemo
 from src.engine.need_pull import ESCALATION_ONSET, HUNGER_LINE
 from src.engine.starvation import STARVING_LINE
 
@@ -45,7 +46,7 @@ class Kernel:
     """
 
     __slots__ = (
-        "_profile", "_state", "_rng", "_phases", 
+        "_profile", "_state", "_rng", "_phases", "_canonical_memo",
         "_scheduler", "_governor", "_signals_zeroed", "_status", "_replay", "_collector",
         "_worker_manager", "_executor", "_stopped",
         "_start_perf_ts", "_current_world_time", "_platform_signals",
@@ -83,6 +84,8 @@ class Kernel:
         self._stopped = False
         self._profile = profile
         self._state = state
+        # The per-tick replay digest's memo (one per kernel, used only in `_phase_persistence`, never pickled or replayed).
+        self._canonical_memo = CanonicalFragmentMemo()
         self._rng = rng
         self._phases = get_authoritative_phases()
         self._audit_mode = flags.get("audit_mode", False) if flags else False
@@ -650,7 +653,7 @@ class Kernel:
                     "tick": self._state.tick,
                     "world_time": self._state.world_time,
                     "seed": self._state.seed,
-                    "update": refined_update,
+                    "update": refined_update.replay_form(),
                     "fingerprint": self._state.fingerprint()
                 }
             ), self._current_policy)
@@ -1110,9 +1113,12 @@ class Kernel:
         from src.engine.checkpoint import CanonicalHashScheduler
         tick = self._state.tick
         if self._current_policy.replay_allowed and (self._audit_mode or self._current_policy.replay_richness == "FULL"):
-            digest = CanonicalHashScheduler().compute_digest(self._state, tick, reason="replay")
+            digest = CanonicalHashScheduler().compute_digest(self._state, tick, reason="replay", memo=self._canonical_memo)
         else:
             digest = CanonicalHashScheduler.not_computed_by_policy(tick)
+
+        if self._audit_mode:
+            self._canonical_memo.raise_if_stale(tick, CANONICAL_MEMO_AUDIT_PERIOD)
 
         if self._current_policy.replay_allowed:
             self._replay.emit(TraceEvent(

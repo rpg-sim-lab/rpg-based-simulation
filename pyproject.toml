@@ -81,14 +81,14 @@ dev = [
 # `dev` so CI jobs that do not run the code-health tests skip them (`uv sync --no-group lint`);
 # `default-groups` below keeps a plain `uv sync` unchanged.
 lint = [
-    "ruff==0.17.5",
+    "ruff==0.17.6",
     "complexipy==8.3.0",
     # TCK-20261004-AST-GREP-RULE-PACK-ADVISORY: project rules in codebase/rules/ (binary: `ast-grep`, never `sg`).
     "ast-grep-cli==0.51.3",
     # TCK-20261004-IMPORT-LINTER-ADOPTION: contracts in codebase/structure/importlinter.toml (blocking in the required Code health job since #671; binary: `lint-imports --config <file>`).
-    "import-linter==2.16",
+    "import-linter==2.17",
     # TCK-20261021-PYREFLY-ADVISORY-REPORT: advisory second type-checker opinion, report-only, never a gate (mypy is the gate).
-    "pyrefly==1.4.1",
+    "pyrefly==1.5.0",
 ]
 profiling = [
     "memray>=1.0.0",

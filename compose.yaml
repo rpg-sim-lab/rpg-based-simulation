@@ -225,7 +225,7 @@ services:
     # port: Prometheus reaches it by service name. The host root is mounted read-only at /host (rslave so a separate mount
     # such as /data shows up under /host/data) and read through --path.rootfs. Only the filesystem collector is enabled,
     # which is all the rules need; pseudo filesystems are excluded by type.
-    image: prom/node-exporter:v1.12.1@sha256:1b4e4438faca4dd7e001dd445d161a4a2091b0fededa84093b3a8dfeae1f1be0
+    image: prom/node-exporter:v1.13.1@sha256:7296504d4ada44b7d7ab4431e27e9f9900d8488f8d55842f4b12ae2704e16dfe
     mem_limit: 32m # measured peak 11.4 MiB over a 2026-10-18 run (about 3x headroom)
     command:
       - '--path.rootfs=/host'
@@ -335,7 +335,7 @@ services:
     #   container environment alloy can already read.
     #   Rejected: mounting /var/lib/docker/containers read-only in alloy (it would read every container's logs on the host, other stacks included, and loses
     #   the project filter); the Loki Docker logging driver (a host plugin install, a logging block on every service, and it bypasses alloy's pipeline).
-    image: tecnativa/docker-socket-proxy:v0.5.0@sha256:1f5038b54f06c3e18422902cf00ba21803d1c97805aae032e5e6673d532d3459
+    image: tecnativa/docker-socket-proxy:3.4@sha256:027f9fa5ee70be5836eeaa10ce889d7a83f34a8db16a7f412818b92997e0beab
     mem_limit: 64m
     environment:
       - CONTAINERS=1

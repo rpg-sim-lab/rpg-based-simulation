@@ -41,6 +41,7 @@ class ProjectEnd(str, Enum):
       `SUSPENSION_EXPIRED` (ABANDONED): a SUSPENDED project that stayed suspended for `SUSPENSION_TTL_TICKS` without resuming (N10, divergence 2.212); every project kind.
       `BLOCKER_TIMEOUT` (ABANDONED): a resolve_blocker project that ran for the 50-tick window without its blocker resolving (divergence 2.214).
       `BLOCKER_CLEARED` (COMPLETED): a resolve_blocker project whose blocker was removed after a quiet spell (divergence 2.214).
+      `DESTINATION_GIVEN_UP` (ABANDONED): the subject gave up reaching this project's destination ACCESS_GIVEUP_LIMIT times (give-up-filed ACCESS blocker, F2, divergence 2.220); every project kind.
     A project ended for any other reason keeps `ended_by` None."""
     SUPERSEDED_BY_TARGET = "SUPERSEDED_BY_TARGET"
     THREAT_CLEARED = "THREAT_CLEARED"
@@ -48,6 +49,7 @@ class ProjectEnd(str, Enum):
     SUSPENSION_EXPIRED = "SUSPENSION_EXPIRED"
     BLOCKER_TIMEOUT = "BLOCKER_TIMEOUT"
     BLOCKER_CLEARED = "BLOCKER_CLEARED"
+    DESTINATION_GIVEN_UP = "DESTINATION_GIVEN_UP"
 
 
 class ObjectiveStatus(str, Enum):
