@@ -41,7 +41,7 @@ P1
 ## Acceptance Criteria
 1. The probe moves the digest for a hashed FrozenSet[enum] field already holding the first enum member.
 2. The new probe tests pass, and fail against the old union.
-3. The architecture digest test file passes on origin/main plus this change, and on #996's head once this merges.
+3. The architecture digest test file passes on origin/main plus this change, including the one allowlist deletion below (owner-approved, #715 7122164131), and on #996's head once this merges.
 4. The PR body lists every changed verdict (or says none). It merges before #996.
 
 ## Related Tickets
@@ -70,10 +70,10 @@ None. Test-only change.
 Pytest on taskset -c 0-3, --basetemp on /data, no uv sync, no bare git stash.
 
 ## Test Summary
-tests/architecture/test_state_digest_probe_perturb.py: 14 passed (7 new); against the old union 4 of the new tests fail; a mutation (remove-first instead of deterministic, no other-member add) fails a test. tests/architecture/test_state_digest_covers_every_field.py: 10 of 11 pass; the one failure is a CHANGED VERDICT, not a probe defect: `state.groups[].member_ids` (`Set[int]`, allowlist row GAP, "hashed only conditionally: samples disagree") now reads covered in every sample, because the old union with the synthesized 1 could equal the original. Known gap: that allowlist row is now stale and must be deleted by the owner's decision; this ticket does not edit the allowlist (out of scope), so the digest test file is red on this branch until that row is removed. The enum row that motivated the ticket (#996 need_services) is not on origin/main.
+tests/architecture/test_state_digest_probe_perturb.py: 14 passed (7 new); against the old union 4 of the new tests fail; a mutation (no other-member add, unordered removal) fails a test. tests/architecture/test_state_digest_covers_every_field.py: 11 of 11 pass with the one row deleted. The deleted row, `state.groups[].member_ids` (`Set[int]`, GAP, "hashed only conditionally: samples disagree"), is the one changed verdict: the field is hashed, and the old union with the synthesized 1 could equal the original, so the old verdict was a probe artefact. With the fixed probe the field reads covered in every sample, so the row is stale. The owner approved deleting it (#715 7122164131). The enum row that motivated the ticket (#996 need_services) is not on origin/main; it needs a run on #996's resynced head.
 
 ## Files Changed
-tests/architecture/state_digest_probe.py (`_perturb_set`), tests/architecture/test_state_digest_probe_perturb.py (7 tests), this ticket and its artifacts.
+tests/architecture/state_digest_probe.py (`_perturb_set`), tests/architecture/test_state_digest_probe_perturb.py (7 tests), tests/architecture/state_digest_allowlist.yaml (one row deleted), this ticket and its artifacts.
 
 ## Completion Summary
-`perturb` now always changes a set or frozenset: union when it differs, else another member of the enum (or a perturbed element), else a deterministic removal; the added element is returned for an add and None for a removal. One allowlist row changed verdict (state.groups[].member_ids) and is reported to testing-planner for the owner.
+`perturb` now always changes a set or frozenset: union when it differs, else another member of the enum (or a perturbed element), else a deterministic removal; the added element is returned for an add and None for a removal. One allowlist row changed verdict (state.groups[].member_ids, a probe artefact) and was deleted on the owner's approval (#715 7122164131).
