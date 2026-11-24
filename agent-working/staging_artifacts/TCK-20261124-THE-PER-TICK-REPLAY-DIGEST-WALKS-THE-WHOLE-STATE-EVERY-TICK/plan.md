@@ -55,3 +55,13 @@ Cold and warm: each assertion is made twice, once on a state whose memos are all
 1. Approve Stage 1 as the first PR (Stage 2 held back).
 2. AC2's replay-bytes comparison needs a lead heavy-slot GO later (two arms on frontier_living_world s42, 2000 ticks, replay on, audit_mode); I do not ask for it now.
 3. Say if a record of the equality test at 2 worlds should include a third (the ticket says at least 2).
+
+## ADDENDUM: status after the four conditions (rpg-planner-ubuntu, Stage 1 approval)
+Condition 3 answers NO, so per the approval Stage 1 is STOPPED here and nothing is coded. Facts are in investigation.md "ADDENDUM". In short:
+- A new `_canonical_cache` slot on StrategicComponent / SocialComponent is a checkpoint schema append: it changes the pickle bytes of every checkpoint and refuses every existing checkpoint unless two ruling-backed `FIELD_RULES` rows are added (checkpoint_fields.py), and a populated memo dict is pickled with the component. The existing memo slots on other records already work this way.
+- Conditions 1 (replace/unpickle/copy paths) and 4 (callers only read) hold. Condition 2: no in-place mutation site found by scan (2 false positives), but the containers are plain dict/set/list in a running world, so nothing but convention and the audit prevents a future one.
+DECISION NEEDED (options, my recommendation first):
+- A (recommended): memoize WITHOUT a new record slot: a typed memo owned by the kernel (the object that already outlives each tick), keyed by `id()` of the component with a strong reference held in the entry, pruned to the live components after each digest (bounded by the state), with a stated lifecycle; `CanonicalStateHasher.get_hash` keeps its signature and gains an optional memo argument; no schema, checkpoint, replay or pickle change. Cost: the memo is hidden-by-design state outside the record, so it needs its own typed class, a pin test of the bound, and the audit extended to it.
+- B: the slot on the two components plus two `FIELD_RULES` rows (rulings needed from rpg-designer: the memo is not state, so the fill is None) and a schema/pickle change. Smaller code, but a checkpoint format change.
+- C: do nothing for the data-build half and go to Stage 2's text splice only on the kernel-owned memo (same ownership problem as A).
+All three keep the digest byte-identical; E1-E11 apply to any of them.
