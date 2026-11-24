@@ -17,8 +17,16 @@ from unittest.mock import patch
 
 import pytest
 
+from src.core.death_cause import DeathCause, DeathRecord
+from src.core.grief_triggers import pending_grief_triggers
 from src.core.models.social import BetrayalRecord, SocialBond
+from src.core.strategic import ProjectState
 from src.core.state import AuthoritativeState, strategic_canonical_dict, social_canonical_dict
+from src.engine.checkpoint_schema import _SchemaPickler, class_key
+from src.engine.scenario_checkpoint import ScenarioCheckpointer
+from src.scenarios.schema import SimulationScenarioDefinition
+from tests.named_run_dirs import remove_restored_run_dirs  # noqa: F401
+from tests.unit.engine.checkpoint_helpers import write_checkpoint
 from src.engine.checkpoint import CanonicalFragmentMemo, CanonicalHashScheduler, CanonicalStateHasher, DigestStatus
 from tests.unit.engine.canonical_reference import reference_canonical_data, reference_digest, reference_json
 from tests.unit.engine.test_proof_digest_contract import _cached_objects, audit_cached_canonical_dicts
@@ -298,3 +306,105 @@ def test_without_a_memo_the_old_path_is_unchanged_and_the_hasher_signature_defau
     import inspect
     for fn in (CanonicalStateHasher.get_hash, CanonicalStateHasher.to_canonical_data, CanonicalStateHasher.to_canonical_json, CanonicalHashScheduler.compute_digest):
         assert inspect.signature(fn).parameters["memo"].default is None
+
+
+# ---------------------------------------------------------------------------
+# E16: a checkpoint that predates a strategic field is filled before any memo exists, and a restored kernel starts empty
+# ---------------------------------------------------------------------------
+
+_PRE_FIELDS = ("cleared_since", "suspended_since", "ended_tick")  # the three trailing ProjectState fields that have FIELD_RULES rows
+
+
+def _rebuild_old_project(cls, old_values):
+    obj = cls.__new__(cls)
+    cls.__setstate__(obj, old_values)  # positional, as an old pickle loads: the record is three values short
+    return obj
+
+
+class _OldProjectPickler(_SchemaPickler):
+    """Writes every ProjectState as an OLD-shape record (without the three trailing fields) and fingerprints it that way."""
+
+    def reducer_override(self, obj):
+        if type(obj) is ProjectState:
+            names = [f.name for f in dataclasses.fields(ProjectState)]
+            old = [n for n in names if n not in _PRE_FIELDS]
+            self.schema[class_key(ProjectState)] = old
+            return _rebuild_old_project, (ProjectState, tuple(getattr(obj, n) for n in old))
+        return super().reducer_override(obj)
+
+
+@pytest.mark.usefixtures("remove_restored_run_dirs")
+def test_a_restore_that_fills_a_strategic_field_starts_with_an_empty_memo_and_digests_to_the_reference(tmp_path):
+    import io
+    run_a = _Run("frontier_living_world")
+    kernel_a = run_a.kernel
+    try:
+        for _ in range(60):
+            kernel_a.tick_once()
+            if any(e.strategic.projects for e in kernel_a.state.entities.values()):
+                break
+        for _ in range(8):
+            kernel_a.tick_once()
+        state_a = kernel_a.state
+        projects = [p for e in state_a.entities.values() for p in e.strategic.projects.values() if type(p) is ProjectState]
+        assert projects, "no entity held a plain ProjectState: the fill rows would not be exercised"
+        assert len(kernel_a._canonical_memo) > 0  # A's memo is warm and A (with its strong references) stays alive for the whole test
+        buf = io.BytesIO()
+        pickler = _OldProjectPickler(buf, protocol=pickle.HIGHEST_PROTOCOL)
+        pickler.dump(state_a)
+        schema = {k: list(v) for k, v in pickler.schema.items()}
+        path = write_checkpoint(tmp_path / "old.bin", buf.getvalue(), "s", schema, tick=state_a.tick)
+        spec = SimulationScenarioDefinition(id="s", world_composition="frontier_living_world", perspective="hero_guild_perspective")
+        svc = ScenarioCheckpointer.restore(path, spec)
+        kernel_b = svc._kernel
+        try:
+            restored = [p for e in kernel_b.state.entities.values() for p in e.strategic.projects.values() if type(p) is ProjectState]
+            assert len(restored) == len(projects)
+            assert all(getattr(p, f) is None for p in restored for f in _PRE_FIELDS), "the fill rows did not run on the restored projects"
+            assert len(kernel_b._canonical_memo) == 0 and kernel_b._canonical_memo is not kernel_a._canonical_memo
+            before_a = len(kernel_a._canonical_memo)
+            kernel_b.tick_once()
+            state_b = kernel_b.state
+            assert CanonicalStateHasher.get_hash(state_b, kernel_b._canonical_memo) == reference_digest(state_b)
+            assert CanonicalStateHasher.get_hash(state_b, CanonicalFragmentMemo()) == reference_digest(state_b)
+            assert len(kernel_a._canonical_memo) == before_a, "kernel B must not touch kernel A's memo"
+            assert kernel_a._canonical_memo.audit() == []
+        finally:
+            kernel_b.shutdown()
+    finally:
+        run_a.close()
+
+
+# ---------------------------------------------------------------------------
+# E17: a live kernel with a warm memo reassigns its state through apply_generation; the teardown flush is the second site
+# ---------------------------------------------------------------------------
+
+def test_the_grief_flush_on_a_warm_kernel_digests_to_the_reference():
+    run = _Run("frontier_living_world")
+    kernel = run.kernel
+    try:
+        for _ in range(25):
+            kernel.tick_once()
+        memo = kernel._canonical_memo
+        assert len(memo) > 0
+        st = kernel.state
+        ids = sorted(e for e, ent in st.entities.items() if ent.lifecycle.active)
+        dead_id, griever_id = ids[0], ids[1]
+        dead = st.entities[dead_id]
+        griever = st.entities[griever_id]
+        dead = dataclasses.replace(dead, lifecycle=dataclasses.replace(dead.lifecycle, active=False, death_record=DeathRecord(cause=DeathCause.COMBAT, tick=st.tick - 1)))
+        griever = dataclasses.replace(griever, social=dataclasses.replace(griever.social, trust_history={**griever.social.trust_history, dead_id: 0.9}))
+        planted = dataclasses.replace(st, entities={**st.entities, dead_id: dead, griever_id: griever})
+        kernel._state = planted
+        assert pending_grief_triggers(planted), "the planted death owes a grief trigger"
+        assert CanonicalStateHasher.get_hash(planted, memo) == reference_digest(planted)  # warm memo, the planted state
+        kernel.drain_pending_triggers_at_teardown()  # the apply_generation site that does not advance the tick
+        after = kernel.state
+        assert after is not planted and after.grief_drained_tick != planted.grief_drained_tick
+        assert f"grief_ally_{dead_id}" in after.entities[griever_id].strategic.concerns or after.entities[griever_id].strategic.concerns != planted.entities[griever_id].strategic.concerns
+        assert CanonicalStateHasher.get_hash(after, memo) == reference_digest(after)
+        assert memo.audit() == []
+        kernel.tick_once()
+        assert CanonicalStateHasher.get_hash(kernel.state, memo) == reference_digest(kernel.state)
+    finally:
+        run.close()
