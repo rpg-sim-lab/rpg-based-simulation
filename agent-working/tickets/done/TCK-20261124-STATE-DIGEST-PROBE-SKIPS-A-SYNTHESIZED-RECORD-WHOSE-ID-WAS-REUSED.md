@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: testing
 authority: P1
 audience: agent
 ticket_id: TCK-20261124-STATE-DIGEST-PROBE-SKIPS-A-SYNTHESIZED-RECORD-WHOSE-ID-WAS-REUSED
-phase: open
+phase: done
 date: 2026-11-24
 tags: [testing]
 ---
@@ -15,7 +15,7 @@ tags: [testing]
 The state-digest probe's visited set holds ids of freed synthesized records, so a new record that reuses an id is skipped and its field paths vanish from one run to the next
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 hotfix
@@ -69,10 +69,12 @@ None. Test-only change.
 Pytest on taskset -c 0-3, --basetemp on /data, no uv sync, no bare git stash.
 
 ## Test Summary
-Not yet run.
+Step 1 (prove first): the new test `test_a_synthesized_record_that_reuses_a_freed_records_id_is_still_probed` fails on origin/main cef537d29: the probe over a holder with two `List[Outer]` fields, where each Outer holds a `List[Rec]`, reports `state.first[].items[].a` but not `state.second[].items[].a` once the freed first Rec's id is handed to the second. The id reuse is modelled, not forced through the allocator: forcing a real address reuse was tried and does not work (the freed block is taken by another allocation before the next record, and 300000 same-type allocations never matched), so the test patches `id` in the probe module with a recycler whose ids are unique among live records and are reissued after a record is freed (the one allocator behaviour the bug needs). With the fix it passes. It proves that an id-keyed `seen` set loses paths on reuse; it does not prove that is what failed run 45140116346, which would need the allocator to reuse an address in that run.
+Fix: `visit()` appends each visited object to a `visited` list that lives for the whole probe, beside the id-keyed `seen`. Live state objects are unchanged.
+Run on `taskset -c 0-3`: test_state_digest_probe_perturb.py 15 passed (1 new), test_state_digest_covers_every_field.py 11 passed; 26 together. No verdict changed, no allowlist edit.
 
 ## Files Changed
-None yet.
+tests/architecture/state_digest_probe.py (`visited` list in `probe_state`), tests/architecture/test_state_digest_probe_perturb.py (one test, a recycling-id helper and three small dataclasses), this ticket and its artifacts.
 
 ## Completion Summary
-Open.
+The probe keeps every visited object alive for the whole probe, so an id in `seen` cannot be reissued to another record. The failing test is deterministic and fails without the fix. Whether this was the cause of the one flaky CI failure is a hypothesis the test supports but cannot confirm.

@@ -318,6 +318,7 @@ def probe_state(state: Any) -> List[Result]:
         if id(o) in seen or depth > MAX_DEPTH:
             return
         seen.add(id(o))
+        visited.append(o)
         hints = hints_of(type(o))
         for f in dataclasses.fields(o):
             if f.name == CACHE_FIELD:
@@ -364,6 +365,7 @@ def probe_state(state: Any) -> List[Result]:
                 visit(item, fpath + "[]", depth + 1, seen, ref)
 
     base[0] = digest()
+    visited: List[Any] = []  # keeps every visited object alive for the whole probe: ``seen`` holds ids, and a freed synthesized record's id can be handed to the next one
     visit(state, "state", 0, set(), base[0])
     return results
 
