@@ -76,7 +76,7 @@ def test_a_different_anchor_and_a_different_purpose_have_their_own_count():
 def test_two_records_on_one_anchor_and_purpose_in_one_pass_count_twice_and_file_one_record():
     e = _subject(records=(_give_up((9, 5), 40), _give_up((9, 5), 41)))
     _, nx, after = _pass(e, 45)
-    assert len(nx.upserts) == 1 and nx.upserts[0].project_giveups == 2 and nx.upserts[0].cycle == 1
+    assert len(nx.upserts) == 1 and nx.upserts[0].project_giveups == 2 and nx.upserts[0].cycle == 2
     assert len(after.cognition.memory.navigation.records) == 1
 
 
