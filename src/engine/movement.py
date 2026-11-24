@@ -220,7 +220,7 @@ class MovementSystem:
 
         The rung ladder runs before the replan gives up (TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK): a step back onto the tile just left is the A-B loop, so look for a
         legal tile that is neither it nor the current tile before dropping the target. The bounded give-up (2.213): a way-round that makes no net progress on this target counts; the count past
-        the step limit (`wayround_limit`) is the real replan. Pure: it reads the entity and the state and returns the outcome."""
+        the step limit (`wayround_limit`) is the real replan. A give-up whose target tile is HELD by another body drops the target but files no record (a full spot is not a failed spot). Pure: it reads the entity and the state and returns the outcome."""
         target_tile = (int(target_pos[0]), int(target_pos[1]))
         current_tick = state_or_context.tick  # the kernel's tick, explicitly: a context with none raises, it never stamps 0 (the #996 rework)
         refusals: List[ReasonCode] = []
@@ -233,6 +233,8 @@ class MovementSystem:
             return OscReplanOutcome(way_round, osc_delta, wait_delta, (wayround_count, wayround_best, wayround_anchor, current_tick), False)
         anchor = entity.navigation.wayround_anchor
         kept = (int(anchor[0]), int(anchor[1])) if anchor is not None else target_tile
+        if LegalityServiceV2.get_occupant(target_tile, state_or_context, ignore_entity_id=entity.id) is not None:
+            return OscReplanOutcome(None, osc_delta, wait_delta, None, True)  # a full spot is not a failed spot (owner, #996): another body HOLDS the target tile, so the target is dropped as before but NO give-up record is filed and no memory follows
         ring_blocked = way_round is None  # the one-ring check found no legal tile (else the bounded way-round count was spent: OSCILLATION, with no ring evidence)
         record = GiveUpRecord(kept, int(current_tick), NavCause.RING_BLOCKED if ring_blocked else NavCause.OSCILLATION, ring_evidence_of(refusals) if ring_blocked else (),
                               (int(entity.navigation.position[0]), int(entity.navigation.position[1])), target_tile, entity.navigation.target_purpose, need_services_at(state_or_context, kept))

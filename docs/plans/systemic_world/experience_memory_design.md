@@ -56,6 +56,7 @@ class TargetPurpose:
 - It is written by `NavigationUpdate.target_purpose_set` together with every NEW `target_set` (one that differs from the stored target), and cleared with the target. The patch refuses a new-target `target_set` with no purpose (a static check and a unit test).
 - Re-emission sites (executor.py:97-110, worker_logic.py:22-32, tactical_hold.py:103 KEEP_WALKING (i)) carry the STORED purpose, and end the move typed when it is None (§4, v2.4).
 - Old checkpoints load None. A target with purpose None is matched only by the pending-record branch, never by an experience.
+- **Amendment (owner #715, option 1 "a full spot is not a failed spot" (asked as #715 7126061322); the approved text above is unchanged):** a give-up whose stored target tile is HELD by another body at that moment (`LegalityServiceV2.get_occupant`, the existing occupancy read, no new rule) still drops the target, as before, but files NO give-up record, so no pending record and no experience follow and the place is open to the same purpose at once. A FREE target tile files as before. Ring crowding around a FREE tile (bodies on the ring tiles, none on the target) still files: a known limit that the post-fix run measures (`movement.py` `_oscillation_replan`; tests `tests/unit/movement/test_giveup_held_tile.py`).
 
 ### 2.2 The experience (NEW, on memory)
 
