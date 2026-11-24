@@ -311,7 +311,8 @@ def test_wider_scope_numbers_pinned():
     # 374 -> 376: rpg-planner ok, 2026-11-19: +2 src files (checkpoint_senses.py, checked_builder.py), both bound to sense_gated_detection; #968
     # 376 -> 384 on 2026-11-23 (TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON, rpg-planner ok, from the check's own output): +8 src files, none removed: src/content/{blocker_settings,wayround_settings,navigation_experience_settings}.py, src/core/{giveup_records,navigation_experience,navigation_purpose}.py, src/strategy/{destination_suppression,experience_due}.py (the F1/F2 give-up files and the #996 rework; the ninth new file, systems/strategic_systems/navigation_experience_step.py, is outside this scope).
     # 384 -> 385 on 2026-11-24 (S8 #715 7123495747): +src/core/need_lines.py, the one source of the starving and sleep lines (TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON, item 2 CI fix, owner #715 7122168466); a new file counted, none removed
-    assert wider["scope_files"] == 385
+    # 385 -> 386 on 2026-11-24 (S8, the lead's record on #715 after 7128579145): +src/core/arrival.py, the structural arrival rule (TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON, "arrived never fails", owner #715 7128509663); a new file counted, none removed
+    assert wider["scope_files"] == 386
     # 233 -> 227 on 2026-10-05: the world-building split names six more files (worldmodules/normalizer,
     # worldassembly/resolve_io, worldbuilding/repository and validator, worldgeneration/generator and scorer).
     # Then +1 for the unbound entity_target_objective.py module (TCK-20261002-COMBAT-OBJECTIVE-TARGETS-...).
@@ -385,7 +386,8 @@ def test_wider_scope_numbers_pinned():
     # 265 -> 264 on 2026-11-18 (TCK-20261117-EACH-BODY-PERCEIVES-BY-ITS-SPECIES-SENSES-AND-SIGNALS-FOLLOW-THE-BODY, rpg-planner ok, S8, from the check's own output): src/engine/tile_distance.py is now bound (chebyshev_tile_distance, under `sense_gated_detection`).
     # 264 -> 270 on 2026-11-23 (TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON, rpg-planner ok, from the check's own output): +6 of the 8 new scope files are unbound (settings loaders, records and pure helpers, no mechanism of their own): src/content/{blocker_settings,wayround_settings,navigation_experience_settings}.py, src/core/{giveup_records,navigation_purpose}.py, src/strategy/experience_due.py; the other two are cited (src/core/navigation_experience.py file-level and src/strategy/destination_suppression.py, both under `strategic_intelligence_core`). candidates (67) and wired (19) are unchanged.
     # 270 -> 271 on 2026-11-24 (S8 #715 7123495747): the same file, src/core/need_lines.py, is unbound
-    assert wider["unbound_files"] == 271
+    # 271 -> 272 on 2026-11-24 (the same S8): src/core/arrival.py is unbound
+    assert wider["unbound_files"] == 272
     # 73 -> 72 on 2026-10-07 (row 7 (b) pass): src/quests/generator.py::QuestGenerator is now bound under `guilds`.
     # 72 -> 71 on 2026-10-11 (#500, D57): src/engine/rpg_depth.py::LeashService is cited under `tactical_decision` (it became wired when
     # the hunger and fatigue goals started calling `way_in_range`), so it is no longer an unbound candidate.
