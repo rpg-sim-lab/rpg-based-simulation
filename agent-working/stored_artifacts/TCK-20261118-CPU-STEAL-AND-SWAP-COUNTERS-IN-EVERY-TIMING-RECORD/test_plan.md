@@ -4,6 +4,7 @@ layer: performance
 authority: P2
 audience: agent
 ticket_id: TCK-20261118-CPU-STEAL-AND-SWAP-COUNTERS-IN-EVERY-TIMING-RECORD
+artifact_type: test_plan
 phase: done
 date: 2026-11-18
 tags: [performance]
