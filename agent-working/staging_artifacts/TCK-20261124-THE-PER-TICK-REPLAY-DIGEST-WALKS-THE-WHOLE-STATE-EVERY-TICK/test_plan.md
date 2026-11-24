@@ -42,9 +42,10 @@ perf-planner measures before and after with its own GO; this ticket reports.
 ## ADDENDUM: tests added by the conditions
 | id | case | assertion |
 |---|---|---|
-| E11 | a caller mutates the returned canonical dict (pop a key, or assign a key, in the memoized strategic or social dict, or in a dict reachable from it) |  reports the mismatch (as it does for the existing poison test), and the digest of the mutated state is reported by the test as the one that differs from a cleared-memo recompute |
-| E12 | pin: replay form and the fingerprint of a state are byte-equal before and after the change |  and the TICK_END payload equal the reference |
-| E13 | pin (option B only): pickle of a state differs from the reference only by the appended slot; an old checkpoint (without the slot) restores through the new FIELD_RULES rows and hashes equal | checkpoint_schema and checkpoint_fields tests updated |
-| E14 | pin (option A only): the memo is bounded by the live component count after a digest; entries for replaced components are gone; the memo holds no component after the entity is removed | size equals live components |
-| E15 |  of a component whose memo is populated gives a component with memo None (option B), or a new key with no entry (option A) | equal digest |
-Worlds for AC1:  and  (bonds on 293 and 287 of 300 ticks; trust_history on 68 and 181 ticks); betrayal, nemesis and marriage are hand-built only (no world produced one in 300 ticks).
+| E11 | a caller mutates the returned canonical dict (pop a key, or assign a key, in the memoized strategic or social dict, or in a dict reachable from it) | `audit_cached_canonical_dicts` reports the mismatch (as it does for the existing poison test), and the test shows the digest of the mutated state differs from a cleared-memo recompute |
+| E12 | pin: the replay form and the fingerprint of a state are byte-equal before and after the change | `StateFingerprinter.get_fingerprint` and the TICK_END payload equal the reference |
+| E13 | pin (option B only): the pickle of a state differs from the reference only by the appended slot; an old checkpoint (without the slot) restores through the new FIELD_RULES rows and hashes equal | checkpoint_schema and checkpoint_fields tests updated |
+| E14 | pin (option A only): the memo is bounded by the live component count after a digest; entries for replaced components are gone; it holds no component after the entity is removed | size equals live components |
+| E15 | `dataclasses.replace` of a component whose memo is populated gives a component with memo None (option B), or a new key with no entry (option A) | equal digest |
+
+Worlds for AC1: `frontier_living_world` and `crowded_frontier` (bonds on 293 and 287 of 300 ticks; trust_history on 68 and 181 ticks); betrayal, nemesis and marriage are hand-built only (no world produced one in 300 ticks).
