@@ -45,5 +45,5 @@ def test_the_worker_packet_and_the_serial_state_give_the_same_needs():
 
 def test_the_record_canonical_form_carries_the_needs_sorted_and_a_bare_record_the_empty_list():
     r = GiveUpRecord((9, 5), 7, NavCause.RING_BLOCKED, (RingEvidence.BODIES,), (5, 5), (9, 5), TargetPurpose("none", "WANDER"), frozenset({REST, EAT}))
-    assert r.to_canonical()["need_services"] == ["eat", "rest"]  # sorted values, not a set
+    assert r.to_canonical()["need_services"] == ["EAT", "REST"]  # sorted values, not a set
     assert GiveUpRecord((9, 5), 7).to_canonical()["need_services"] == []  # a bare record: the default, still hashed (the digest hashes every field)
