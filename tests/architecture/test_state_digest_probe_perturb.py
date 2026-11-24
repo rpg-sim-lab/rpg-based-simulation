@@ -4,8 +4,10 @@
 """
 from __future__ import annotations
 
+import dataclasses
 import enum
-from typing import FrozenSet, Optional, Set, Tuple
+import weakref
+from typing import FrozenSet, List, Optional, Set, Tuple
 
 import pytest
 
@@ -99,3 +101,62 @@ def test_a_full_set_with_no_new_member_loses_one_deterministically():
     first, _ = probe.perturb(value, FrozenSet[_Kind])
     again, _ = probe.perturb(value, FrozenSet[_Kind])
     assert first == again and len(first) == 2 and first < value
+
+
+# ---- a freed synthesized record must not hide the next one (TCK-20261124-STATE-DIGEST-PROBE-SKIPS-A-SYNTHESIZED-RECORD-WHOSE-ID-WAS-REUSED)
+
+@dataclasses.dataclass
+class _Rec:
+    a: int = 0
+
+
+@dataclasses.dataclass
+class _Outer:
+    items: List[_Rec] = dataclasses.field(default_factory=list)
+
+
+@dataclasses.dataclass
+class _Holder:
+    first: List[_Outer] = dataclasses.field(default_factory=list)
+    second: List[_Outer] = dataclasses.field(default_factory=list)
+
+
+class _ReprHasher:
+    @staticmethod
+    def get_hash(state):
+        return repr(state)
+
+
+class _RecyclingIds:
+    """``id()`` for the test records with the one behaviour of CPython's allocator that matters here, made deterministic: an id is unique among LIVE records, and a freed
+    record's id goes to the next record that is asked for one. (Forcing a real address reuse depends on the allocator's free lists, which other allocations take first.)"""
+
+    def __init__(self):
+        self.free = []
+        self.by_object = {}
+        self.next = 1
+
+    def __call__(self, obj):
+        if not isinstance(obj, (_Rec, _Outer)):
+            return id(obj)
+        key = id(obj)
+        known = self.by_object.get(key)
+        if known is not None and known[0]() is obj:
+            return known[1]
+        if self.free:
+            fake = self.free.pop()
+        else:
+            fake, self.next = self.next, self.next + 1
+        self.by_object[key] = (weakref.ref(obj, lambda _r, fake=fake: self.free.append(fake)), fake)
+        return fake
+
+
+def test_a_synthesized_record_that_reuses_a_freed_records_id_is_still_probed(monkeypatch):
+    """The first nested record (``first[].items[]``) is installed, probed and freed when the probe leaves ``first``; the nested record under ``second`` then gets the id the
+    freed one had. Its paths must still be reported."""
+    recycler = _RecyclingIds()
+    monkeypatch.setattr(probe, "id", recycler, raising=False)
+    monkeypatch.setattr(probe, "CanonicalStateHasher", _ReprHasher)
+    paths = {r.path for r in probe.probe_state(_Holder())}
+    assert recycler.free or recycler.next > 1  # the probe asked the recycler for ids
+    assert {"state.first[].items[].a", "state.second[].items[].a"} <= paths
