@@ -65,6 +65,10 @@ Found by lead-planner while reviewing the AC2 record set of TCK-20261124-THE-PER
 ## Implementation Notes
 - 2026-11-24, from the replay-digest AC2 key scan (BASE 36a7e2089 smoke, #715 7132066246, proven complete by a second smoke): a SECOND wall-clock field is in every REFINED_UPDATE: `payload.update.sub_phase_costs.<23 phase names>` (src/core/updates.py:359 `sub_phase_costs: Dict[str, float]`, per-phase durations such as combat_engagement 17.316701). It is not named *_ms and is not in metric_counters. Scope covers it too: both timer groups leave the replayed payload. Frozen list: tools/rpg_measure/replay_digest_wall_clock_keys.jsonl on rpg-ubuntu-replay-digest.
 
+- 2026-11-24, approved approach (rpg-planner-ubuntu, option A): `Kernel` emits `refined_update.replay_form()` (kernel.py:656); `StateUpdate.replay_form` empties `sub_phase_costs` and drops `WALL_CLOCK_METRIC_KEYS` (src/core/updates.py) from `metric_counters`, never mutating self. `metric_counters` is typed `Dict[str, float]`. The kernel's own update, `_phase_costs`, `_metrics` and the governor input are unchanged (perf baselines read `_metrics`).
+- Found and ruled out of scope (run metadata by design, not replayed simulation content; planner ruling 2026-11-24): `src/engine/replay_manager.py:64` and `:173` (`manifest.json` `start_time`/`end_time`, `time.time()`), `src/engine/kernel.py:173` and `:1241` (run manifest `started_at`/`ended_at`), `src/engine/run_identity.py:21` (run id). No ticket is needed.
+- The sealed AC2 kit (tools/rpg_measure/replay_digest_*) is unchanged; its mask is a no-op on new chunks and still correct on old ones.
+
 ## Test Summary
 
 ## Files Changed
