@@ -366,6 +366,13 @@ def _merged_spawn_sources(first: "StateUpdate", others: List["StateUpdate"]) -> 
     return merged
 
 
+# Wall-clock durations that the phases write into `StateUpdate.metric_counters`. They are control and telemetry values (the kernel copies them into
+# `_metrics`, which the perf baselines read) and are never replayed: `StateUpdate.replay_form` drops them from the copy that goes to the replay stream.
+# Writers: src/domains/cooperation/phase.py (`cooperation_phase_ms`) and src/domains/world_emergence/phase.py (`world_emergence_ms`). A new timer
+# written into `metric_counters` must be added here; tests/unit/engine/test_replay_chunks_are_reproducible.py fails on a float leaf that is not.
+WALL_CLOCK_METRIC_KEYS = frozenset({"cooperation_phase_ms", "world_emergence_ms"})
+
+
 @dataclass(frozen=True, slots=True)
 class StateUpdate:
     """
@@ -416,7 +423,7 @@ class StateUpdate:
     dirty_set: Optional[DirtySet] = None
     force_full_scan: bool = False
     sub_phase_costs: Dict[str, float] = field(default_factory=dict)
-    metric_counters: Dict[str, int] = field(default_factory=dict)
+    metric_counters: Dict[str, float] = field(default_factory=dict)  # counts, plus the wall-clock durations named in WALL_CLOCK_METRIC_KEYS
     world_events_add: List["WorldEvent"] = field(default_factory=list)
     quest_registry_add: List["QuestOpportunity"] = field(default_factory=list)
     quest_registry_remove: List[str] = field(default_factory=list)
@@ -663,6 +670,15 @@ class StateUpdate:
     
     def replace(self, **kwargs) -> StateUpdate:
         return replace(self, **kwargs)
+
+    def replay_form(self) -> StateUpdate:
+        """The copy of this update that is written to the replay stream: no wall-clock value, so two runs of one world and seed write the same bytes.
+
+        `sub_phase_costs` is emptied and the keys in WALL_CLOCK_METRIC_KEYS are dropped from `metric_counters`; counts stay. `self` is not changed:
+        the kernel keeps the full update for its phase costs, `_metrics` and the governor.
+        """
+        counters = self.metric_counters or {}
+        return replace(self, sub_phase_costs={}, metric_counters={k: v for k, v in counters.items() if k not in WALL_CLOCK_METRIC_KEYS})
 
 # Logic ID: CORE-PERF-018 (Singleton for no-op entity updates)
 EMPTY_ENTITY_UPDATE = EntityUpdate(entity_id=-1)
