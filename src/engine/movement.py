@@ -411,6 +411,7 @@ class MovementSystem:
         # 4. Decision Ladder
         # VERIFIED v2: collision_rejection
         # VERIFIED v2: movement_readiness_gating
+        reason_code: Optional[ReasonCode]  # the legality verdict is a ReasonCode, but the ladder successes below (sidestep, yield, reroute) set None
         success, reason_code = LegalityServiceV2.verify_movement_legality(
             entity, effective_target, state_or_context, move_speed_mult=move_speed_mult
         )
