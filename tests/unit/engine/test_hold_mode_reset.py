@@ -76,6 +76,7 @@ def test_a_pending_mode_write_decides_the_effective_mode():
 def test_keep_walking_no_longer_inherits_hold():
     """Posture `ignore` re-issues the walk as an ENTITY_MOVE decision; it used to carry the CURRENT mode forward, including a sticky HOLD."""
     from src.core.enums import EntityRole, Faction
+    from src.core.navigation_purpose import TargetPurpose
     from src.core.state import AuthoritativeState, RegionState
     from src.engine.behavior_consumers import configure_behavior_consumers, reset_behavior_consumers
     from src.engine.tactical_hold import notice_unengaged_hostile
@@ -94,7 +95,7 @@ def test_keep_walking_no_longer_inherits_hold():
             e = fighter(1, (10.0, 10.0), Faction.HERO_GUILD)
             props = dict(e.identity.properties)
             props["last_combat_posture"], props["last_combat_posture_target"] = "ignore", 2
-            return replace(e, navigation=replace(e.navigation, target=(40.0, 40.0), movement_mode=mode), identity=replace(e.identity, properties=props),
+            return replace(e, navigation=replace(e.navigation, target=(40.0, 40.0), movement_mode=mode, target_purpose=TargetPurpose("none", "PURSUE")), identity=replace(e.identity, properties=props),
                            task=TaskComponent(work_kind="ENTITY_ACT", payload={}))
 
         hostile = replace(fighter(2, (10.0, 11.0), Faction.MONSTER_HORDE), task=TaskComponent(work_kind="ENTITY_ACT", payload={}))
@@ -132,6 +133,7 @@ def test_a_collapse_hold_ends_with_its_sleep_and_nothing_else_does():
 ALLOW_LIST = {  # (file, enclosing function): a bare reaffirm of a held ENTITY_MOVE's payload target each tick, not a walk decision
     ("src/engine/executor.py", "_entity_move_updates"),
     ("src/engine/worker_logic.py", "default_simulation_worker"),
+    ("src/strategy/destination_suppression.py", "reaffirm_move_update"),  # F2 v2.2a: the shared re-emission of a held move's target (the executor and the worker dispatch call it)
 }
 
 
@@ -179,5 +181,10 @@ def test_the_six_walk_decision_writers_call_the_helper():
 
 
 def test_the_regroup_writers_always_name_their_mode():
-    regroup = [c for c in _target_set_calls() if c[0] in ("src/systems/strategic_systems/intelligence.py", "src/systems/strategic_systems/redirection.py") and c[2]]
-    assert len(regroup) >= 4  # intelligence.py x3 and redirection.py x1 carry movement_mode_set=REGROUP in the same call as target_set
+    """The town-regroup walk is written in ONE place, `regroup_to_town_update` (F2 ceiling move out of intelligence.py), which names REGROUP in both its branches; intelligence.py keeps no hand-written
+    REGROUP `target_set` of its own; redirection.py (unwired) still carries its own."""
+    calls = _target_set_calls()
+    builder = [c for c in calls if c[:2] == ("src/strategy/destination_suppression.py", "regroup_to_town_update")]
+    assert len(builder) == 2 and all(c[2] for c in builder), f"regroup_to_town_update must name its mode in both branches: {builder}"
+    assert not [c for c in calls if c[0] == "src/systems/strategic_systems/intelligence.py" and c[2]], "intelligence.py must write REGROUP targets only through regroup_to_town_update"
+    assert any(c[0] == "src/systems/strategic_systems/redirection.py" and c[2] for c in calls)

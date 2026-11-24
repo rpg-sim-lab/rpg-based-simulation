@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 if TYPE_CHECKING:
     from src.core.models.quests import QuestOpportunity, QuestOpportunityStatus
@@ -20,8 +20,11 @@ if TYPE_CHECKING:
     from src.engine.intent.action_intent import ActionIntent
     from src.engine.policy import GovernorPolicy
 from src.core.dirty import DirtySet
+from src.core.giveup_records import GiveUpRecord
 from src.core.group_update_merge import merge_group_fields
 from src.core.movement_modes import MovementMode
+from src.core.navigation_experience import NavigationExperienceUpdate
+from src.core.navigation_purpose import TargetPurpose
 from src.core.spawn_source import SpawnSource
 from src.core.state import ItemInstance, ItemStack, LifeStage  # noqa: F401  (ItemStack re-exported: tests import it from here)
 from src.core.update_models.body import (  # noqa: F401  (re-exported)
@@ -80,13 +83,34 @@ class NavigationUpdate:
     lodged_in_set: Optional[int] = None  # F3: the building the subject lodges in from this tick (a lodge claim until `grant_beds` grants it)
     lodged_in_clear: bool = False  # F3: the subject leaves the building it lodges in
     last_moved_tick_set: Optional[int] = None  # PERC-02: the tick of a move: any position change by the movement apply path (a step, a swap, a yield displacement)
+    wayround_count_set: Optional[int] = None  # 2.213: the way-round steps taken on this target with no net progress, and the best distance seen (written by resolve_move only)
+    wayround_best_distance_set: Optional[int] = None
+    wayround_anchor_set: Optional[Tuple[int, int]] = None  # F1 (2.213): the tile the count opened on, and the tick of this event (written by resolve_move only)
+    wayround_last_tick_set: Optional[int] = None
+    wayround_clear: bool = False  # 2.213: the way-round count ends (the give-up replan)
+    giveup_record_add: Optional[GiveUpRecord] = None  # F2: the give-up's typed record, appended by the navigation patch (written by resolve_move only)
+    giveup_records_clear: bool = False  # F2: the subject's strategic pass has consumed the held records (written by the strategic pass only; applied before an add of the same update)
+    target_clear_anchors: Tuple[Tuple[int, int], ...] = ()  # F2 v2.2a A'': the anchor tiles of suppressions, written by the strategic pass only: with ``target_clear`` when it refused the stored target at an anchor, and alone when it filed or extended a suppression; merged as the sorted, de-duplicated union; a transient update field, never stored or serialised
+    target_purpose_set: Optional[TargetPurpose] = None  # the #996 rework: what a NEW target_set was chosen for, written WITH it by the writer (the same bound name as the gate's purpose argument); the patch stores it only with the target it keeps
+    arrived_this_attempt_set: bool = False  # the #996 rework (ruling 476631fe): movement measured the body within `has_arrived` of its target (from the PRE-step position); the patch stores the flag only with the target it keeps; merged as "True wins"
+    target_gated_set: Optional[bool] = None  # the #996 rework: True when the target_set position passed a gate call, False for a by-value own-tile write that skipped it; None = not stated (a re-emission keeps the stored flag)
+
+    def __post_init__(self) -> None:
+        """The anchors are always the sorted, de-duplicated tuple, whoever built the update (so a merge, or a no-op merge, returns the normalised form)."""
+        anchors = self.target_clear_anchors
+        if anchors:
+            norm = tuple(sorted(set(anchors)))
+            if norm != anchors:
+                object.__setattr__(self, "target_clear_anchors", norm)
 
     def is_noop(self) -> bool:
         return (self.target_set is None and not self.target_clear and self.path_set is None and self.step_ready_tick_set is None and 
                 self.moved_recently_set is None and self.movement_mode_set is None and 
                 self.failure_reason is None and not self.failure_reason_clear and not self.clear_target and not self.clear_path and 
                 self.wait_count_delta == 0 and self.oscillation_count_delta == 0 and 
-                self.last_position_set is None and self.region_id_set is None and self.lodged_in_set is None and not self.lodged_in_clear and self.last_moved_tick_set is None)
+                self.last_position_set is None and self.region_id_set is None and self.lodged_in_set is None and not self.lodged_in_clear and self.last_moved_tick_set is None and
+                self.wayround_count_set is None and self.wayround_best_distance_set is None and self.wayround_anchor_set is None and
+                self.wayround_last_tick_set is None and not self.wayround_clear and self.giveup_record_add is None and not self.giveup_records_clear and not self.target_clear_anchors and self.target_purpose_set is None and self.target_gated_set is None and not self.arrived_this_attempt_set)
 
     def merge(self, other: NavigationUpdate) -> NavigationUpdate:
         if not other or other.is_noop():
@@ -98,11 +122,32 @@ class NavigationUpdate:
         if other.wait_count_delta != 0: changes["wait_count_delta"] = self.wait_count_delta + other.wait_count_delta
         if other.oscillation_count_delta != 0: changes["oscillation_count_delta"] = self.oscillation_count_delta + other.oscillation_count_delta
         changes.update(other._lodging_changes())
+        changes.update(other._wayround_changes())
+        changes.update(other._giveup_changes())
+        changes.update(other._purpose_changes())
+        if other.arrived_this_attempt_set: changes["arrived_this_attempt_set"] = True  # True wins
+        if other.target_clear_anchors: changes["target_clear_anchors"] = tuple(sorted(set(self.target_clear_anchors) | set(other.target_clear_anchors)))  # the union, sorted and de-duplicated: the same whatever the writer order
         return replace(self, **changes)
 
     def _failure_changes(self) -> Dict[str, Any]:
         """What a merge takes from this update for the failure fields: the code if one is set, and the clear flag (a successful step; ``NavigationPatch`` lets a code win over the clear)."""
         return {**({"failure_reason": self.failure_reason} if self.failure_reason is not None else {}), **({"failure_reason_clear": True} if self.failure_reason_clear else {})}
+
+    def _wayround_changes(self) -> Dict[str, Any]:
+        """What a merge takes from this update for the way-round fields (2.213 F1): each value that is set, and the clear flag."""
+        sets = {"wayround_count_set": self.wayround_count_set, "wayround_best_distance_set": self.wayround_best_distance_set,
+                "wayround_anchor_set": self.wayround_anchor_set, "wayround_last_tick_set": self.wayround_last_tick_set}
+        return {**{k: v for k, v in sets.items() if v is not None}, **({"wayround_clear": True} if self.wayround_clear else {})}
+
+    def _purpose_changes(self) -> Dict[str, Any]:
+        """What a merge takes from this (later) update for the target's purpose and gate flag: a later `target_set` brings ITS OWN purpose and flag (even None, never the earlier target's), else any value it names."""
+        if self.target_set is not None:
+            return {"target_purpose_set": self.target_purpose_set, "target_gated_set": self.target_gated_set}
+        return {**({"target_purpose_set": self.target_purpose_set} if self.target_purpose_set is not None else {}), **({"target_gated_set": self.target_gated_set} if self.target_gated_set is not None else {})}
+
+    def _giveup_changes(self) -> Dict[str, Any]:
+        """What a merge takes from this update for the give-up records (F2): the record to append if one is set, and the clear flag."""
+        return {**({"giveup_record_add": self.giveup_record_add} if self.giveup_record_add is not None else {}), **({"giveup_records_clear": True} if self.giveup_records_clear else {})}
 
     def _lodging_changes(self) -> Dict[str, Any]:
         """What a merge takes from this update for the lodging fields (F3): the claim's building, and the leave flag."""
@@ -188,6 +233,18 @@ class StatusEffectUpdate:
         return replace(self, **changes)
 
 
+def _experience_is_noop(update: Optional[NavigationExperienceUpdate]) -> bool:
+    """True when there is no navigation experience update, or it holds no review, upsert or eviction."""
+    return update is None or update.is_noop()
+
+
+def _experience_changes(mine: Optional[NavigationExperienceUpdate], theirs: Optional[NavigationExperienceUpdate]) -> Dict[str, Any]:
+    """The merge change for the navigation experience update: ``theirs`` merged under ``mine`` when ``theirs`` holds anything, else no change."""
+    if theirs is None or theirs.is_noop():
+        return {}
+    return {"navigation_experience": mine.merge(theirs) if mine else theirs}
+
+
 @dataclass(frozen=True, slots=True)
 class EntityUpdate:
     """
@@ -231,6 +288,7 @@ class EntityUpdate:
     # path, so a raw ActionIntent can no longer reach that IntentResult-typed durable field by
     # construction, regardless of whether InformationIntentExecutionPhase runs.
     pending_action_intent: Optional[ActionIntent] = None
+    navigation_experience: Optional[NavigationExperienceUpdate] = None  # the #996 rework: the subject's navigation experience memory update (reviews, upserts, evictions), written ONLY by its strategic consume step; applied by NavigationExperiencePatch
 
     def is_noop(self) -> bool:
         return (self.kind_set is None and self.new_position is None and 
@@ -254,7 +312,7 @@ class EntityUpdate:
                 (self.status_effect_update is None or self.status_effect_update.is_noop()) and
                 self.group_id_set is None and self.self_model_bundle_set is None and
                 self.cognition_bundle_set is None and not self.intent_results and
-                self.pending_action_intent is None and
+                self.pending_action_intent is None and _experience_is_noop(self.navigation_experience) and
                 not self.property_updates)
 
     def merge(self, other: EntityUpdate) -> EntityUpdate:
@@ -293,6 +351,7 @@ class EntityUpdate:
         if other.cognition_bundle_set is not None: changes["cognition_bundle_set"] = other.cognition_bundle_set
         if other.intent_results: changes["intent_results"] = self.intent_results + other.intent_results
         if other.pending_action_intent is not None: changes["pending_action_intent"] = other.pending_action_intent
+        changes.update(_experience_changes(self.navigation_experience, other.navigation_experience))
         if other.property_updates: changes["property_updates"] = {**self.property_updates, **other.property_updates}
         return replace(self, **changes)
 

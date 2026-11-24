@@ -3,6 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional, Self, TYPE_CHECKING
 
+from src.core.giveup_records import GIVEUP_RECORDS_CAP, GiveUpDropCounts, anchored_target
+from src.core.navigation_experience import with_navigation_experience
+
 if TYPE_CHECKING:
     from src.core.state import EntityState, IntentResult
     from src.core.updates import (
@@ -254,6 +257,39 @@ class IdentityPatch(ComponentPatch):
                                           latest_intent_results=intents)
 
 
+
+def _target_and_path(u_nav: Any, stored_nav: Any) -> tuple:
+    """The stored target and path a navigation update leaves: the anchor rule (`anchored_target`: the give-up record's anchor and the update's `target_clear_anchors` drop a same-update set near them and clear a stored target near them, with the
+    path) and otherwise today's precedence (a set wins, else a clear clears, else the stored value stays)."""
+    target, drop_path = anchored_target(u_nav.target_set, bool(u_nav.target_clear or u_nav.clear_target), stored_nav.target, u_nav.giveup_record_add, u_nav.target_clear_anchors)
+    path = None if drop_path else u_nav.path_set if u_nav.path_set is not None else (None if u_nav.clear_path else stored_nav.path)
+    return target, path
+
+
+def _purpose_and_gate(u_nav: Any, stored_nav: Any, final_target: Any) -> tuple:
+    """The stored target's purpose and gate flag after a navigation update (the #996 rework, design section 4): they are written ONLY together with the target the patch keeps.
+    A cleared target takes neither; a target that is not the stored one takes the update's own (a write with no purpose stores None and False); the target that stays the stored one keeps the stored pair,
+    unless the update re-emits that same target and names them. So when `anchored_target` DROPS the update's set and keeps the stored target, the dropped write's purpose and flag are dropped with it."""
+    if final_target is None:
+        return None, False
+    if final_target != stored_nav.target:
+        return u_nav.target_purpose_set, bool(u_nav.target_gated_set)
+    if u_nav.target_set is not None and final_target == u_nav.target_set:
+        purpose = u_nav.target_purpose_set if u_nav.target_purpose_set is not None else stored_nav.target_purpose
+        gated = u_nav.target_gated_set if u_nav.target_gated_set is not None else stored_nav.target_gated
+        return purpose, gated
+    return stored_nav.target_purpose, stored_nav.target_gated
+
+
+def _arrived_flag(u_nav: Any, stored_nav: Any, final_target: Any) -> bool:
+    """The arrived-this-attempt flag a navigation update leaves (ruling 476631fe, owner #715 7130852946): it belongs to the target the patch KEEPS, decided here next to `_purpose_and_gate` from ``final_target``. No target
+    kept: False. A kept target that is not the stored one (a new value, or the update's set replacing it): False, so a True measured on the old target is dropped with it (safe: the next resolve measures again). The target that
+    stays the stored one keeps the stored flag, or takes True when movement measured the arrival in this update. Covers target_clear, clear_target, the give-up drops, the A'' anchor clears and lodging's `_without_walk` in one place."""
+    if final_target is None or final_target != stored_nav.target:
+        return False
+    return bool(stored_nav.arrived_this_attempt or u_nav.arrived_this_attempt_set)
+
+
 @dataclass(frozen=True, slots=True)
 class NavigationPatch(ComponentPatch):
     navigation: Optional[Any] = None # NavigationUpdate
@@ -279,11 +315,16 @@ class NavigationPatch(ComponentPatch):
         new_nav = changes.get("navigation", entity.navigation)
         if self.navigation:
             u_nav = self.navigation
+            final_target, final_path = _target_and_path(u_nav, new_nav)  # F2 v2.2a A'': an anchor (the give-up's, or the strategic pass's) drops a same-update set near it and clears a stored target near it (the path with it); anywhere else today's precedence
+            final_purpose, final_gated = _purpose_and_gate(u_nav, new_nav, final_target)
             new_nav = replace(
                 new_nav,
-                target=u_nav.target_set if u_nav.target_set is not None else (None if u_nav.target_clear else new_nav.target),
+                target=final_target,
+                target_purpose=final_purpose,
+                target_gated=final_gated,
+                arrived_this_attempt=_arrived_flag(u_nav, new_nav, final_target),
                 movement_mode=u_nav.movement_mode_set if u_nav.movement_mode_set is not None else new_nav.movement_mode,
-                path=u_nav.path_set if u_nav.path_set is not None else (None if u_nav.clear_path else new_nav.path),
+                path=final_path,
                 moved_recently=u_nav.moved_recently_set if u_nav.moved_recently_set is not None else new_nav.moved_recently,
                 # last_failure_reason is the outcome of the LAST step: codes come from any action writer, ONLY a successful movement step clears it with the typed `failure_reason_clear`, and a bare None
                 # (a held step) leaves it as it was. A code set in the same update wins over the clear.
@@ -296,6 +337,22 @@ class NavigationPatch(ComponentPatch):
                 lodged_in=None if u_nav.lodged_in_clear else (u_nav.lodged_in_set if u_nav.lodged_in_set is not None else new_nav.lodged_in),
                 last_moved_tick=u_nav.last_moved_tick_set if u_nav.last_moved_tick_set is not None else new_nav.last_moved_tick,
             )
+            # 2.213 (COMB-356, F1): the way-round count belongs to the pursuit, not to one stored tile. Only the give-up (wayround_clear) ends it here; a target re-write or a clear does not,
+            # and resolve_move's anchor and quiet tests at the next event decide whether the count continues. The movement update's count, best distance, anchor and tick land.
+            if u_nav.wayround_clear:
+                new_nav = replace(new_nav, wayround_count=0, wayround_best_distance=None, wayround_anchor=None, wayround_last_tick=None)
+            elif u_nav.wayround_count_set is not None:
+                new_nav = replace(new_nav, wayround_count=u_nav.wayround_count_set, wayround_best_distance=u_nav.wayround_best_distance_set,
+                                  wayround_anchor=u_nav.wayround_anchor_set, wayround_last_tick=u_nav.wayround_last_tick_set)
+            # F2: the typed give-up records. The clear (the strategic pass consumed them) is applied first, then an append of the same update (a new give-up this tick survives a clear); a record
+            # past GIVEUP_RECORDS_CAP drops the oldest and is counted (observability only).
+            if u_nav.giveup_records_clear:
+                new_nav = replace(new_nav, giveup_records=())
+            if u_nav.giveup_record_add is not None:
+                held = (*new_nav.giveup_records, u_nav.giveup_record_add)
+                for _ in range(max(0, len(held) - GIVEUP_RECORDS_CAP)):
+                    GiveUpDropCounts.note()
+                new_nav = replace(new_nav, giveup_records=held[-GIVEUP_RECORDS_CAP:])
         if self.new_position:
             if self.new_position != entity.navigation.position:
                 new_nav = ApplyPath._fast_replace_navigation(new_nav, self.new_position, None)
@@ -788,12 +845,43 @@ class CognitionPatch(ComponentPatch):
             changes["cognition"] = self.cognition_bundle_set
 
 
+@dataclass(frozen=True, slots=True)
+class NavigationExperiencePatch(ComponentPatch):
+    """The subject's navigation experience update (the #996 rework): rebuilds ``cognition.memory.navigation`` through `apply_experience_update`. It layers on whatever cognition the same update already
+    stages (it reads ``changes["cognition"]`` first), so a whole-object `CognitionPatch` of the memory phase and this patch compose in either order of arrival."""
+    navigation_experience: Optional[Any] = None  # NavigationExperienceUpdate
+
+    def is_noop(self) -> bool:
+        """True when there is no update, or it holds no review, upsert or eviction."""
+        return self.navigation_experience is None or self.navigation_experience.is_noop()
+
+    def merge(self, other: NavigationExperiencePatch) -> NavigationExperiencePatch:
+        """The two updates merged (reviews and upserts concatenated, evictions a sorted union)."""
+        if not other or other.is_noop():
+            return self
+        merged = self.navigation_experience.merge(other.navigation_experience) if self.navigation_experience is not None else other.navigation_experience
+        return NavigationExperiencePatch(entity_id=self.entity_id, navigation_experience=merged)
+
+    def apply(self, entity: EntityState, changes: Dict[str, Any]) -> None:
+        """Stage the cognition with its navigation experiences updated, on top of any cognition the same update already staged."""
+        update = self.navigation_experience
+        if update is None or self.is_noop():
+            return
+        changes["cognition"] = with_navigation_experience(changes.get("cognition", entity.cognition), update)
+
+
+def _experience_patches(entity_id: int, update: EntityUpdate) -> List[ComponentPatch]:
+    """The navigation experience patch of ``update`` (one, or none when it carries no experience update or an empty one)."""
+    patch = NavigationExperiencePatch(entity_id, navigation_experience=update.navigation_experience)
+    return [] if patch.is_noop() else [patch]
+
+
 def extract_patches(entity_id: int, update: EntityUpdate) -> List[ComponentPatch]:
     """
     Extracts all active component patches from a monolithic EntityUpdate.
     Preserves precise evaluation order for derived stats calculation.
     """
-    patches = []
+    patches: List[ComponentPatch] = []
     if update.kind_set is not None:
         patches.append(KindPatch(entity_id, kind_set=update.kind_set))
     if update.lifecycle is not None or update.active is not None:
@@ -853,4 +941,5 @@ def extract_patches(entity_id: int, update: EntityUpdate) -> List[ComponentPatch
     if update.cognition_bundle_set is not None:
         p = CognitionPatch(entity_id, cognition_bundle_set=update.cognition_bundle_set)
         if not p.is_noop(): patches.append(p)
+    patches.extend(_experience_patches(entity_id, update))  # last: after the cognition bundle, so it layers on whatever cognition is staged
     return patches

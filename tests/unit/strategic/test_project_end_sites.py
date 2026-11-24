@@ -39,7 +39,7 @@ def test_the_files_that_end_a_project_are_the_known_ones():
     callers = {rel for rel, name, _ in _calls() if name == "end_record"}
     assert callers == {
         "core/strategic.py", "engine/building_arrival.py", "engine/lodging.py",
-        "systems/strategic_systems/entity_target_objective.py", "systems/strategic_systems/intelligence.py",
+        "systems/strategic_systems/entity_target_objective.py", "systems/strategic_systems/intelligence.py", "systems/strategic_systems/blocker_lifecycle.py",
     }
 
 

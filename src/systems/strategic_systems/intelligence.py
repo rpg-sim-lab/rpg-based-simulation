@@ -14,7 +14,7 @@ Covers:
 """
 from __future__ import annotations
 from dataclasses import dataclass, field, replace
-from typing import Dict, List, Optional, Any, TYPE_CHECKING
+from typing import Dict, List, Optional, Any, TYPE_CHECKING, cast
 import ast
 import logging
 
@@ -62,6 +62,7 @@ if TYPE_CHECKING:
     from src.engine.cadence import SystemCadence
 
 from src.core.state import EntityState, AuthoritativeState
+from src.strategy.destination_suppression import destination_open, navigation_with_filing_anchor, regroup_to_town_update, suppression_anchors
 from src.core.hold_mode import hold_reset_kwargs
 from src.core.enums import EntityRole
 from src.core.updates import (
@@ -75,7 +76,7 @@ from src.core.strategic import (
     CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, restart_clear_window, suspend_record, expire_suspended, end_record, typed_completion, ProjectEnd, blocker_timeout_suppression, with_live_current_score, ended_blocker_stamps
 )
 from src.engine.spatial_query import SpatialQueryService
-from src.systems.strategic_systems.blocker_lifecycle import generate_crafting_blockers, infer_blockers, reinferred_blockers_update, resolve_blockers
+from src.systems.strategic_systems.blocker_lifecycle import consume_giveup_records, generate_crafting_blockers, infer_blockers, reinferred_blockers_update, resolve_blockers
 from src.core.lodging_rules import is_lodged_stayer
 from src.content_semantics.faction import are_entities_hostile
 from src.content_semantics.relation import RelationContext
@@ -83,6 +84,7 @@ from src.strategy.cognition_capacity import CapacityService
 from src.core.inventory import InventoryService
 from src.engine.cadence import should_run, SystemCadence
 from src.core.movement_modes import MovementMode
+from src.core.navigation_purpose import purpose_of, stored_purpose
 from src.core.updates import NavigationUpdate, InteractionUpdate
 from src.systems.world_systems.routine import RoutineService
 from src.systems.world_systems.intake import ConcernIntakeSystem
@@ -267,7 +269,7 @@ class StrategicIntelligenceSystem:
             eval_concerns = should_run(state.tick, e_id, cadence.concern_evaluation)
             eval_intents = should_run(state.tick, e_id, cadence.strategic_intelligence)
             
-            if not eval_concerns and not eval_intents and strat_up is None and not entity.strategic.blockers and not entity.strategic.leads:
+            if not eval_concerns and not eval_intents and strat_up is None and not entity.strategic.blockers and not entity.strategic.leads and not entity.navigation.giveup_records:  # F2 v2.2a C(a): a pending give-up record takes the slow pass (the one consume site)
                 nav_changed = False
                 proj_resolved = False
                 curr_proj_id = entity.strategic.current_project_id
@@ -286,18 +288,9 @@ class StrategicIntelligenceSystem:
                 if not nav_changed and not proj_resolved:
                     if not lodged_stayer and not (active_obj and (getattr(active_obj, 'target_position', None) is not None or getattr(active_obj, 'target_entity_id', None) is not None)):  # an ACTIVE project's active objective with a point OR an entity target owns the direction, as on the slow path (~:663); the objective's own status is not checked here (pre-existing, see TCK-20261101-FUSED-STRATEGIC-PASS-RESTRUCTURE)
                         town_target = nearest_town_tile(state.town_tiles, entity.navigation.position) or state.town_center
-                        if len(pending_inventory.items) > 0 and entity.navigation.position != (0.0, 0.0) and town_target and entity.navigation.target != town_target:
-                            if ent_upd:
-                                refined_entity_updates[e_id] = replace(ent_upd,
-                                    navigation=replace(ent_upd.navigation or NavigationUpdate(), target_set=town_target, movement_mode_set=MovementMode.REGROUP),
-                                    interaction=InteractionUpdate(reset=True)
-                                )
-                            else:
-                                refined_entity_updates[e_id] = EntityUpdate(
-                                    entity_id=e_id,
-                                    navigation=NavigationUpdate(target_set=town_target, movement_mode_set=MovementMode.REGROUP),
-                                    interaction=InteractionUpdate(reset=True)
-                                )
+                        purpose = purpose_of(entity, ent_upd, MovementMode.REGROUP)
+                        if len(pending_inventory.items) > 0 and entity.navigation.position != (0.0, 0.0) and town_target and entity.navigation.target != town_target and destination_open(entity, town_target, state.tick, purpose, ent_upd):
+                            refined_entity_updates[e_id] = regroup_to_town_update(e_id, ent_upd, town_target, purpose)
                     fast_hits += 1
                     continue
             fast_misses += 1
@@ -388,6 +381,7 @@ class StrategicIntelligenceSystem:
             )
             
             strat_up = reinferred_blockers_update(entity, strat_up, inferred_up, state.tick)
+            strat_up, ent_upd = consume_giveup_records(entity, strat_up, ent_upd, state.tick)  # F2 (divergence 2.220), the #996 rework: file the give-up records as navigation experiences, end the project at the give-up limit, clear the records
             removals = set(strat_up.blockers_remove)
             resolved_ids = set()
             for b_id, b in entity.strategic.blockers.items():
@@ -518,6 +512,8 @@ class StrategicIntelligenceSystem:
             # (Hoisted logic from StrategicRedirectionSystem)
             
             has_nav_update = lodged_stayer or (ent_upd.navigation and ent_upd.navigation.target_set is not None)
+            _staged = lambda: replace(ent_upd, strategic=strat_up)  # D1: the update staged so far this tick (the give-up record movement_routing staged, the reviews the consume step staged)
+            if entity.navigation.target is not None and not destination_open(entity, entity.navigation.target, state.tick, stored_purpose(entity), _staged()): ent_upd = replace(ent_upd, navigation=replace(ent_upd.navigation or NavigationUpdate(), target_clear=True, target_clear_anchors=suppression_anchors(entity, entity.navigation.target, state.tick, stored_purpose(entity), _staged())))  # D2(B) + A'': a stored target at a suppressed anchor is cleared, typed, and the clear carries that anchor
             current_project_id = strat_up.current_project_id_set if strat_up.current_project_id_set is not None else entity.strategic.current_project_id
             
             active_blockers = [b for b_id, b in entity.strategic.blockers.items() if b_id not in new_removals and not b.resolved]
@@ -529,11 +525,12 @@ class StrategicIntelligenceSystem:
                 match_lead = next((l for l in entity.strategic.leads.values() if l.subject == target_mat and l.kind == 'location'), None)
                 if match_lead and not lodged_stayer:
                     try:
-                        coords = tuple(map(float, match_lead.detail.split(',')))
-                        if entity.navigation.target != coords:
+                        coords = cast('tuple[float, float]', tuple(map(float, match_lead.detail.split(','))))  # type only: a lead's coordinate detail is "x,y"
+                        purpose = purpose_of(entity, _staged())
+                        if entity.navigation.target != coords and destination_open(entity, coords, state.tick, purpose, _staged()):  # F2: a tile near a suppressed give-up anchor is not a destination
                             has_nav_update = True
                             existing_nav = ent_upd.navigation or NavigationUpdate()
-                            ent_upd = replace(ent_upd, navigation=replace(existing_nav, target_set=coords, **hold_reset_kwargs(entity, ent_upd)), interaction=InteractionUpdate(reset=True))
+                            ent_upd = replace(ent_upd, navigation=replace(existing_nav, target_set=coords, target_purpose_set=purpose, target_gated_set=True, **hold_reset_kwargs(entity, ent_upd)), interaction=InteractionUpdate(reset=True))
                     except (ValueError, AttributeError) as lead_ex: logger.debug(f"[Tick {state.tick}] material lead for {target_mat!r} has a non-coordinate detail {match_lead.detail!r}: {lead_ex}")
             
             if not has_nav_update and current_project_id:
@@ -551,20 +548,19 @@ class StrategicIntelligenceSystem:
                             has_nav_update = True
                         else:
                             target_pos = getattr(active_obj, 'target_position', None)
-                            if target_pos:
+                            purpose = purpose_of(entity, _staged())
+                            if target_pos and destination_open(entity, target_pos, state.tick, purpose, _staged()):  # F2: a suppressed destination sets no target and leaves the next alternative (the town fallback) to be tried
                                  has_nav_update = True
                                  if entity.navigation.target != target_pos:
-                                     ent_upd = replace(ent_upd, navigation=replace(ent_upd.navigation or NavigationUpdate(), target_set=target_pos, **hold_reset_kwargs(entity, ent_upd)))
+                                     ent_upd = replace(ent_upd, navigation=replace(ent_upd.navigation or NavigationUpdate(), target_set=target_pos, target_purpose_set=purpose, target_gated_set=True, **hold_reset_kwargs(entity, ent_upd)))
             
             if not has_nav_update:
                 town_target = nearest_town_tile(state.town_tiles, entity.navigation.position) or state.town_center
-                if len(pending_inventory.items) > 0 and entity.navigation.position != (0.0, 0.0) and town_target:
+                purpose = purpose_of(entity, _staged(), MovementMode.REGROUP)
+                if len(pending_inventory.items) > 0 and entity.navigation.position != (0.0, 0.0) and town_target and destination_open(entity, town_target, state.tick, purpose, _staged()):
                     if entity.navigation.target != town_target:
                         has_nav_update = True
-                        ent_upd = replace(ent_upd, 
-                            navigation=replace(ent_upd.navigation or NavigationUpdate(), target_set=town_target, movement_mode_set=MovementMode.REGROUP),
-                            interaction=InteractionUpdate(reset=True)
-                        )
+                        ent_upd = regroup_to_town_update(e_id, ent_upd, town_target, purpose)
             
             # Finalize entity update - only if changed
             if strat_up is not None and strat_up.is_noop():
@@ -583,7 +579,7 @@ class StrategicIntelligenceSystem:
                     prop_updates["last_routing_family"] = strat_up.last_routing_family_set
                 if strat_up is not None and strat_up.last_routing_tick_set is not None:
                     prop_updates["last_routing_tick"] = strat_up.last_routing_tick_set
-                final_upd = replace(ent_upd, identity=final_identity_upd, strategic=strat_up, property_updates=prop_updates)
+                final_upd = replace(ent_upd, identity=final_identity_upd, strategic=strat_up, property_updates=prop_updates, navigation=navigation_with_filing_anchor(entity, ent_upd.navigation, ent_upd.navigation_experience))  # F2 v2.2a: the pass that files a suppression says so (the anchor, no clear)
                 refined_entity_updates[e_id] = final_upd
         
         if state.tick % 10 == 0:

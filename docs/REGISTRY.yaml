@@ -3362,6 +3362,16 @@
   - documentation
   - schema
 - type: doc
+  path: docs/plans/systemic_world/experience_memory_design.md
+  title: 'Navigation experience memory: design v2 (rework of PR #996 under decision
+    56)'
+  status: active
+  layer: strategy
+  authority: P1
+  audience: agent
+  tags: []
+  last_verified: '2026-11-23'
+- type: doc
   path: docs/plans/systemic_world/m1_kernel_spec_items_2_6.md
   title: 'Milestone 1 kernel spec: items 2-6'
   status: active
@@ -8003,6 +8013,18 @@
   - agent-working/stored_artifacts/TCK-20261124-A-WALL-CLOCK-TIMER-IN-THE-REPLAY-STREAM-MAKES-REPLAY-FILES-NON-REPRODUCIBLE/pr_notes.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261124-NAVIGATION-STATE-MOVES-OUT-OF-STATE-PY.md
+  ticket_id: TCK-20261124-NAVIGATION-STATE-MOVES-OUT-OF-STATE-PY
+  title: NavigationComponent moves out of src/core/state.py into its own core module,
+    retiring the one-line size raise
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-24'
+  related_code_areas:
+  - src/core/state.py, codebase/baselines/code_health_exceptions.jsonl
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261124-STATE-DIGEST-PROBE-SKIPS-A-SYNTHESIZED-RECORD-WHOSE-ID-WAS-REUSED.md
   ticket_id: TCK-20261124-STATE-DIGEST-PROBE-SKIPS-A-SYNTHESIZED-RECORD-WHOSE-ID-WAS-REUSED
   title: The state-digest probe's visited set holds ids of freed synthesized records,
@@ -8054,6 +8076,26 @@
   - frontend/src/hooks/useCanvas.ts, useSimulation.ts
   - .github/workflows/test.yml (Frontend job)
   artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON.md
+  ticket_id: TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON
+  title: 'A subject remembers why a place failed it, for what purpose, and reconsiders
+    it by that reason (the #996 rework: an entity-owned navigation experience memory)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-23'
+  related_code_areas:
+  - src/core/giveup_records.py, src/strategy/destination_suppression.py
+  - src/engine/movement.py (_oscillation_replan, _find_way_round_loop, _find_sidestep),
+    src/engine/legality.py
+  - src/systems/strategic_systems/blocker_lifecycle.py, intelligence.py, work_queue.py
+  - src/core/state.py (NavigationState, MemoryModel), checkpoint FIELD_RULES
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON/external_review_architecture_v2.md
+  - agent-working/stored_artifacts/TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON/investigation.md
+  - agent-working/stored_artifacts/TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON/plan.md
+  - agent-working/stored_artifacts/TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON/test_plan.md
   tags: []
 - type: ticket
   path: agent-working/tickets/done/TCK-20261123-FOUR-CORPUS-GRADE-STABILITY-GUARDS-PASS-AND-FAIL-ON-THE-SAME-SHA-GET-FLAKY-ENTRIES.md
@@ -9342,6 +9384,23 @@
   - agent-working/stored_artifacts/TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON.md
+  ticket_id: TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON
+  title: After a way-round give-up, the target choice picks the same target again
+    within 200 ticks; add a typed give-up memory that target choice respects (F2)
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas:
+  - src/engine/patches.py (navigation apply), resolve_move, the target-choice path
+    (to be located in the design)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON/external_review_experience_memory.md
+  - agent-working/stored_artifacts/TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON/investigation.md
+  - agent-working/stored_artifacts/TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON/plan.md
+  - agent-working/stored_artifacts/TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF.md
   ticket_id: TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF
   title: An entity carries its occupation label as its own field, and `species_of`
@@ -9487,19 +9546,6 @@
   date: '2026-11-17'
   related_code_areas:
   - src/core/species.py, src/world/
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON.md
-  ticket_id: TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON
-  title: After a way-round give-up, the target choice picks the same target again
-    within 200 ticks; add a typed give-up memory that target choice respects (F2)
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-17'
-  related_code_areas:
-  - src/engine/patches.py (navigation apply), resolve_move, the target-choice path
-    (to be located in the design)
   artifact_files: []
   tags: []
 - type: ticket

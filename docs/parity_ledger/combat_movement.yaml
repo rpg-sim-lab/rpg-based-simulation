@@ -278,11 +278,11 @@
   status: legacy_verified
   priority: P0
   legacy_evidence: null
-  v2_evidence: Implementation proven via exhaustive checklist audit Phase 1-11
+  v2_evidence: "Implementation proven via exhaustive checklist audit Phase 1-11. Oscillation replan (3 cycles on the looped step): since 2026-11 (divergence 2.213, COMB-356) the rung ladder runs before the replan gives up; the replan's clear_target now clears the stored target."
   proof_type: parity
-  test_path: null
-  divergence_note: null
-  support_boundary: null
+  test_path: tests/unit/movement/test_osc_replan_ladder.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.213.
+  support_boundary: "The 3-cycle trigger at the movement layer (src/engine/movement.py, the oscillation branch of resolve_move) first looks for a way round the loop and replans only when there is none; the tactical stalemate breaker (STALEMATE_BREAK, tactical.py) is a different trigger and did not fire in the diagnostic cells (bb26e4e5f, 3 cells x 5000 ticks)."
 - id: COMB-021
   text: "`test_high_ground_bonus`: High ground bonus \u2014 Verify High Ground bonus\
     \ applies when attacker is on MOUNTAIN and defender is on FLOOR.."
@@ -626,10 +626,10 @@
   status: verified
   priority: P0
   legacy_evidence: null
-  v2_evidence: Implementation proven via exhaustive checklist audit Phase 1-11
+  v2_evidence: "Implementation proven via exhaustive checklist audit Phase 1-11. Oscillation replan (3 cycles on the looped step): since 2026-11 (divergence 2.213, COMB-356) the rung ladder runs before the replan gives up; the replan's clear_target now clears the stored target."
   proof_type: null
-  test_path: null
-  divergence_note: null
+  test_path: tests/unit/movement/test_osc_replan_ladder.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.213.
   support_boundary: null
 - id: COMB-053
   text: "`test_reroute_hysteresis`: Reroute hysteresis \u2014 Verify minor reroutes\
@@ -4969,7 +4969,7 @@
     is not reset until that action ends. The effect against the base (stage 1 and stage 2) is recorded in
     divergence 2.206 (Measured). One death traced to this limit: a cornered hold that
     ends on a live attack task, followed up in TCK-20261116-A-CORNERED-HOLD-ENDS-ON-A-LIVE-ACTION-TASK-AND-WALKS-BACK-INTO-THE-FIGHT. Not changed here: the congestion ladder''s reroute rung, the collapsed
-    sleeper''s MOVE_TO walk, the unapplied clear_target flag.'
+    sleeper''s MOVE_TO walk. (The clear_target flag is applied from COMB-356 on.)'
 - id: COMB-354
   text: 'TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER: a simultaneous
     group hit (resolve_multi_attack, called by the opportunity-attack step of MovementSystem.resolve_move)
@@ -5014,6 +5014,40 @@
   support_boundary: 'Only the latest hit is remembered (COMB-354); the window is a
     registered tuning constant, not derived from fight data; timing of the target_score
     hot loop is NOT MEASURED (perf pause #715 6556861718).'
+- id: COMB-356
+  text: 'TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK: NavigationUpdate.clear_target
+    is applied to the stored target by the navigation patch, next to target_clear
+    (a target_set in the same update still wins); the three writers (the oscillation
+    replan in MovementSystem.resolve_move, ActorValidityPhase, BlacksmithSystem.enforce)
+    now clear it. An oscillation replan (oscillation_count at 3 and the step back
+    onto the tile just left) runs the rung ladder before it gives up: the sidestep
+    around the looped step, else the nearest legal orthogonal neighbour to the target,
+    never the tile just left and never the current tile; found, the subject steps
+    there with the oscillation and wait counters reset and keeps its target; none
+    found, or on the third way-round with no net progress on one target (bound N =
+    2, NavigationComponent.wayround_count and wayround_best_distance, anchored to
+    the pursuit by wayround_anchor and wayround_last_tick: the count continues
+    across target re-writes within one tile of the anchor and up to 200 ticks between
+    events, restarts at 1 on progress, and ends at the give-up), the replan clears
+    target and path.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/engine/patches.py (NavigationPatch.apply), src/engine/movement.py
+    (MovementSystem._find_way_round_loop, the way-round step limit and quiet window now read from data/content/movement/wayround_settings.yaml via src/content/wayround_settings.py, the oscillation branch of resolve_move),
+    src/core/state.py (NavigationComponent.wayround_count, wayround_best_distance, wayround_anchor,
+    wayround_last_tick), src/engine/checkpoint_fields.py (four FIELD_RULES rows), src/replay/fingerprint.py,
+    src/engine/apply.py (the move carries the four fields), src/engine/movement.py (wayround_after_event; the give-up writes ReasonCode.WAYROUND_GIVE_UP, src/core/enums.py).
+  proof_type: regression
+  test_path: tests/unit/movement/test_osc_replan_ladder.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.213.
+  support_boundary: 'Paired effect against bb26e4e5f NOT MEASURED yet (own-job counts
+    S1-S3 pending). The diagnostic (3 cells x 5000 ticks) found 1496-2027 oscillation
+    replans per cell that kept their target, up to 403 for one subject; those counts
+    are lower bounds (a spy exception dropped replans labelled LEGAL with a None path).
+    The tactical stalemate breaker was not reproduced there; the way-round tile is
+    chosen locally and may still lengthen the walk. A legal tile near a door two or
+    more steps away is not searched (rungs read only the subject''s four neighbours).'
 - id: COMB-357
   text: 'TCK-20261117-A-NAVIGATION-FAILURE-REASON-IS-NEVER-CLEARED-AND-KEEPS-FEEDING-BLOCKER-INFERENCE: NavigationComponent.last_failure_reason holds the outcome of the
     subject''s last step. Any action writer may set a failure code (movement, combat, action router, AOE, combat and core actions); ONLY a successful movement step clears it: MovementSystem.resolve_move
@@ -5045,6 +5079,52 @@
   proof_type: regression
   test_path: tests/unit/engine/test_wild_creature_regarded_by_appraisal.py
   divergence_note: See docs/guidelines/intentional_divergences.md Sections 2.216 (this change) and 2.107 (#536, the original).
+
+- id: COMB-359
+  text: 'TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON: a way-round give-up appends a typed GiveUpRecord(anchor, tick)
+    to NavigationComponent.giveup_records (at most 4; movement appends, the strategic
+    pass clears). The #996 rework (TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON):
+    the subject''s next strategic pass files each record as a navigation experience in its own memory
+    (per anchor and target purpose, with the cause, the ring evidence, the tile it gave up from and the
+    needs the place serves; due again by that reason) and clears the records; it files no ACCESS blocker.
+    While a record is pending, or an ACTIVE experience of the same purpose is not yet due and not latched,
+    destination_suppressed forbids every tile within Chebyshev 1 of the anchor to both tactical
+    target writers (the typed outcome OBJECTIVE_DESTINATION_SUPPRESSED, no navigation update) and
+    the strategic bridge. The give-ups of one place for one purpose within one project (project_giveups)
+    reaching access_giveup_limit (4, data/content/strategy/blocker_settings.yaml)
+    end the project current at that give-up, ProjectEnd.DESTINATION_GIVEN_UP. A give-up with another body (LegalityServiceV2.get_occupant)
+    on the target tile or within Chebyshev 1 of it drops the target and files an OCCUPIED record (waiting, not failure; owner #715 7130979190, ruling 476631fe;
+    it replaces the earlier no-record rule; tests/unit/movement/test_giveup_held_tile.py); a body that arrived at any tick of this attempt (arrived_this_attempt) files nothing.
+    A body ARRIVED at the nav target of its walk (src/core/arrival.py has_arrived, Manhattan <= 1) never gives up: the walk ends with target_clear,
+    no WAYROUND_GIVE_UP and no record (arrived never fails, owner #715 7128509663; src/engine/movement.py _oscillation_replan,
+    tests/unit/movement/test_arrival_never_fails.py). v2.2a: every place-target writer
+    goes through propose_target, with a per-class fallback when it refuses (flight: retreat point, half the
+    distance, home, then the own-tile hold; combat positioning: the branch does not fire; stalemate-break:
+    hold; objective: the typed idle; bridge: the next alternative and a typed target_clear of a suppressed
+    stored target; executor re-emission: the typed DestinationSuppressedEnd). v2.2a A'': in the navigation
+    patch a clear that carries an anchor (the give-up record''s, or the strategic pass''s suppression clear
+    NavigationUpdate.target_clear_anchors) beats a same-update target_set within Chebyshev 1 of that anchor;
+    a set elsewhere stands. The pass that files or extends a suppression carries its anchor with no clear: a same-update set near it is dropped and a stored target near it is cleared.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/core/giveup_records.py (GiveUpRecord, GiveUpDropCounts, HeldTargetAtAnchorCounts), src/core/state.py
+    (NavigationComponent.giveup_records), src/engine/patches.py (NavigationPatch.apply), src/engine/movement.py
+    (the give-up writes the record), src/systems/strategic_systems/blocker_lifecycle.py (giveup_project_end_update,
+    consume_giveup_records), src/systems/strategic_systems/navigation_experience_step.py (navigation_experience_update), src/core/navigation_experience.py, src/strategy/experience_due.py (due_reason), src/strategy/destination_suppression.py (destination_suppressed, SuppressionHit),
+    src/engine/tactical_objective.py (ObjectiveDestinationSuppressed), src/systems/strategic_systems/intelligence.py
+    (the consume hook and the bridge guards), src/content/blocker_settings.py, src/core/strategic.py (ProjectEnd.DESTINATION_GIVEN_UP),
+    src/strategy/destination_suppression.py (propose_target, DestinationSuppressedEnd, reaffirm_move_update), src/engine/tactical*.py,
+    src/engine/tactical_destinations.py (retreat_destination candidates), src/engine/executor.py and worker_logic.py (the typed end),
+    src/core/updates.py (NavigationUpdate.target_clear_anchors), src/core/giveup_records.py (anchored_target, near_anchor), src/strategy/destination_suppression.py (suppression_anchors, filed_suppression_anchors, navigation_with_filing_anchor), src/systems/strategic_systems/intelligence.py:577 (the filing anchor). The A'' tests are in tests/unit/strategic/test_giveup_clear_and_service.py.
+  proof_type: regression
+  test_path: tests/unit/strategic/test_giveup_filing.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.220.
+  support_boundary: 'Paired effect NOT MEASURED yet (the F1+F2 own-job, bars G1-G5 and G1-held, is pending).
+    redirection.py is unwired and untouched; a target writer that skips the proposal point is
+    caught by tests/unit/engine/test_propose_target_single_path.py (the guard is tied to the written
+    value) and reported by G1/G6. Unit rows for the fallbacks: tests/unit/strategic/test_propose_target.py,
+    tests/unit/engine/test_notice_suppressed_goal_stands.py.'
 - id: COMB-360
   text: "TCK-20261122-A-PREY-MAY-NOT-STRIKE-ITS-PREDATOR-BETWEEN-THE-PREDATORS-BLOWS: attack permission is a property of the pair. For a wild pair (decision 47) an attack is legal when either party hit the other within ATTACKED_RECENTLY_WINDOW_TICKS or either party appraises the other as PREDATION (no task is read); the target's current task no longer decides it, so a prey may strike its predator between the predator's blows (CONFLICT-03, DEV-016 extended)."
   status: verified

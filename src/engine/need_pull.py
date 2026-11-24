@@ -18,6 +18,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Tuple
 
+from src.core.need_lines import (  # SLEEP_LINE is re-exported under its old name
+    SLEEP_LINE,
+    STARVING_LINE,
+)
+
 if TYPE_CHECKING:
     from src.core.state import EntityState
 
@@ -30,8 +35,7 @@ ESCALATION_AMPLITUDE = 60.0
 # The consequence lines of `src/engine/apply.py` (hunger damage from 95.0, sleep-deprivation damage from 98.0); kept here as
 # named values, not re-derived. The per-tick accumulation is NOT here: it is per kind (SURV-05, `need_rates(entity)`), so callers
 # pass the subject's own rate.
-HUNGER_LINE = 95.0
-SLEEP_LINE = 98.0
+HUNGER_LINE = STARVING_LINE  # the same line as the starving line: one source, `src.core.need_lines`
 
 # A walking subject covers about one tile per tick (measured: 21 tiles in 20 ticks).
 TICKS_PER_TILE = 1.0

@@ -12,11 +12,13 @@ from src.engine.legality import LegalityServiceV2
 from src.engine.positioning import PositioningService
 from src.core.strategic import GoalKind, ProjectStatus, suspend_record
 from src.core.movement_modes import MovementMode
+from src.core.navigation_purpose import TargetPurpose, purpose_of, ungated_purpose
 from src.core.enums import ActionStyle, ReasonCode, EntityRole, Faction
 from src.core.skills import SKILL_REGISTRY, SkillDefinition
 from src.engine.rpg_depth import WoundService
 from src.cognition.common_knowledge import combat_capability_against
 from src.engine.tactical_destinations import retreat_destination, wander_destination
+from src.strategy.destination_suppression import propose_target  # F2 v2.2 D2: the one proposal point of a place target
 from src.engine.tactical_threat import attacked_me_recently, hostile_acts_on, need_yields, perceived_threats, present_threats, safety_retreat_warranted
 from src.engine.need_pull import HUNGER_LINE, SLEEP_LINE, entity_hunger_is_pressing, entity_need_is_pressing
 from src.engine.tactical_rest import in_place_survival_update
@@ -96,9 +98,22 @@ def _has_tactical_hostiles(entity: "EntityState", neighbors: List["EntityState"]
     return bool(classify_neighbours(entity, neighbors, source_identity(entity), night, tick).hostiles)
 
 
+def _open_or_none(entity: "EntityState", destination: Optional[Tuple[float, float]], tick: int, purpose: TargetPurpose) -> Optional[Tuple[float, float]]:
+    """A destination through `propose_target` (F2 v2.2a, class W): None when absent or suppressed, so the existing hold applies."""
+    return propose_target(entity, destination, tick, purpose) if destination is not None else None
+
+
 def _destination_or_hold(entity: "EntityState", destination: Optional[Tuple[float, float]]) -> Tuple[float, float]:
     """MOV-03: with no valid destination the entity holds position; never a sentinel coordinate."""
     return destination if destination is not None else entity.navigation.position
+
+
+def _purpose_and_gated(entity: "EntityState", destination: Optional[Tuple[float, float]], purpose: TargetPurpose, mode: MovementMode) -> Tuple[TargetPurpose, bool]:
+    """The purpose and gate flag the target of `_destination_or_hold` is stored with (the #996 rework): a destination that came through the gate carries the caller's bound ``purpose`` as gated; with none
+    the entity holds its own tile, a by-value write that skipped the gate, stored with `ungated_purpose` and as NOT gated."""
+    if destination is not None:
+        return purpose, True
+    return ungated_purpose(entity, mode), False
 
 
 def _serves_a_need(entity: "EntityState") -> bool:
@@ -252,7 +267,8 @@ class TacticalDecisionSystem:
         )
         
         threats = present_threats(entity, perceived_threats(entity, neighbors))  # a flight needs a PRESENT threat (AGENCY-07 terms), the test the retreat goal begins and ends on (divergence 2.156)
-        panic_destination = retreat_destination(state, entity, threats) if (emotion.is_fleeing and threats) else None
+        purpose = purpose_of(entity, None, MovementMode.RETREAT)
+        panic_destination = retreat_destination(state, entity, threats, purpose) if (emotion.is_fleeing and threats) else None
         # A flight with no destination is not flight (designer ruling, V3): a panic that resolves to the subject's own tile is not taken, and the tick
         # falls through the existing order (in-place survival, then the arrival at a building). A real tactical hostile keeps the old freeze, so the
         # fall-through never turns a held panic into a fight the subject would not otherwise start.
@@ -260,9 +276,10 @@ class TacticalDecisionSystem:
              # PANIC: Move away from the perceived threats, inside the current region
              # (MOV-01 / LOC-01); hold position when no valid destination exists (MOV-03).
              retreat_to = _destination_or_hold(entity, panic_destination)
+             stored_for, gated = _purpose_and_gated(entity, panic_destination, purpose, MovementMode.RETREAT)
              return flight_weighs_free_swing(state, entity, EntityUpdate(
                  entity_id=entity.id,
-                 navigation=NavigationUpdate(target_set=retreat_to, movement_mode_set=MovementMode.RETREAT),
+                 navigation=NavigationUpdate(target_set=retreat_to, movement_mode_set=MovementMode.RETREAT, target_purpose_set=stored_for, target_gated_set=gated),
                  task=TaskUpdate(
                      work_kind_set="ENTITY_MOVE",
                      payload_set={"target_position": retreat_to, "reason": "PANIC_RETREAT"}
@@ -270,7 +287,7 @@ class TacticalDecisionSystem:
              ), FlightSite.PANIC_RETREAT)
 
         # Section 8: Mob Leashing (GAP-T08)
-        if (leash_return := leash_return_update(entity)) is not None:
+        if (leash_return := leash_return_update(entity, state.tick)) is not None:
             return flight_weighs_free_swing(state, entity, leash_return, FlightSite.LEASH_RETURN)
 
         from src.engine.behavior_consumers import get_pressure_resolver
@@ -296,11 +313,14 @@ class TacticalDecisionSystem:
 
         # Safety pressure (AGENCY-07): a cautious entity retreats from a present threat, never from a hostile merely seen
         if safety_retreat_warranted(entity, hostiles, entity_pressures.safety_pressure):
-            retreat_to = _destination_or_hold(entity, retreat_destination(state, entity, hostiles))
+            purpose = purpose_of(entity, None, MovementMode.RETREAT)
+            retreat_dest = retreat_destination(state, entity, hostiles, purpose)
+            retreat_to = _destination_or_hold(entity, retreat_dest)
+            stored_for, gated = _purpose_and_gated(entity, retreat_dest, purpose, MovementMode.RETREAT)
             return flight_weighs_free_swing(state, entity, EntityUpdate(
                 entity_id=entity.id,
                 strategic=strat_up,
-                navigation=NavigationUpdate(target_set=retreat_to, movement_mode_set=MovementMode.RETREAT),
+                navigation=NavigationUpdate(target_set=retreat_to, movement_mode_set=MovementMode.RETREAT, target_purpose_set=stored_for, target_gated_set=gated),
                 task=TaskUpdate(
                     work_kind_set="ENTITY_MOVE",
                     payload_set={"target_position": retreat_to, "reason": "SAFETY_PRESSURE_RETREAT"}
@@ -337,10 +357,11 @@ class TacticalDecisionSystem:
                         if role in ("VANGUARD", "PROTECTOR"):
                             # Guard position near leader
                             guard_pos = PositioningService.find_guard_position(entity, leader, None, state)
-                            if guard_pos != entity.navigation.position:
+                            purpose = purpose_of(entity, None, MovementMode.GUARD)
+                            if guard_pos != entity.navigation.position and propose_target(entity, guard_pos, state.tick, purpose) is not None:
                                 return EntityUpdate(
                                     entity_id=entity.id,
-                                    navigation=NavigationUpdate(target_set=guard_pos, movement_mode_set=MovementMode.GUARD),
+                                    navigation=NavigationUpdate(target_set=guard_pos, movement_mode_set=MovementMode.GUARD, target_purpose_set=purpose, target_gated_set=True),
                                     task=TaskUpdate(
                                         work_kind_set="ENTITY_MOVE",
                                         payload_set={"target_position": guard_pos, "reason": "CONTRACT_OBLIGATION_GUARD", "target_id": leader.id}
@@ -352,10 +373,11 @@ class TacticalDecisionSystem:
                 dx = entity.navigation.position[0] - group.anchor[0]
                 dy = entity.navigation.position[1] - group.anchor[1]
                 dist_sq = dx*dx + dy*dy
-                if dist_sq > group.cohesion_radius**2:
+                purpose = purpose_of(entity, None, MovementMode.REGROUP)
+                if dist_sq > group.cohesion_radius**2 and propose_target(entity, group.anchor, state.tick, purpose) is not None:
                     return EntityUpdate(
                         entity_id=entity.id,
-                        navigation=NavigationUpdate(target_set=group.anchor, movement_mode_set=MovementMode.REGROUP),
+                        navigation=NavigationUpdate(target_set=group.anchor, movement_mode_set=MovementMode.REGROUP, target_purpose_set=purpose, target_gated_set=True),
                         task=TaskUpdate(
                             work_kind_set="ENTITY_MOVE",
                             payload_set={"target_position": group.anchor, "reason": "REGROUP", "arrival_radius": group.cohesion_radius}
@@ -452,7 +474,11 @@ class TacticalDecisionSystem:
 
         if stale_ticks > 10 and not fighting_adjacent:
              # Logic ID: COMB-277 (Anti-stalemate does not force illegal movement)
-             return stalemate_break_update(entity, strat_up, _destination_or_hold(entity, wander_destination(state, entity)))
+             purpose = purpose_of(entity, None, MovementMode.WANDER)
+             wander_dest = _open_or_none(entity, wander_destination(state, entity), state.tick, purpose)
+             wander_to = _destination_or_hold(entity, wander_dest)
+             stored_for, gated = _purpose_and_gated(entity, wander_dest, purpose, MovementMode.WANDER)
+             return stalemate_break_update(entity, strat_up, wander_to, stored_for, gated)
 
         # Decision 32: beside a hostile it is not engaged with, the subject decides now (keep walking, step away, or fight below).
         noticed = notice_unengaged_hostile(state, entity, target, hostiles, strat_up)
@@ -498,10 +524,11 @@ class TacticalDecisionSystem:
              ranged_threats = [h for h in hostiles if h.combat.range > 2]
              if ranged_threats:
                  cover_pos = PositioningService.find_nearest_cover(entity, ranged_threats[0], state)
-                 if cover_pos and cover_pos != entity.navigation.position:
+                 purpose = purpose_of(entity, None, MovementMode.REPOSITION)
+                 if cover_pos and cover_pos != entity.navigation.position and propose_target(entity, cover_pos, state.tick, purpose) is not None:
                      return EntityUpdate(
                          entity_id=entity.id,
-                         navigation=NavigationUpdate(target_set=cover_pos, movement_mode_set=MovementMode.REPOSITION),
+                         navigation=NavigationUpdate(target_set=cover_pos, movement_mode_set=MovementMode.REPOSITION, target_purpose_set=purpose, target_gated_set=True),
                          task=TaskUpdate(
                              work_kind_set="ENTITY_MOVE",
                              payload_set={"target_position": cover_pos, "reason": "SEEK_COVER", "target_id": ranged_threats[0].id}
@@ -512,15 +539,17 @@ class TacticalDecisionSystem:
              # threat here and the flight stands as before; the pressing-need rows never reach this line (`need_first` returned above, law P). With nowhere to go the
              # retreat is not taken as a move: no PANIC_RETREAT task, and the tick does not become a fight either.
              if hp_percent < 0.15:
-                  retreat_pos = retreat_destination(state, entity, hostiles)
+                  purpose = purpose_of(entity, None, MovementMode.RETREAT)
+                  retreat_pos = retreat_destination(state, entity, hostiles, purpose)
                   if retreat_pos is None:
                       # Nowhere to go: hold on the subject's own tile in RETREAT mode with no task (so no PANIC_RETREAT). An idle update would leave a stored target in place for the
                       # movement phase to walk; RETREAT mode on a pinned tile is inert (routing skips position == target). Not HOLD mode: it changes swap eligibility at movement.py.
                       return EntityUpdate(entity_id=entity.id, strategic=strat_up,
-                                          navigation=NavigationUpdate(target_set=entity.navigation.position, movement_mode_set=MovementMode.RETREAT))
+                                          navigation=NavigationUpdate(target_set=entity.navigation.position, movement_mode_set=MovementMode.RETREAT,
+                                                                      target_purpose_set=ungated_purpose(entity, MovementMode.RETREAT), target_gated_set=False))
                   return flight_weighs_free_swing(state, entity, EntityUpdate(
                       entity_id=entity.id,
-                      navigation=NavigationUpdate(target_set=retreat_pos, movement_mode_set=MovementMode.RETREAT),
+                      navigation=NavigationUpdate(target_set=retreat_pos, movement_mode_set=MovementMode.RETREAT, target_purpose_set=purpose, target_gated_set=True),
                       task=TaskUpdate(
                           work_kind_set="ENTITY_MOVE",
                           payload_set={"target_position": retreat_pos, "reason": "PANIC_RETREAT"}
@@ -537,10 +566,11 @@ class TacticalDecisionSystem:
              if targeting_ally:
                  bracket_pos = PositioningService.get_bracketing_position(entity, targeting_ally, target)
                  is_walkable, _ = LegalityServiceV2.verify_occupancy(bracket_pos, state, ignore_entity_id=entity.id)
-                 if is_walkable and bracket_pos != entity.navigation.position:
+                 purpose = purpose_of(entity, None, MovementMode.REPOSITION)
+                 if is_walkable and bracket_pos != entity.navigation.position and propose_target(entity, bracket_pos, state.tick, purpose) is not None:
                      return EntityUpdate(
                          entity_id=entity.id,
-                         navigation=NavigationUpdate(target_set=bracket_pos, movement_mode_set=MovementMode.REPOSITION),
+                         navigation=NavigationUpdate(target_set=bracket_pos, movement_mode_set=MovementMode.REPOSITION, target_purpose_set=purpose, target_gated_set=True),
                          task=TaskUpdate(
                              work_kind_set="ENTITY_MOVE",
                              payload_set={"target_position": bracket_pos, "reason": "BRACKETING", "target_id": target.id}
@@ -579,10 +609,11 @@ class TacticalDecisionSystem:
              
              if wounded_ally:
                   guard_pos = PositioningService.find_guard_position(entity, wounded_ally, target, state)
-                  if guard_pos != entity.navigation.position:
+                  purpose = purpose_of(entity, None, MovementMode.GUARD)
+                  if guard_pos != entity.navigation.position and propose_target(entity, guard_pos, state.tick, purpose) is not None:
                       return EntityUpdate(
                           entity_id=entity.id,
-                          navigation=NavigationUpdate(target_set=guard_pos, movement_mode_set=MovementMode.GUARD),
+                          navigation=NavigationUpdate(target_set=guard_pos, movement_mode_set=MovementMode.GUARD, target_purpose_set=purpose, target_gated_set=True),
                           task=TaskUpdate(
                               work_kind_set="ENTITY_MOVE",
                               payload_set={"target_position": guard_pos, "reason": "GUARDING_ALLY", "target_id": wounded_ally.id}
@@ -592,10 +623,11 @@ class TacticalDecisionSystem:
         # 5.4 Intercept Logic (Task 4.1)
         if dist_to_target > 3 and target.navigation.target:
              intercept_pos = PositioningService.find_intercept_position(entity, target, state)
-             if intercept_pos != target.navigation.position:
+             purpose = purpose_of(entity, None, MovementMode.INTERCEPT)
+             if intercept_pos != target.navigation.position and propose_target(entity, intercept_pos, state.tick, purpose) is not None:
                  return EntityUpdate(
                      entity_id=entity.id,
-                     navigation=NavigationUpdate(target_set=intercept_pos, movement_mode_set=MovementMode.INTERCEPT),
+                     navigation=NavigationUpdate(target_set=intercept_pos, movement_mode_set=MovementMode.INTERCEPT, target_purpose_set=purpose, target_gated_set=True),
                      task=TaskUpdate(
                          work_kind_set="ENTITY_MOVE",
                          payload_set={"target_position": intercept_pos, "reason": "INTERCEPTING", "target_id": target.id}
@@ -644,25 +676,28 @@ class TacticalDecisionSystem:
             
             # Verify kite position is walkable (Phase E5.2)
             kite_legal, _ = LegalityServiceV2.verify_occupancy(kite_pos, state, ignore_entity_id=entity.id)
+            kite_purpose = purpose_of(entity, None, MovementMode.RETREAT)
             if not kite_legal:
-                 # If kiting destination is blocked, fallback to pursuit
-                 return EntityUpdate(
-                     entity_id=entity.id,
-                     navigation=NavigationUpdate(target_set=target.navigation.position, movement_mode_set=MovementMode.PURSUE),
-                     task=TaskUpdate(
-                         work_kind_set="ENTITY_MOVE",
-                         payload_set={"target_position": target.navigation.position, "reason": "PURSUIT_BLOCKED_KITE", "target_id": target.id}
+                 # If kiting destination is blocked, fallback to pursuit (F2 v2.2a class C: a suppressed pursuit tile means the branch does not fire)
+                 purpose = purpose_of(entity, None, MovementMode.PURSUE)
+                 if propose_target(entity, target.navigation.position, state.tick, purpose) is not None:
+                     return EntityUpdate(
+                         entity_id=entity.id,
+                         navigation=NavigationUpdate(target_set=target.navigation.position, movement_mode_set=MovementMode.PURSUE, target_purpose_set=purpose, target_gated_set=True),
+                         task=TaskUpdate(
+                             work_kind_set="ENTITY_MOVE",
+                             payload_set={"target_position": target.navigation.position, "reason": "PURSUIT_BLOCKED_KITE", "target_id": target.id}
+                         )
                      )
-                 )
-
-            return EntityUpdate(
-                entity_id=entity.id,
-                navigation=NavigationUpdate(target_set=kite_pos, movement_mode_set=MovementMode.RETREAT),
-                task=TaskUpdate(
-                    work_kind_set="ENTITY_MOVE",
-                    payload_set={"target_position": kite_pos, "reason": "KITING", "target_id": target.id}
+            elif propose_target(entity, kite_pos, state.tick, kite_purpose) is not None:  # class C: a suppressed kite tile means the branch does not fire
+                return EntityUpdate(
+                    entity_id=entity.id,
+                    navigation=NavigationUpdate(target_set=kite_pos, movement_mode_set=MovementMode.RETREAT, target_purpose_set=kite_purpose, target_gated_set=True),
+                    task=TaskUpdate(
+                        work_kind_set="ENTITY_MOVE",
+                        payload_set={"target_position": kite_pos, "reason": "KITING", "target_id": target.id}
+                    )
                 )
-            )
 
         # (Removed, TCK-20260809-TACTICAL-DEAD-ACTIONSTYLE-SUBBRANCHES: this block previously
         # computed an ActionStyle-biased `attack_range` local variable -- AGGRESSIVE +1,
@@ -760,11 +795,14 @@ class TacticalDecisionSystem:
                     # Too far from group: only move to the edge of the cohesion zone
                     scale = (group.cohesion_radius * 1.5) / dist_from_anchor
                     target_pos = (group.anchor[0] + dx * scale, group.anchor[1] + dy * scale)
-                    
+
+            purpose = purpose_of(entity, None, MovementMode.PURSUE)
+            if propose_target(entity, target_pos, state.tick, purpose) is None:  # F2 v2.2a class C: the pursuit tile is suppressed and no branch follows, so the subject stands (idle, as a held swing does)
+                return EntityUpdate(entity_id=entity.id, strategic=strat_up)
             return EntityUpdate(
                 entity_id=entity.id,
                 strategic=strat_up,
-                navigation=NavigationUpdate(target_set=target_pos, movement_mode_set=MovementMode.PURSUE),
+                navigation=NavigationUpdate(target_set=target_pos, movement_mode_set=MovementMode.PURSUE, target_purpose_set=purpose, target_gated_set=True),
                 task=TaskUpdate(
                     work_kind_set="ENTITY_MOVE",
                     payload_set={

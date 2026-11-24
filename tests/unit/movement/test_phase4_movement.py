@@ -73,9 +73,11 @@ def test_anti_oscillation():
             .combat(readiness=100.0)
             .navigation(last_position=(6, 5), oscillation_count=3)
             .build())
-    state = replace(state, entities={1: hero})
+    # Boxed in on every side but the looped step: the ladder before the replan finds no way round (TCK-20261030-STALEMATE-BREAK-...).
+    walls = {10 + i: V2EntityBuilder(10 + i).kind("OBSTACLE").location(*tile).build() for i, tile in enumerate(((5, 4), (5, 6), (4, 5)))}
+    state = replace(state, entities={1: hero, **walls})
     
-    updates = MovementSystem.resolve_move(state, hero, (6, 5))
+    updates = MovementSystem.resolve_move(state, hero, (7, 5))
     assert updates[1].navigation.clear_target is True # Replan: clear target
     assert updates[1].navigation.oscillation_count_delta == -3 # Reset
     assert updates[1].new_position is None # Stop moving

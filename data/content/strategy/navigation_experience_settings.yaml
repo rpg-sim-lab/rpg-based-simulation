@@ -1,0 +1,21 @@
+# data/content/strategy/navigation_experience_settings.yaml
+# The navigation experience memory's balance values, not law (the #996 rework, TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON; design
+# docs/plans/systemic_world/experience_memory_design.md section 9; owner answers #715 7091099713: 100 / 50 / 5 / 8). A one-record catalog family like blocker_settings.yaml, so the values are part of
+# the catalog fingerprint (the run's identity); read through the warmed catalog by src/content/navigation_experience_settings.py, never from the file at tick time.
+#
+# oscillation_review_delay: ticks after an OSCILLATION (or an OTHER-evidence ring block) give-up before the place is due for another try; never grows. The first #996 window, kept so the first cycle is comparable.
+# bodies_review_delay: the same for a ring block with BODIES among its evidence; shorter, because bodies are the evidence that the block moves.
+# approach_change_radius: tiles the subject must be from where it gave up (Chebyshev) for the approach to count as changed and the place to be due; beyond the one-ring plus the sidestep.
+# navigation_experience_cap: records one subject keeps; bounds the review and gate work per call.
+# occupied_review_delay: ticks after an OCCUPIED give-up (another body on the place or within one tile of it: waiting, not failure) before the place is due for another try; never grows, and an OCCUPIED
+# filing does not count toward access_giveup_limit. 10 = about one try's worth of the shuffling seen before each give-up at the crowded dungeon place (ruling 476631fe section 4; owner #715 7130979190);
+# alternatives were 5 and 25. DISCLOSURE: any value under 40 means one OCCUPIED record alone cannot make a 40-tick still run, so the freeze measure no longer sees an OCCUPIED wait; the per-subject band ticks are the evidence.
+- id: "navigation_experience_settings"
+  display_name: "Navigation experience settings"
+  description: "Balance values of the navigation experience memory that live in data"
+  schema_version: "navigationexperiencesettings.v1"
+  oscillation_review_delay: 100
+  bodies_review_delay: 50
+  approach_change_radius: 5
+  navigation_experience_cap: 8
+  occupied_review_delay: 10

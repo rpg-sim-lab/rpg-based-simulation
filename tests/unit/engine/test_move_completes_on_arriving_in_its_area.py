@@ -8,6 +8,7 @@ from dataclasses import replace
 
 import pytest
 
+from src.core.navigation_purpose import TargetPurpose
 from src.core.builder import V2EntityBuilder
 from src.core.state import TaskComponent
 from src.core.work import WorkClass
@@ -22,6 +23,7 @@ HOME = (50.0, 50.0)
 def _held(reason, at, target, **payload):
     e = (V2EntityBuilder(1).kind("goblin").location(*at).combat(hp=100, max_hp=100, readiness=100.0, alive=True).lifecycle(active=True)
          .navigation(home_position=HOME, leash_radius=10.0).build())
+    e = replace(e, navigation=replace(e.navigation, target_purpose=TargetPurpose("none", "RETREAT")))  # the #996 rework: a held move carries the stored purpose of its target
     return replace(e, task=TaskComponent(work_kind="ENTITY_MOVE", payload={"target_position": target, "reason": reason, **payload}))
 
 

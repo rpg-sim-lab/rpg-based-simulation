@@ -12,6 +12,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, Optional, overload
 
 from src.core.movement_modes import MovementMode
+from src.core.navigation_purpose import ungated_purpose
 from src.core.updates import EntityUpdate, NavigationUpdate, TaskUpdate
 from src.engine.candidate_selector import MovementCandidateSelector
 from src.engine.felt_swing import felt_lethal_attacker
@@ -81,5 +82,5 @@ def flight_weighs_free_swing(
     return EntityUpdate(
         entity_id=entity.id,
         strategic=update.strategic,
-        navigation=NavigationUpdate(target_set=entity.navigation.position, movement_mode_set=MovementMode.RETREAT),
+        navigation=NavigationUpdate(target_set=entity.navigation.position, movement_mode_set=MovementMode.RETREAT, target_purpose_set=ungated_purpose(entity, MovementMode.RETREAT), target_gated_set=False),
     )
