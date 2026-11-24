@@ -78,6 +78,8 @@ None. These are dev and test dependencies only; no simulation state.
 
 ## Implementation Notes
 
+- 2026-11-24, rpg-planner-ubuntu: Dependabot #1004 (npm-major group without TypeScript) was closed by owner decision #715 7122284965; this ticket runs on ubuntu. Targets: globals 17.14.x, @types/node 26.x, @testing-library/jest-dom 8.0.0 (not 7.0), jsdom 31.0.1. jsdom 31's engines field is node ^22.22.2 || ^24.15.0 || >=26.0.0; CI's setup-node 24 and docker/frontend.Dockerfile's node:24.22.3 meet it. jsdom 31 serializes CSS numbers at 6 significant digits (jsdom/lib/jsdom/living/css/serialize.js:1040), so frontend/src/test/GameCanvas.zoom.test.tsx's style.transform read-back loses precision (#1004's Frontend job failed at lines 92 and 121); the component is correct and unchanged.
+
 ## Test Summary
 
 ## Files Changed
