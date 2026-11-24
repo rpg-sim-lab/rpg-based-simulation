@@ -13,7 +13,7 @@ from src.core.navigation_experience import NavCause, RingEvidence, apply_experie
 from src.core.navigation_purpose import TargetPurpose
 from src.core.state import AuthoritativeState
 from src.core.updates import StrategicUpdate
-from src.engine.movement import MovementSystem
+from src.engine.movement import MovementSystem, _place_occupied
 from src.engine.patches import NavigationPatch
 from src.strategy.destination_suppression import propose_target
 from src.systems.strategic_systems.blocker_lifecycle import consume_giveup_records
@@ -115,8 +115,8 @@ def test_the_subject_itself_on_the_places_ring_is_not_counted():
     """The subject stands on a ring tile of the target (Chebyshev 1) with nobody else near: nothing makes the place occupied (ignore self)."""
     h = _hero(target=T, last_position=(8, 5), oscillation_count=3)
     h = replace(h, navigation=replace(h.navigation, position=(8.0, 6.0), wayround_count=2, wayround_best_distance=4, wayround_anchor=T, wayround_last_tick=0, target_purpose=P))
-    assert not MovementSystem._place_occupied(T, h, AuthoritativeState(entities={1: h}, tick=7, seed=1))
-    assert MovementSystem._place_occupied(T, h, AuthoritativeState(entities={1: h, 20: _body(10, 4, 20)}, tick=7, seed=1))  # the failing control: another body on the ring
+    assert not _place_occupied(T, h, AuthoritativeState(entities={1: h}, tick=7, seed=1))
+    assert _place_occupied(T, h, AuthoritativeState(entities={1: h, 20: _body(10, 4, 20)}, tick=7, seed=1))  # the failing control: another body on the ring
 
 
 def _after_give_up(held, tick=7):

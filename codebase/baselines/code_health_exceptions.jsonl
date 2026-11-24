@@ -1358,8 +1358,8 @@
 {"added_date": "2026-10-02", "ceiling": 3, "file": "src/engine/movement.py", "retiring_ticket": null, "reviewed": false, "rule": "PLC0415", "symbol": null, "tool": "ruff", "value": 3}
 {"added_date": "2026-10-02", "ceiling": 1, "file": "src/engine/movement.py", "retiring_ticket": null, "reviewed": false, "rule": "PLR0912", "symbol": null, "tool": "ruff", "value": 1}
 {"added_date": "2026-10-02", "ceiling": 1, "file": "src/engine/movement.py", "retiring_ticket": null, "reviewed": false, "rule": "PLR0915", "symbol": null, "tool": "ruff", "value": 1}
-{"added_date": "2026-10-02", "ceiling": 72, "file": "src/engine/movement.py", "retiring_ticket": null, "reviewed": false, "rule": "cognitive-complexity", "symbol": "MovementSystem.resolve_move", "tool": "complexipy", "value": 72}
-{"added_date": "2026-10-02", "ceiling": 254, "file": "src/engine/movement.py", "retiring_ticket": null, "reviewed": false, "rule": "function-length", "symbol": "MovementSystem.resolve_move", "tool": "line_count", "value": 254}
+{"added_date": "2026-10-02", "ceiling": 71, "file": "src/engine/movement.py", "retiring_ticket": null, "reviewed": false, "rule": "cognitive-complexity", "symbol": "MovementSystem._resolve_move_ladder", "tool": "complexipy", "value": 71}
+{"added_date": "2026-10-02", "ceiling": 238, "file": "src/engine/movement.py", "retiring_ticket": null, "reviewed": false, "rule": "function-length", "symbol": "MovementSystem._resolve_move_ladder", "tool": "line_count", "value": 238}
 {"added_date": "2026-10-02", "ceiling": 11, "file": "src/engine/movement.py", "retiring_ticket": null, "reviewed": false, "rule": "duplicate-block", "symbol": "dup:src/engine/tactical.py", "tool": "jscpd", "value": 11}
 {"added_date": "2026-10-02", "ceiling": 1, "file": "src/engine/movement_cache.py", "retiring_ticket": null, "reviewed": false, "rule": "D100", "symbol": null, "tool": "ruff", "value": 1}
 {"added_date": "2026-10-02", "ceiling": 2, "file": "src/engine/movement_cache.py", "retiring_ticket": null, "reviewed": false, "rule": "D101", "symbol": null, "tool": "ruff", "value": 2}

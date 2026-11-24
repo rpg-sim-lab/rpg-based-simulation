@@ -126,6 +126,11 @@ class OscReplanOutcome:
     arrived: bool = False  # the count ran out while the body is ARRIVED at the walk's nav target (`has_arrived`): not a give-up, the walk simply ends (owner #715 7128509663, "arrived never fails")
 
 
+def _place_occupied(target_tile: Tuple[int, int], entity: EntityState, state_or_context: Any) -> bool:
+    """True when another body (never the subject) stands on the target tile or on any tile within Chebyshev 1 of it: the place's own one-ring, the radius of `near_anchor`. The existing `get_occupant`, no new occupancy rule."""
+    return any(LegalityServiceV2.get_occupant((target_tile[0] + dx, target_tile[1] + dy), state_or_context, ignore_entity_id=entity.id) is not None for dx in (-1, 0, 1) for dy in (-1, 0, 1))
+
+
 class MovementSystem:
     """ Authoritative handler for grid-based movement in V2. """
 
@@ -237,18 +242,13 @@ class MovementSystem:
             return OscReplanOutcome(None, osc_delta, wait_delta, None, False, None, True)
         anchor = entity.navigation.wayround_anchor
         kept = (int(anchor[0]), int(anchor[1])) if anchor is not None else target_tile
-        occupied = MovementSystem._place_occupied(target_tile, entity, state_or_context)  # OCCUPIED outranks the two failure causes: other bodies at the place is waiting, not failure (owner #715 7130979190, ruling 476631fe)
+        occupied = _place_occupied(target_tile, entity, state_or_context)  # OCCUPIED outranks the two failure causes: other bodies at the place is waiting, not failure (owner #715 7130979190, ruling 476631fe)
         ring_blocked = way_round is None and not occupied  # the one-ring check found no legal tile (else the bounded way-round count was spent: OSCILLATION, with no ring evidence)
         cause = NavCause.OCCUPIED if occupied else NavCause.RING_BLOCKED if ring_blocked else NavCause.OSCILLATION
         evidence = (RingEvidence.BODIES,) if occupied else ring_evidence_of(refusals) if ring_blocked else ()
         record = GiveUpRecord(kept, int(current_tick), cause, evidence,
                               (int(entity.navigation.position[0]), int(entity.navigation.position[1])), target_tile, entity.navigation.target_purpose, need_services_at(state_or_context, kept))
         return OscReplanOutcome(None, osc_delta, wait_delta, None, True, record)
-
-    @staticmethod
-    def _place_occupied(target_tile: Tuple[int, int], entity: EntityState, state_or_context: Any) -> bool:
-        """True when another body (never the subject) stands on the target tile or on any tile within Chebyshev 1 of it: the place's own one-ring, the radius of `near_anchor`. The existing `get_occupant`, no new occupancy rule."""
-        return any(LegalityServiceV2.get_occupant((target_tile[0] + dx, target_tile[1] + dy), state_or_context, ignore_entity_id=entity.id) is not None for dx in (-1, 0, 1) for dy in (-1, 0, 1))
 
     @staticmethod
     def _osc_outcome(entity: EntityState, osc: OscReplanOutcome, success: bool, reason_code: Optional[ReasonCode]) -> Tuple[Optional[Dict[int, EntityUpdate]], bool, bool, Optional[ReasonCode], bool, Optional[GiveUpRecord]]:

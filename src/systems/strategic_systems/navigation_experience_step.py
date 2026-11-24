@@ -58,10 +58,9 @@ def _evictions(entity: Any, memory: NavigationExperienceMemory, kept_ids: set, t
 def _project_giveups(prev: Optional[NavigationExperience], cause: NavCause, project_id: str) -> int:
     """The give-ups of this place for this purpose within the project: one more for a real failure (OSCILLATION, RING_BLOCKED), and UNCHANGED for an OCCUPIED filing, which is waiting and never counts toward
     `access_giveup_limit` (ruling 476631fe, owner #715 7130979190): the stored count within the same project, 0 for a first record or another project."""
-    same = prev is not None and prev.project_id == project_id
-    if cause == NavCause.OCCUPIED:
-        return prev.project_giveups if same else 0
-    return (prev.project_giveups + 1) if same else 1
+    if prev is None or prev.project_id != project_id:
+        return 0 if cause == NavCause.OCCUPIED else 1
+    return prev.project_giveups if cause == NavCause.OCCUPIED else prev.project_giveups + 1
 
 
 def navigation_experience_update(entity: Any, tick: int, project_id: str, settings: NavigationExperienceSettings) -> NavigationExperienceUpdate:
