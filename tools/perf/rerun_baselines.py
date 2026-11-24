@@ -495,7 +495,7 @@ def cmd_record(name: str, out_root: Path, cause: str, keep_samples: bool = False
         record = BenchmarkRecord.from_dict(json.loads(path.read_text(encoding="utf-8")))
         meta = json.loads(path.with_suffix(".meta.json").read_text(encoding="utf-8"))
         probe_before, probe_after = (meta.get("probe_before") or {}).get("median"), (meta.get("probe_after") or {}).get("median")
-        gates.append({"run": index, "gate": seen, "reading": reading[0] if reading else None, "foreign_share": foreign, "swap_delta": getattr(watch, "swap_delta", None),
+        gates.append({"run": index, "gate": seen, "reading": reading[0] if reading else None, "foreign_share": foreign, "swap_delta": getattr(watch, "swap_delta", None), **getattr(watch, "fields", {}),
                       "probe_pre_ms": (reading[0] if reading else {}).get("probe_ms"), "probe_before_ms": probe_before, "probe_after_ms": probe_after, "max_probe_ms": max_probe_ms})
         runs.append(Run(str(path), record.result.latency_ms["avg"], meta["loadavg_1min"], meta["swap_used_mb"], meta["peak_rss_mb"], meta["wall_s"],
                         (meta.get("probe_before") or {}).get("median"), (meta.get("probe_after") or {}).get("median")))
