@@ -7986,6 +7986,22 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK.md
+  ticket_id: TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK
+  title: 'The per-tick replay digest rebuilds and re-sorts the whole canonical state
+    every tick: make it cheaper with byte-identical digests'
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-24'
+  related_code_areas:
+  - src/engine/checkpoint.py (CanonicalStateHasher, CanonicalHashScheduler)
+  - src/engine/kernel.py (_phase_persistence, line ~1113)
+  - src/core/dirty.py, src/core/state.py (to_canonical_dict producers)
+  - tests/unit/engine (hash tests)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK/owner_decision_2026-11-24.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261123-FOUR-CORPUS-GRADE-STABILITY-GUARDS-PASS-AND-FAIL-ON-THE-SAME-SHA-GET-FLAKY-ENTRIES.md
   ticket_id: TCK-20261123-FOUR-CORPUS-GRADE-STABILITY-GUARDS-PASS-AND-FAIL-ON-THE-SAME-SHA-GET-FLAKY-ENTRIES
   title: Four corpus grade-stability guards that pass and fail on the same sha in
