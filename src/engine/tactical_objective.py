@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, List, Optional, Sequence, Tuple
 
+from src.core.arrival import has_arrived
 from src.core.movement_modes import MovementMode
 from src.core.navigation_purpose import TargetPurpose, purpose_of
 from src.core.strategic import ObjectiveKind
@@ -38,10 +39,6 @@ if TYPE_CHECKING:
 Resolver = Callable[["AuthoritativeState", "ObjectiveState"], Tuple[Optional[Tuple[float, float]], Optional[int], Optional[int]]]
 
 
-def _distance(entity: "EntityState", target_pos: Tuple[float, float]) -> float:
-    return abs(target_pos[0] - entity.navigation.position[0]) + abs(target_pos[1] - entity.navigation.position[1])
-
-
 def _walk_to(entity: "EntityState", target_pos: Tuple[float, float], purpose: TargetPurpose) -> EntityUpdate:
     """Still en route: set the nav target (stored with ``purpose``, the caller's bound name, as gated) and stay idle so the brain re-evaluates on each cadence tick."""
     return EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(target_set=target_pos, movement_mode_set=MovementMode.WANDER, target_purpose_set=purpose, target_gated_set=True))
@@ -55,7 +52,7 @@ def _fatigue_arrival_waits(state: "AuthoritativeState", entity: "EntityState", o
     if not hostiles or project is None or str(getattr(project.kind, "value", project.kind)).lower() != "fatigue":
         return False
     target_pos, _, building_id = resolve(state, obj)
-    if not target_pos or building_id is None or _distance(entity, target_pos) > 1.0:
+    if not target_pos or building_id is None or not has_arrived(entity.navigation.position, target_pos):
         return False
     return not rest_would_lodge(state, entity, state.buildings.get(building_id)) and in_danger(entity, hostiles)
 
@@ -64,7 +61,7 @@ def _reach_location_step(state: "AuthoritativeState", entity: "EntityState", pro
     target_pos, node_id, building_id = resolve(state, obj)
     if not target_pos:
         return None
-    if _distance(entity, target_pos) > 1.0:
+    if not has_arrived(entity.navigation.position, target_pos):
         purpose = purpose_of(entity, None, MovementMode.WANDER)
         if propose_target(entity, target_pos, state.tick, purpose) is None:
             return ObjectiveDestinationSuppressed(entity_id=entity.id)
@@ -101,7 +98,7 @@ def _other_objective_step(state: "AuthoritativeState", entity: "EntityState", ob
     if obj.target:
         target_pos, node_id, _ = resolve(state, obj)
     if target_pos:
-        if _distance(entity, target_pos) > 1.0:
+        if not has_arrived(entity.navigation.position, target_pos):
             purpose = purpose_of(entity, None, MovementMode.WANDER)
             if propose_target(entity, target_pos, state.tick, purpose) is None:
                 return ObjectiveDestinationSuppressed(entity_id=entity.id)

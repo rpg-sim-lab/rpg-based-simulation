@@ -5094,7 +5094,10 @@
     reaching access_giveup_limit (4, data/content/strategy/blocker_settings.yaml)
     end the project current at that give-up, ProjectEnd.DESTINATION_GIVEN_UP. A give-up whose target tile is HELD by another body
     (LegalityServiceV2.get_occupant) drops the target but files no record (a full spot is not a failed spot, owner #715 ask 7126061322);
-    ring crowding around a free tile still files (tests/unit/movement/test_giveup_held_tile.py). v2.2a: every place-target writer
+    ring crowding around a free tile still files (tests/unit/movement/test_giveup_held_tile.py).
+    A body ARRIVED at the nav target of its walk (src/core/arrival.py has_arrived, Manhattan <= 1) never gives up: the walk ends with target_clear,
+    no WAYROUND_GIVE_UP and no record (arrived never fails, owner #715 7128509663; src/engine/movement.py _oscillation_replan,
+    tests/unit/movement/test_arrival_never_fails.py). v2.2a: every place-target writer
     goes through propose_target, with a per-class fallback when it refuses (flight: retreat point, half the
     distance, home, then the own-tile hold; combat positioning: the branch does not fire; stalemate-break:
     hold; objective: the typed idle; bridge: the next alternative and a typed target_clear of a suppressed

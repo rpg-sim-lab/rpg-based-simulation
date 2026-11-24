@@ -7,6 +7,7 @@ from dataclasses import dataclass, replace
 
 from src.content.common_knowledge_seed import warmed_catalog
 from src.content.wayround_settings import WayroundSettings, wayround_settings
+from src.core.arrival import has_arrived
 from src.core.giveup_records import GiveUpRecord
 from src.core.navigation_experience import NavCause, NeedService, ring_evidence_of
 from src.core.movement_modes import MovementMode
@@ -122,6 +123,7 @@ class OscReplanOutcome:
     wayround_set: Optional[Tuple[int, int, Tuple[int, int], int]]
     gave_up: bool
     giveup_record: Optional[GiveUpRecord] = None  # F2: the typed record of the give-up (anchor = the tile the pursuit's count opened on, else this target's tile; the tick), None unless it gave up
+    arrived: bool = False  # the count ran out while the body is ARRIVED at the walk's nav target (`has_arrived`): not a give-up, the walk simply ends (owner #715 7128509663, "arrived never fails")
 
 
 class MovementSystem:
@@ -220,7 +222,7 @@ class MovementSystem:
 
         The rung ladder runs before the replan gives up (TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK): a step back onto the tile just left is the A-B loop, so look for a
         legal tile that is neither it nor the current tile before dropping the target. The bounded give-up (2.213): a way-round that makes no net progress on this target counts; the count past
-        the step limit (`wayround_limit`) is the real replan. A give-up whose target tile is HELD by another body drops the target but files no record (a full spot is not a failed spot). Pure: it reads the entity and the state and returns the outcome."""
+        the step limit (`wayround_limit`) is the real replan. A give-up whose target tile is HELD by another body drops the target but files no record (a full spot is not a failed spot). A body ARRIVED at the walk's nav target when the count runs out does not give up at all (arrived never fails): the outcome is `arrived`. Pure: it reads the entity and the state and returns the outcome."""
         target_tile = (int(target_pos[0]), int(target_pos[1]))
         current_tick = state_or_context.tick  # the kernel's tick, explicitly: a context with none raises, it never stamps 0 (the #996 rework)
         refusals: List[ReasonCode] = []
@@ -231,6 +233,8 @@ class MovementSystem:
         wayround_count, wayround_best, wayround_anchor = wayround_after_event(entity.navigation, target_tile, dist_now, current_tick)
         if way_round is not None and wayround_count <= _wayround().limit:
             return OscReplanOutcome(way_round, osc_delta, wait_delta, (wayround_count, wayround_best, wayround_anchor, current_tick), False)
+        if has_arrived(entity.navigation.position, target_pos):  # arrived never fails: ``target_pos`` is the walk's own nav target (movement sees no objective), the structural adjacency of `src/core/arrival.py`
+            return OscReplanOutcome(None, osc_delta, wait_delta, None, False, None, True)
         anchor = entity.navigation.wayround_anchor
         kept = (int(anchor[0]), int(anchor[1])) if anchor is not None else target_tile
         if LegalityServiceV2.get_occupant(target_tile, state_or_context, ignore_entity_id=entity.id) is not None:
@@ -442,6 +446,8 @@ class MovementSystem:
                 if entity.navigation.oscillation_count >= 3:
                     osc = MovementSystem._oscillation_replan(entity, effective_target, target_pos, state_or_context, move_speed_mult)
                     effective_target, osc_delta, wait_delta, wayround_set = osc.effective_target, osc.osc_delta, osc.wait_delta, osc.wayround_set
+                    if osc.arrived:  # the same shape as the beside-unenterable arrival above (the walk is over: target_clear), plus the pursuit's counters ended; no give-up code and no record
+                        return {entity.id: EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(target_clear=True, wayround_clear=True, oscillation_count_delta=osc_delta, wait_count_delta=wait_delta))}
                     if osc.gave_up:
                         replan = True
                         success = False
