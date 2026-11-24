@@ -8061,6 +8061,26 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON.md
+  ticket_id: TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON
+  title: 'A subject remembers why a place failed it, for what purpose, and reconsiders
+    it by that reason (the #996 rework: an entity-owned navigation experience memory)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-23'
+  related_code_areas:
+  - src/core/giveup_records.py, src/strategy/destination_suppression.py
+  - src/engine/movement.py (_oscillation_replan, _find_way_round_loop, _find_sidestep),
+    src/engine/legality.py
+  - src/systems/strategic_systems/blocker_lifecycle.py, intelligence.py, work_queue.py
+  - src/core/state.py (NavigationState, MemoryModel), checkpoint FIELD_RULES
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON/external_review_architecture_v2.md
+  - agent-working/stored_artifacts/TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON/investigation.md
+  - agent-working/stored_artifacts/TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON/plan.md
+  - agent-working/stored_artifacts/TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261123-FOUR-CORPUS-GRADE-STABILITY-GUARDS-PASS-AND-FAIL-ON-THE-SAME-SHA-GET-FLAKY-ENTRIES.md
   ticket_id: TCK-20261123-FOUR-CORPUS-GRADE-STABILITY-GUARDS-PASS-AND-FAIL-ON-THE-SAME-SHA-GET-FLAKY-ENTRIES
   title: Four corpus grade-stability guards that pass and fail on the same sha in
@@ -8112,23 +8132,6 @@
   - agent-working/stored_artifacts/TCK-20261123-STATE-DIGEST-PROBE-SET-PERTURBATION-MUST-CHANGE-THE-SET/test_plan.md
   tags:
   - testing
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON.md
-  ticket_id: TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON
-  title: 'A subject remembers why a place failed it, for what purpose, and reconsiders
-    it by that reason (the #996 rework: an entity-owned navigation experience memory)'
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-23'
-  related_code_areas:
-  - src/core/giveup_records.py, src/strategy/destination_suppression.py
-  - src/engine/movement.py (_oscillation_replan, _find_way_round_loop, _find_sidestep),
-    src/engine/legality.py
-  - src/systems/strategic_systems/blocker_lifecycle.py, intelligence.py, work_queue.py
-  - src/core/state.py (NavigationState, MemoryModel), checkpoint FIELD_RULES
-  artifact_files:
-  - agent-working/stored_artifacts/TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON/external_review_architecture_v2.md
-  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261123-A-BROKE-BODY-CAN-EARN-BY-TAKING-A-QUEST.md
   ticket_id: TCK-20261123-A-BROKE-BODY-CAN-EARN-BY-TAKING-A-QUEST

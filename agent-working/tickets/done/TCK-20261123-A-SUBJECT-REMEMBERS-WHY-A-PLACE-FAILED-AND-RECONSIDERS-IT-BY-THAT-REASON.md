@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: strategy
 authority: P1
 audience: agent
 ticket_id: TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON
-phase: open
+phase: done
 date: 2026-11-23
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 A subject remembers why a place failed it, for what purpose, and reconsiders it by that reason (the #996 rework: an entity-owned navigation experience memory)
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -119,8 +119,16 @@ Lifecycle per the design: filing by the consume step, a gate due-read, a recorde
 - Kernel pin re-record (owner "Yes, re-make it", #715, the answer after 7138420867), at b2b4943f9: `python -m tests.unit.observability.extractor_characterization.corpus` (same python env as the tests, 25 s, max RSS 181 MB) rewrote ONLY `tests/fixtures/event_extractor_characterization/kernel_runs.jsonl` (400 lines before and after; sha256 cf7179d974b4b1d8d448f5887a51042df32822cbdbc89832f07e61859e2daa9b -> bf04b2a95b6aa8564186800bac76cbc5942a111a85ca733435055adba1d9b72a); `unit_corpus.jsonl` is byte-identical (sha256 e80b469a12921ff0eb379a85c45a660be7e1aed9b02808f8784f085f497df127, no diff). The four pins are `tests/unit/observability/test_event_extractor_characterization.py::test_kernel_scenario_matches_pinned_fixture[lifecycle_full_coverage_world]`, `...::test_kernel_scenario_matches_pinned_fixture[dungeon_crawl]`, `...::test_kernel_recording_is_identical_under_a_second_hash_seed[lifecycle_full_coverage_world]` and `...::test_kernel_recording_is_identical_under_a_second_hash_seed[dungeon_crawl]`; they pass on the new fixture (4 passed). The measured moves against the old pin (the kit's problem counts, `vs-pin`) are 321 (dungeon_crawl) and 519 (lifecycle_full_coverage_world); the count history over the ticket is 398 -> 386 -> 392 -> 321 / 519.
 
 ## Test Summary
+Final results on this branch (each run behind busy_gate rc 0; test python venv-sync2, mypy and code health in the lock env ci_env_c4cd853):
+- tests/unit/movement 146 passed; tests/unit/strategic 697 passed; tests/unit/tools 1455 passed (at b2b4943f9); tests/unit/observability 1262 passed, 1 skipped (after the kernel pin re-record); the engine checkpoint tests 76 passed; tests/unit/engine/test_canonical_digest_equals_reference.py 31 passed; the new old-path checkpoint test 3 passed.
+- The four kernel pins (test_event_extractor_characterization.py::test_kernel_scenario_matches_pinned_fixture and ::test_kernel_recording_is_identical_under_a_second_hash_seed, both worlds) were re-recorded with the owner's answer (#715 after 7138420867) and pass (4 passed).
+- mypy_gate rc 0; code health rc 0 (no blocking row; the new and worse rows are jscpd, report-only). CI on GitHub is the full-suite check.
+- Measurement (read-only kits, the designer reads): post-fix3 run at 0d0141804 (kit 1 README_r7, kit 2 README_v2_4) and the 10-seed run at 7116e107f (README_seeds), with their controls C1-C3 all EQUAL; see the Implementation Notes and the designer's POSTFIX3_READ_FINAL.md.
+- Written at close from the session's own reports; the per-step results are in the PR #996 conversation and the #715 records cited above.
 
 ## Files Changed
+The branch diff is the record (PR #996, `git diff origin/main...rpg-stalemate-nav`): src (navigation experience memory, give-up OCCUPIED and arrived-this-attempt, the gate, the settings loader, core records and the NavigationComponent move), data/content (navigation_experience_settings.yaml and the two settings it touches), tests, docs (design, Bible ch04, divergence 2.220, parity rows, mechanisms.yaml), the code-health baselines and the re-recorded kernel pin.
 
 ## Completion Summary
+The rework is implemented and measured: a subject keeps a typed navigation experience per (anchor, purpose) with its reason, reconsiders a place by that reason (OSCILLATION, RING_BLOCKED, OCCUPIED), and a body that arrived this attempt files nothing. The kernel pins were re-recorded with the owner's yes (#715 after 7138420867); the state.py size raise was retired by moving NavigationComponent out (TCK-20261124-NAVIGATION-STATE-MOVES-OUT-OF-STATE-PY). Seed 42 stays NOT GONE for the lifecycle world by the pre-registered rule; whether the seed spread counts is the owner's question (POSTFIX3_READ_FINAL.md).
 Named follow-up (a later sweep, not this change): the `mypy_baseline` rows at l.496-498 are stale (`movement.py` `reason_code = None`).
