@@ -8,7 +8,13 @@ import json
 from enum import Enum
 from typing import Any, Dict, Optional
 
-from src.core.state import GROUP_ID_BASE, AuthoritativeState, social_canonical_dict, strategic_canonical_dict
+from src.core.protocol_validator import ProtocolViolationError
+from src.core.state import (
+    GROUP_ID_BASE,
+    AuthoritativeState,
+    social_canonical_dict,
+    strategic_canonical_dict,
+)
 
 # PERF-D5 point 2: the proof digest is named and versioned. A stored or emitted digest of a
 # different scheme is never compared with this one.
@@ -19,6 +25,10 @@ from src.core.state import GROUP_ID_BASE, AuthoritativeState, social_canonical_d
 # v4 (TCK-20261109-A-FLIGHT-WEIGHS-THE-FREE-SWING-IT-WOULD-TAKE): v3 plus `CombatComponent.last_hit_damage`; nothing else changed, so a v4 digest is not comparable with a v3 one.
 # v5 (TCK-20261103-A-GROUP-HIT-RECORDS-ONLY-ITS-FIRST-ATTACKER): v4 plus `CombatComponent.last_hit_attackers` and `last_hit_damages`; nothing else changed, so a v5 digest is not comparable with a v4 one.
 PROOF_DIGEST_SCHEME = "flat-sha256-v5"
+
+# Under audit_mode the kernel audits the per-tick digest memo every this many ticks (the tick number, never the wall clock): one audit costs about one cold rebuild of the strategic and
+# social strata of every entity (10 to 20 ms in the two real worlds), so 100 keeps it near 0.1 to 0.2 ms per tick. TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK.
+CANONICAL_MEMO_AUDIT_PERIOD = 100
 
 
 class DigestStatus(str, Enum):
@@ -109,7 +119,7 @@ class CanonicalFragmentMemo:
     After every digest `prune` keeps only the components of the state just digested, so the size is at most 2 x the entity count.
 
     Limit (stated in docs/engine/deterministic_execution.md): a memoized component whose container is mutated IN PLACE keeps its old dict here, so that change stays invisible to the per-tick digest for the
-    component's life. Components are rebuilt with `replace()`; under audit_mode the kernel runs `audit` every CANONICAL_MEMO_AUDIT_PERIOD ticks (src/engine/kernel.py) and raises on a stale entry, so the write is
+    component's life. Components are rebuilt with `replace()`; under audit_mode the kernel runs `audit` every CANONICAL_MEMO_AUDIT_PERIOD ticks (`raise_if_stale`) and raises on a stale entry, so the write is
     detected within that many ticks, and not at all outside audit_mode. The final digest is taken without this memo and never reads a dict built by it: `EntityState.to_canonical_dict(memo)` does not store its
     result in the entity's own `_canonical_cache`.
     """
@@ -126,9 +136,10 @@ class CanonicalFragmentMemo:
         entry = table.get(id(component))
         if entry is not None and entry[0] is component:
             self.hits += 1
-            return entry[1]
+            cached: Dict[str, Any] = entry[1]
+            return cached
         self.misses += 1
-        built = build(component)
+        built: Dict[str, Any] = build(component)
         table[id(component)] = (component, built)
         return built
 
@@ -146,6 +157,15 @@ class CanonicalFragmentMemo:
         live_social = {id(e.social) for e in state.entities.values()}
         self._strategic = {k: v for k, v in self._strategic.items() if k in live_strategic}
         self._social = {k: v for k, v in self._social.items() if k in live_social}
+
+    def raise_if_stale(self, tick: int, period: int) -> None:
+        """The kernel's audit_mode check: on a tick that is a multiple of `period`, raise ProtocolViolationError when any entry differs from a recompute of its component. Read-only."""
+        mismatches = self.audit() if tick % period == 0 else []
+        if mismatches:
+            raise ProtocolViolationError(
+                f"Canonical digest memo is stale at tick {tick}: {len(mismatches)} memoized stratum dict(s) differ from a recompute "
+                f"(a strategic or social component was mutated in place). First: {mismatches[0]}"
+            )
 
     def __len__(self) -> int:
         return len(self._strategic) + len(self._social)

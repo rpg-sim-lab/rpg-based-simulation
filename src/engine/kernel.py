@@ -24,7 +24,7 @@ from src.engine.run_identity import create_run_directory, new_run_id
 from src.engine.executor import IWorkExecutor, LocalSequentialExecutor, ConcurrentExecutionAdapter
 from src.engine.cache_registry import CacheRegistry, CacheBudgetPolicy
 from src.engine.cadence import should_run
-from src.engine.checkpoint import CanonicalFragmentMemo
+from src.engine.checkpoint import CANONICAL_MEMO_AUDIT_PERIOD, CanonicalFragmentMemo
 from src.engine.need_pull import ESCALATION_ONSET, HUNGER_LINE
 from src.engine.starvation import STARVING_LINE
 
@@ -38,11 +38,6 @@ if TYPE_CHECKING:
     from src.engine.replay_manager import ReplayManager
 
 logger = logging.getLogger(__name__)
-
-# Under audit_mode the per-tick digest memo (`CanonicalFragmentMemo`) is audited every this many ticks: every entry is recomputed from its component and compared, and a mismatch
-# (an in-place write into a memoized component) raises ProtocolViolationError. The cadence is the tick number, never the wall clock. One audit costs about one cold rebuild of the strategic
-# and social strata of every entity, so 100 keeps it near 1 % of the per-tick saving (TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK).
-CANONICAL_MEMO_AUDIT_PERIOD = 100
 
 
 class Kernel:
@@ -89,7 +84,7 @@ class Kernel:
         self._stopped = False
         self._profile = profile
         self._state = state
-        # The per-tick replay digest's memo of the strategic and social canonical dicts: one per kernel, used only in `_phase_persistence`, never pickled or replayed (a new kernel starts empty).
+        # The per-tick replay digest's memo (one per kernel, used only in `_phase_persistence`, never pickled or replayed).
         self._canonical_memo = CanonicalFragmentMemo()
         self._rng = rng
         self._phases = get_authoritative_phases()
@@ -1114,16 +1109,6 @@ class Kernel:
                 f"Full isolation enforcement requires audit_mode=True."
             )
 
-    def _audit_canonical_memo(self, tick: int) -> None:
-        """Read-only check of the per-tick digest memo (audit_mode only, every CANONICAL_MEMO_AUDIT_PERIOD ticks): any entry that differs from a fresh recompute of its component raises."""
-        from src.core.protocol_validator import ProtocolViolationError
-        mismatches = self._canonical_memo.audit()
-        if mismatches:
-            raise ProtocolViolationError(
-                f"Canonical digest memo is stale at tick {tick}: {len(mismatches)} memoized stratum dict(s) differ from a recompute "
-                f"(a strategic or social component was mutated in place). First: {mismatches[0]}"
-            )
-
     def _phase_persistence(self) -> None:
         from src.engine.checkpoint import CanonicalHashScheduler
         tick = self._state.tick
@@ -1132,8 +1117,8 @@ class Kernel:
         else:
             digest = CanonicalHashScheduler.not_computed_by_policy(tick)
 
-        if self._audit_mode and tick % CANONICAL_MEMO_AUDIT_PERIOD == 0:
-            self._audit_canonical_memo(tick)
+        if self._audit_mode:
+            self._canonical_memo.raise_if_stale(tick, CANONICAL_MEMO_AUDIT_PERIOD)
 
         if self._current_policy.replay_allowed:
             self._replay.emit(TraceEvent(
