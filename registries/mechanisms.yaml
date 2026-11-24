@@ -1952,11 +1952,15 @@ mechanisms:
         existing one (`merge_inferred_blocker`), never replaced; a blocker not re-observed for BLOCKER_QUIET_SPELL_TICKS is removed (`quiet_spell_update`), and the removal emits COGNITION blocker_removed.
 
         **Note, added 2026-11-22 (TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON, divergence 2.220, PR #996):**
-        a subject that gives up a destination files a typed give-up record and an ACCESS blocker. While the
-        blocker is suppressed (its window escalates with `BlockerState.giveup_count`), every target proposal
-        goes through `destination_suppression.propose_target` / `destination_open` and refuses the tile and
-        its neighbours (`giveup_records.near_anchor`, Chebyshev 1). Four give-ups end the project
-        (`DESTINATION_GIVEN_UP`). A target set in the same tick next to an anchor is cleared by
+        a subject that gives up a destination files a typed give-up record. **Amended by the #996 rework
+        (TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON):** the strategic
+        pass turns the record into a navigation experience of the subject (`MemoryModel.navigation`, per place and
+        purpose, with its cause, evidence and due rule; `navigation_experience_step.navigation_experience_update`);
+        no ACCESS blocker is filed and `BlockerState.giveup_count` is gone. While the record is pending, or an
+        ACTIVE experience of the same purpose is not yet due and not latched, every target proposal goes through
+        `destination_suppression.propose_target` / `destination_open` and refuses the tile and its neighbours
+        (`giveup_records.near_anchor`, Chebyshev 1); main's ACCESS blockers refuse nothing. Four give-ups of one
+        place for one purpose within one project (`project_giveups`) end that project (`DESTINATION_GIVEN_UP`). A target set in the same tick next to an anchor is cleared by
         `NavigationUpdate.target_clear_anchors` (transient, never stored). Evidence (scenario, executed): the
         post-fix full run (S9 #715 7077731963, 3 cells × 5000t) has G1-held 0/2/0 and G1 0/2/0 (the 2 flw
         own-tile holds, reported rather than counted by owner ruling #715 7078467940), with G2 and G4-G7 at 0.

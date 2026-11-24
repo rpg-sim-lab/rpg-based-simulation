@@ -5083,14 +5083,16 @@
 - id: COMB-359
   text: 'TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON: a way-round give-up appends a typed GiveUpRecord(anchor, tick)
     to NavigationComponent.giveup_records (at most 4; movement appends, the strategic
-    pass clears). The subject''s next strategic pass files the ACCESS blocker blocker_access_<x>_<y>
-    of each record, merged into the stored one (failure_count 1 for a new blocker, n + 1
-    for an existing one; suppression_until_tick = tick + 100 x 2^(failure_count - 1), capped
-    at 800), and clears the records. While a blocker is suppressed or a record is pending,
+    pass clears). The #996 rework (TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON):
+    the subject''s next strategic pass files each record as a navigation experience in its own memory
+    (per anchor and target purpose, with the cause, the ring evidence, the tile it gave up from and the
+    needs the place serves; due again by that reason) and clears the records; it files no ACCESS blocker.
+    While a record is pending, or an ACTIVE experience of the same purpose is not yet due and not latched,
     destination_suppressed forbids every tile within Chebyshev 1 of the anchor to both tactical
     target writers (the typed outcome OBJECTIVE_DESTINATION_SUPPRESSED, no navigation update) and
-    the strategic bridge. A blocker reaching access_giveup_limit (4, data/content/strategy/blocker_settings.yaml)
-    ends the project current at that give-up, ProjectEnd.DESTINATION_GIVEN_UP. v2.2a: every place-target writer
+    the strategic bridge. The give-ups of one place for one purpose within one project (project_giveups)
+    reaching access_giveup_limit (4, data/content/strategy/blocker_settings.yaml)
+    end the project current at that give-up, ProjectEnd.DESTINATION_GIVEN_UP. v2.2a: every place-target writer
     goes through propose_target, with a per-class fallback when it refuses (flight: retreat point, half the
     distance, home, then the own-tile hold; combat positioning: the branch does not fire; stalemate-break:
     hold; objective: the typed idle; bridge: the next alternative and a typed target_clear of a suppressed
@@ -5103,8 +5105,8 @@
   legacy_evidence: null
   v2_evidence: src/core/giveup_records.py (GiveUpRecord, GiveUpDropCounts, HeldTargetAtAnchorCounts), src/core/state.py
     (NavigationComponent.giveup_records), src/engine/patches.py (NavigationPatch.apply), src/engine/movement.py
-    (the give-up writes the record), src/systems/strategic_systems/blocker_lifecycle.py (giveup_filing_update,
-    consume_giveup_records), src/strategy/destination_suppression.py (destination_suppressed, SuppressionHit),
+    (the give-up writes the record), src/systems/strategic_systems/blocker_lifecycle.py (giveup_project_end_update,
+    consume_giveup_records), src/systems/strategic_systems/navigation_experience_step.py (navigation_experience_update), src/core/navigation_experience.py, src/strategy/experience_due.py (due_reason), src/strategy/destination_suppression.py (destination_suppressed, SuppressionHit),
     src/engine/tactical_objective.py (ObjectiveDestinationSuppressed), src/systems/strategic_systems/intelligence.py
     (the consume hook and the bridge guards), src/content/blocker_settings.py, src/core/strategic.py (ProjectEnd.DESTINATION_GIVEN_UP),
     src/strategy/destination_suppression.py (propose_target, DestinationSuppressedEnd, reaffirm_move_update), src/engine/tactical*.py,
