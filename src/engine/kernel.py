@@ -653,7 +653,7 @@ class Kernel:
                     "tick": self._state.tick,
                     "world_time": self._state.world_time,
                     "seed": self._state.seed,
-                    "update": refined_update,
+                    "update": refined_update.replay_form(),
                     "fingerprint": self._state.fingerprint()
                 }
             ), self._current_policy)

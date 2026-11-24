@@ -7986,6 +7986,23 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261124-A-WALL-CLOCK-TIMER-IN-THE-REPLAY-STREAM-MAKES-REPLAY-FILES-NON-REPRODUCIBLE.md
+  ticket_id: TCK-20261124-A-WALL-CLOCK-TIMER-IN-THE-REPLAY-STREAM-MAKES-REPLAY-FILES-NON-REPRODUCIBLE
+  title: A wall-clock timer inside every replay update makes replay files differ byte
+    for byte between two runs of the same world and seed
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-24'
+  related_code_areas:
+  - src/domains/cooperation/phase.py
+  - src/core/updates.py (metric_counters)
+  - src/engine/kernel.py (_metrics)
+  - src/engine/replay_manager.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261124-A-WALL-CLOCK-TIMER-IN-THE-REPLAY-STREAM-MAKES-REPLAY-FILES-NON-REPRODUCIBLE/approach_note.md
+  - agent-working/stored_artifacts/TCK-20261124-A-WALL-CLOCK-TIMER-IN-THE-REPLAY-STREAM-MAKES-REPLAY-FILES-NON-REPRODUCIBLE/pr_notes.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261124-STATE-DIGEST-PROBE-SKIPS-A-SYNTHESIZED-RECORD-WHOSE-ID-WAS-REUSED.md
   ticket_id: TCK-20261124-STATE-DIGEST-PROBE-SKIPS-A-SYNTHESIZED-RECORD-WHOSE-ID-WAS-REUSED
   title: The state-digest probe's visited set holds ids of freed synthesized records,

@@ -30,6 +30,7 @@ The Replay System provides a non-authoritative stream of simulation events for d
     2. Maximum Tick Count (e.g., 100 ticks).
 - **Immutability**: Once a chunk is closed and written, it is considered immutable.
 - **Manifest**: Each run contains a `manifest.json` that tracks the sequence of chunks and the runtime configuration.
+- **No wall-clock value in a chunk** (`TCK-20261124-A-WALL-CLOCK-TIMER-IN-THE-REPLAY-STREAM-MAKES-REPLAY-FILES-NON-REPRODUCIBLE`): the `REFINED_UPDATE` event carries `StateUpdate.replay_form()`, not the kernel's own update. `sub_phase_costs` is empty and the keys in `WALL_CLOCK_METRIC_KEYS` (`src/core/updates.py`: `cooperation_phase_ms`, `world_emergence_ms`) are absent from `metric_counters`; counts such as `cooperation_evaluations` stay. Two runs of one world and seed write byte-equal `chunk_*.json` (no run id is written into a chunk). `manifest.json` still holds `start_time` and `end_time`, and the run manifest holds `started_at` and `ended_at`: run metadata, not replayed content. Limit: a new timer written into `metric_counters` leaks into the chunks until it is added to the set; `tests/unit/engine/test_replay_chunks_are_reproducible.py` fails on any float leaf there.
 
 ## Sink Pressure and Quota
 - **Backpressure**: The Persistence Sink reports latency and storage status.
