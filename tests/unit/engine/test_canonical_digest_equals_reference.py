@@ -504,3 +504,16 @@ def test_a_tick_that_is_not_a_multiple_of_the_period_runs_no_audit_and_the_audit
         assert CanonicalStateHasher.get_hash(kernel.state, memo) == digest == reference_digest(kernel.state)
     finally:
         run.close()
+
+
+@pytest.mark.parametrize("world", WORLDS)
+def test_a_real_audit_mode_run_passes_the_audit_at_the_real_period(world: str):
+    """Two real audit ticks (100 and 200) of a real world: no component of the shipped code is mutated in place, so the audit never raises."""
+    run = _Run(world)
+    try:
+        for _ in range(205):
+            run.kernel.tick_once()
+        assert run.kernel.state.tick >= 200
+        assert run.kernel._canonical_memo.audit() == []
+    finally:
+        run.close()
