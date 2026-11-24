@@ -71,7 +71,15 @@ Owner answer: #715, after 7135893456 (split now, retiring the +1 raise taken at 
 - New test tests/unit/engine/test_checkpoint_old_navigation_path.py: a checkpoint whose header fingerprint and pickle name `src.core.state.NavigationComponent` passes the schema check and unpickles.
 
 ## Test Summary
-At the time of this commit the move was WRITTEN, not run: the AST check (class node identical to 0d0141804:src/core/state.py, decorator included) printed True; nothing else had been executed. The gap results (AST check, the new test, tests/unit/movement, tests/unit/strategic, the engine checkpoint tests, test_canonical_digest_equals_reference, mypy_gate, code health) are added to this section by the follow-up commit once they have run.
+Run at HEAD 4445e0532d788177c4671d850c3a18a464e8b344 (planner slot GO, busy_gate rc 0 before each step; venv-sync2 python; the lock env ci_env_c4cd853 for mypy and code health):
+- AST class-identity check (0d0141804:src/core/state.py against src/core/navigation_component.py, decorator included): True.
+- tests/unit/engine/test_checkpoint_old_navigation_path.py: 3 passed.
+- tests/unit/engine/test_canonical_digest_equals_reference.py: 31 passed.
+- Engine checkpoint tests (test_checkpoint_fields, test_checkpoint_group_fields, test_checkpoint_schema, test_scenario_checkpointer, test_beds_survive_a_checkpoint_restore): 76 passed.
+- tests/unit/movement: 146 passed. tests/unit/strategic: 697 passed.
+- mypy_gate: rc 0.
+- Code health: rc 0, no blocking row; "OK: 3 new, 2 worse, 110 improved, 29 gone, 3402 unchanged (5 report-only)" (the new and worse rows are all jscpd, report-only). The src/core/state.py module-length row (1601/1601) is neither worse nor improved, so the tool measures 1601, as the row says; src/core/state.py ruff D102 is 34 against a ceiling of 36 (improved, not tightened here).
+No failure and no existing test expectation changed.
 
 ## Files Changed
 - src/core/navigation_component.py (new)
@@ -81,4 +89,4 @@ At the time of this commit the move was WRITTEN, not run: the AST check (class n
 - agent-working/tickets/done/TCK-20261124-NAVIGATION-STATE-MOVES-OUT-OF-STATE-PY.md
 
 ## Completion Summary
-NavigationComponent now lives in src/core/navigation_component.py and is re-exported by src/core/state.py; state.py is 1601 lines (was 1673 at 0d0141804) and its module-length ceiling is lowered to 1601, which retires the raise. Behaviour is unchanged. Verification results: see Test Summary (added after the gap).
+NavigationComponent now lives in src/core/navigation_component.py and is re-exported by src/core/state.py; state.py is 1601 lines (was 1673 at 0d0141804) and its module-length ceiling is lowered to 1601, which retires the raise. Behaviour is unchanged. Verification results: see Test Summary.
