@@ -54,7 +54,13 @@ Deferred outside #995 by the owner's scope freeze (#715 7132422805). The three s
 - tests/ corpus diversity pins (exact ids recorded by lane A at planning)
 
 ## Assumptions / Open Questions
-- The exact test ids and the guard (ii) definition are confirmed with lane A at planning.
+- Lane A's inspected read (2026-11-24, at a31bbe1bf), all in tests/unit/worldassembly/test_corpus_diversity.py:
+  - urban SOCIAL: test_urban_political_seed42_1000t_social_grade_stability (l.888), row urban_political_seed42_1000t, SOCIAL 51.887 -> 37.831932773109244;
+  - unit ECONOMY: test_unit_selfmodel_pilot_seed42_1000t_cognition_economy_narrative_grade_stability (l.786), row unit_selfmodel_pilot_seed42_1000t, ECONOMY 0.4079822616407982 -> 0.30831643002028397;
+  - the two values were measured at e293a8c71 by grade_rows.py (ef35c736) under owner ruling 7097550602;
+  - hero COGNITION: test_hero_guild_routing_seed42_1000t_cognition_grade_stability (l.767), row inferred as hero_guild_routing_seed42_1000t. It's NOT confirmed and has NO measured value; lane A's step 2 covered only the 2 rows above.
+- These long_run params skip in CI (data/calibration is not in git).
+- Guard (ii) isn't defined in the repo: divergence 2.223 and the town-heal ticket only say "rpg-designer re-reads guard (ii)" in the W urban cell. Get the definition from rpg-designer or the #781 materials before planning.
 
 ## Durable state, lifecycle and clocks
 No durable state.
