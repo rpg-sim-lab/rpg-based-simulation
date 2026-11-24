@@ -34,6 +34,17 @@ function mount(dpr: number) {
   return render(<GameCanvas mapData={mapData} entities={[]} selectedEntity={null} groundItems={[]} buildings={[]} resourceNodes={[]} regions={[]} selectedEntityId={null} onEntityClick={() => undefined} />)
 }
 
+// jsdom 31 serializes every CSS number it stores at 6 significant digits (jsdom/lib/jsdom/living/css/serialize.js, following CSSOM), so style.transform
+// reads back as `scale(1.33333)` for a component value of 4/3. The laws asserted here stay exact: a read-back must equal the SERIALIZED form of the
+// value the law allows, never "close to" it.
+const serialized = (x: number): number => Number(x.toPrecision(6))
+// z is one of the levels, as stored by the CSS serializer.
+const onLevel = (levels: number[], z: number): boolean => levels.some((l) => z === serialized(l))
+// The exact level a read-back stands for (isOverviewZoom judges the level, not its 6-digit form, which would read as off-pixel).
+const levelOf = (levels: number[], z: number): number => levels.find((l) => z === serialized(l)) ?? Number.NaN
+// v is a whole number of device pixels (v * perUnit is an integer), as stored: the nearest whole count k gives the one value v may read back as.
+const onWholePixel = (v: number, perUnit: number): boolean => v === serialized(Math.round(v * perUnit) / perUnit)
+
 const scaleOf = (container: HTMLElement): number => {
   const canvas = container.querySelector('canvas') as HTMLCanvasElement
   const match = /scale\(([\d.]+)\)/.exec(canvas.style.transform)
@@ -49,18 +60,18 @@ describe.each([1, 1.25, 1.5, 2])('GameCanvas zoom at devicePixelRatio %s', (dpr)
     const seen = new Set<string>()
     const check = () => {
       const z = scaleOf(container)
-      expect(reachable.some((l) => Math.abs(l - z) < 1e-9), `zoom ${z} is not a level of ${reachable}`).toBe(true)
-      if (isOverviewZoom(z, dpr)) expect(Math.abs(CELL_SIZE * z * dpr - Math.round(CELL_SIZE * z * dpr))).toBeLessThan(1e-9) // the overview level: a whole cell
-      else expect(Math.abs(z * dpr - Math.round(z * dpr))).toBeLessThan(1e-9) // an art level: a whole art pixel
+      expect(onLevel(reachable, z), `zoom ${z} is not a level of ${reachable}`).toBe(true)
+      if (isOverviewZoom(levelOf(reachable, z), dpr)) expect(onWholePixel(z, CELL_SIZE * dpr), `zoom ${z}`).toBe(true) // the overview level: a whole cell
+      else expect(onWholePixel(z, dpr), `zoom ${z}`).toBe(true) // an art level: a whole art pixel
       seen.add(z.toFixed(9))
     }
     check()
     for (let i = 0; i < reachable.length + 2; i += 1) { press('Zoom In'); check() }
-    expect(scaleOf(container)).toBeCloseTo(reachable[reachable.length - 1], 9) // clamped at the top
+    expect(scaleOf(container)).toBe(serialized(reachable[reachable.length - 1])) // clamped at the top
     for (let i = 0; i < reachable.length + 2; i += 1) { press('Zoom Out'); check() }
-    expect(scaleOf(container)).toBeCloseTo(reachable[0], 9) // clamped at the bottom
+    expect(scaleOf(container)).toBe(serialized(reachable[0])) // clamped at the bottom
     press('Reset Zoom'); check()
-    expect(scaleOf(container)).toBeCloseTo(reachable.reduce((a, b) => (Math.abs(b - 1) < Math.abs(a - 1) ? b : a)), 9)
+    expect(scaleOf(container)).toBe(serialized(reachable.reduce((a, b) => (Math.abs(b - 1) < Math.abs(a - 1) ? b : a))))
     expect(seen.size).toBe(reachable.length) // every level was reachable by the buttons
   })
 
@@ -70,16 +81,16 @@ describe.each([1, 1.25, 1.5, 2])('GameCanvas zoom at devicePixelRatio %s', (dpr)
     const overview = reachable.filter((l) => isOverviewZoom(l, dpr))
     expect(overview).toEqual(dpr === 2 ? [] : [reachable[0]]) // none at DPR 2, where 0.5 already is an art level
     for (let i = 0; i < reachable.length + 1; i += 1) press('Zoom Out')
-    expect(scaleOf(container)).toBeCloseTo(reachable[0], 9)
-    expect(isOverviewZoom(scaleOf(container), dpr)).toBe(dpr !== 2)
+    expect(scaleOf(container)).toBe(serialized(reachable[0]))
+    expect(isOverviewZoom(levelOf(reachable, scaleOf(container)), dpr)).toBe(dpr !== 2)
     const holder = container.querySelector('canvas')!.parentElement as HTMLElement
     fireEvent.mouseDown(holder, { button: 0, clientX: 100, clientY: 100 })
     fireEvent.mouseMove(holder, { clientX: 107, clientY: 111 })
     const match = /translate\(([-\d.]+)px, ([-\d.]+)px\)/.exec(holder.style.transform)!
-    for (const v of [match[1], match[2]]) expect(Math.abs(parseFloat(v) * dpr - Math.round(parseFloat(v) * dpr))).toBeLessThan(1e-9)
+    for (const v of [match[1], match[2]]) expect(onWholePixel(parseFloat(v), dpr), `offset ${v}`).toBe(true)
     press('Zoom In')
-    expect(scaleOf(container)).toBeCloseTo(reachable[1], 9)
-    expect(isOverviewZoom(scaleOf(container), dpr)).toBe(false)
+    expect(scaleOf(container)).toBe(serialized(reachable[1]))
+    expect(isOverviewZoom(levelOf(reachable, scaleOf(container)), dpr)).toBe(false)
   })
 
   it('the mouse wheel steps the same levels', () => {
@@ -89,11 +100,11 @@ describe.each([1, 1.25, 1.5, 2])('GameCanvas zoom at devicePixelRatio %s', (dpr)
     for (let i = 0; i < 12; i += 1) {
       fireEvent.wheel(root, { deltaY: -100 })
       const z = scaleOf(container)
-      expect(reachable.some((l) => Math.abs(l - z) < 1e-9)).toBe(true)
+      expect(onLevel(reachable, z), `zoom ${z}`).toBe(true)
     }
-    expect(scaleOf(container)).toBeCloseTo(reachable[reachable.length - 1], 9)
+    expect(scaleOf(container)).toBe(serialized(reachable[reachable.length - 1]))
     for (let i = 0; i < 12; i += 1) fireEvent.wheel(root, { deltaY: 100 })
-    expect(scaleOf(container)).toBeCloseTo(reachable[0], 9)
+    expect(scaleOf(container)).toBe(serialized(reachable[0]))
   })
 
   it('the overlay canvas draws one tile pixel as a whole number of device pixels too', () => {
@@ -101,7 +112,7 @@ describe.each([1, 1.25, 1.5, 2])('GameCanvas zoom at devicePixelRatio %s', (dpr)
     press('Zoom In')
     const overlay = container.querySelectorAll('canvas')[2] as HTMLCanvasElement
     const factor = parseFloat(/scale\(([\d.]+)\)/.exec(overlay.style.transform)![1])
-    expect(Math.abs(factor * dpr - Math.round(factor * dpr))).toBeLessThan(1e-9) // CELL_SIZE (16) x zoom x dpr
+    expect(onWholePixel(factor, dpr)).toBe(true) // CELL_SIZE (16) x zoom x dpr
     expect(overlay.style.imageRendering).toBe('pixelated')
   })
 })
@@ -118,7 +129,7 @@ describe('GameCanvas panning', () => {
   it.each([1.25, 1.5, 2])('at DPR %s a dragged offset is drawn on whole device pixels, not at the raw mouse distance', (dpr) => {
     const { container } = mount(dpr)
     const [x, y] = drag(container, 7, 11)
-    for (const v of [x, y]) expect(Math.abs(v * dpr - Math.round(v * dpr))).toBeLessThan(1e-9)
+    for (const v of [x, y]) expect(onWholePixel(v, dpr), `offset ${v}`).toBe(true)
     expect(Math.abs(x - 7)).toBeLessThanOrEqual(0.5 / dpr + 1e-9)
     if (dpr === 1.5) expect([x, y]).not.toEqual([7, 11]) // 7 css px = 10.5 device px: it moved to a whole one
   })
@@ -136,7 +147,7 @@ describe('GameCanvas when the device pixel ratio changes while open', () => {
     expect(scaleOf(container)).toBe(2)
     act(() => { dprValue = 1.5; listeners.forEach((l) => l()) })
     const z = scaleOf(container)
-    expect(Math.abs(z * 1.5 - Math.round(z * 1.5))).toBeLessThan(1e-9)
+    expect(onWholePixel(z, 1.5)).toBe(true)
     expect(Math.abs(z - 2)).toBeLessThanOrEqual(1 / 3 + 1e-9) // nearest level of the new list
   })
 })

@@ -22,6 +22,8 @@ SAMPLE_S = 5.0
 MAX_PINNED_BUSY_PCT = 10.0
 #: A pinned run is stopped when work that was not the run's own used this share of its allowed CPUs (fraction of ``len(allowed) * wall seconds``).
 MAX_FOREIGN_SHARE = 0.10
+#: A run whose CPUs lost more than this share of their wall time to the hypervisor (``/proc/stat`` steal) carries a warning in its record; the run is not voided (the voiding rule is the foreign share and the swap check).
+MAX_STEAL_PCT = 5.0
 
 
 def _user_hz() -> float:
@@ -64,6 +66,24 @@ def read_cpu_jiffies(path: str = "/proc/stat") -> CpuJiffies:
     if not out:
         raise GateError(f"{path} has no per-CPU lines")
     return out
+
+
+def read_steal_jiffies(path: str = "/proc/stat") -> Optional[Tuple[int, Dict[int, int]]]:
+    """``(aggregate steal, {cpu: steal})`` in jiffies from ``/proc/stat``, or ``None`` where the file or its steal field cannot be read (the record then says so; the run is not failed)."""
+    total: Optional[int] = None
+    per_cpu: Dict[int, int] = {}
+    try:
+        for line in Path(path).read_text(encoding="utf-8").splitlines():
+            parts = line.split()
+            if len(parts) < 9 or not parts[0].startswith("cpu"):
+                continue
+            if parts[0] == "cpu":
+                total = int(parts[8])
+            elif parts[0][3:].isdigit():
+                per_cpu[int(parts[0][3:])] = int(parts[8])
+    except (OSError, ValueError):
+        return None
+    return None if total is None or not per_cpu else (total, per_cpu)
 
 
 def read_swap_counters(path: str = "/proc/vmstat") -> Optional[Tuple[int, int]]:
@@ -171,9 +191,12 @@ class RunWatch:
 
     def __init__(self, stat: Callable[[], CpuJiffies] = read_cpu_jiffies, cgroup_usec: Callable[[], int] = read_own_cgroup_usec,
                  affinity: Callable[[], Optional[Set[int]]] = allowed_cpus, clock: Callable[[], float] = time.monotonic,
-                 cgroup_path: Callable[[], str] = read_own_cgroup_path, vmstat: Callable[[], Optional[Tuple[int, int]]] = read_swap_counters) -> None:
-        self._stat, self._usec, self._clock, self._path, self._vmstat = stat, cgroup_usec, clock, cgroup_path, vmstat
+                 cgroup_path: Callable[[], str] = read_own_cgroup_path, vmstat: Callable[[], Optional[Tuple[int, int]]] = read_swap_counters,
+                 steal: Callable[[], Optional[Tuple[int, Dict[int, int]]]] = read_steal_jiffies) -> None:
+        self._stat, self._usec, self._clock, self._path, self._vmstat, self._steal = stat, cgroup_usec, clock, cgroup_path, vmstat, steal
         self.swap_delta: Optional[Tuple[int, int]] = None
+        #: ``cpu_steal``, ``swap_in_pages`` and ``swap_out_pages`` of the run, set by ``finish`` (pinned or not); the record writer stores them as they are.
+        self.fields: Dict[str, Any] = {}
         self.cpus: Optional[Set[int]] = None
         self._affinity = affinity
 
@@ -181,7 +204,9 @@ class RunWatch:
         """Raises ``GateError`` for a pinned process whose cgroup CPU time cannot be read, or that is not in its own ``run-*.scope``: the series refuses rather than skip the check."""
         j = self._stat()
         self.cpus = pinned_cpus(j, self._affinity())
+        self._steal0 = self._steal()
         if self.cpus is None:
+            self._s0, self._t0 = self._vmstat(), self._clock()  # read for the record only: an unpinned run keeps no in-run swap check
             return
         path = self._path()
         if not fnmatch.fnmatchcase(path.rstrip("/").rsplit("/", 1)[-1], SCOPE_PATTERN):
@@ -194,9 +219,11 @@ class RunWatch:
     def finish(self) -> Optional[float]:
         """Raises ``SwapMovedError`` when pswpin/pswpout moved during the run. The foreign share of the run (``None`` for an unpinned run): (busy on the allowed CPUs - own CPU time) / (len(allowed) * wall seconds), clamped at 0."""
         if self.cpus is None:
+            self._record(self._steal(), self._vmstat(), self._clock(), None)
             return None
         j1, u1, t1 = self._stat(), self._usec(), self._clock()
         s1 = self._vmstat()
+        self._record(self._steal(), s1, t1, self.cpus)
         if s1 is None:
             raise GateError("swap counters unreadable (/proc/vmstat) at the end of the run")
         self.swap_delta = (s1[0] - self._s0[0], s1[1] - self._s0[1])
@@ -206,3 +233,26 @@ class RunWatch:
         own_s = (u1 - self._u0) / 1e6
         wall = max(t1 - self._t0, 1e-9)
         return round(max(0.0, (busy_s - own_s) / (len(self.cpus) * wall)), 4)
+
+    def _record(self, steal1: Optional[Tuple[int, Dict[int, int]]], s1: Optional[Tuple[int, int]], t1: float, cpus: Optional[Set[int]]) -> None:
+        """Steal and swap deltas of the run into ``fields`` (``cpus`` ``None``: every CPU of the host). A counter that cannot be read at either end is ``None`` (and a steal warning says so), never a failure."""
+        wall = max(t1 - self._t0, 1e-9)
+        if cpus is None:
+            cpus = set(steal1[1]) if steal1 is not None else set()
+        s0 = self._s0 if s1 is not None else None
+        self.fields = {
+            "cpu_steal": steal_report(self._steal0, steal1, cpus, wall),
+            "swap_in_pages": None if s0 is None or s1 is None else s1[0] - s0[0],
+            "swap_out_pages": None if s0 is None or s1 is None else s1[1] - s0[1],
+        }
+
+
+def steal_report(before: Optional[Tuple[int, Dict[int, int]]], after: Optional[Tuple[int, Dict[int, int]]], cpus: Set[int], wall_s: float) -> Dict[str, Any]:
+    """Steal over a run: ``jiffies`` and ``pct`` (of ``len(cpus) * wall_s``) on ``cpus`` (the allowed CPUs of a pinned run, else every CPU), ``aggregate_jiffies`` (the ``cpu`` line), ``per_cpu_jiffies``, and a ``warning`` above ``MAX_STEAL_PCT`` or when a field is unreadable."""
+    if before is None or after is None or not cpus or not (cpus <= set(before[1]) and cpus <= set(after[1])):
+        return {"jiffies": None, "pct": None, "aggregate_jiffies": None, "per_cpu_jiffies": None, "cpus": sorted(cpus), "wall_s": round(wall_s, 3), "warning": "steal field of /proc/stat unreadable"}
+    per_cpu = {c: after[1][c] - before[1][c] for c in sorted(cpus)}
+    jiffies = sum(per_cpu.values())
+    pct = round(100.0 * jiffies / USER_HZ / (len(cpus) * wall_s), 3)
+    warning = f"steal {pct} % of the run's CPU time is above {MAX_STEAL_PCT} %" if pct > MAX_STEAL_PCT else None
+    return {"jiffies": jiffies, "pct": pct, "aggregate_jiffies": after[0] - before[0], "per_cpu_jiffies": per_cpu, "cpus": sorted(cpus), "wall_s": round(wall_s, 3), "warning": warning}
