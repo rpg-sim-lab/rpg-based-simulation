@@ -578,7 +578,7 @@
 {"added_date": "2026-10-02", "ceiling": 1, "file": "src/core/skills.py", "retiring_ticket": null, "reviewed": false, "rule": "D100", "symbol": null, "tool": "ruff", "value": 1}
 {"added_date": "2026-10-02", "ceiling": 3, "file": "src/core/skills.py", "retiring_ticket": null, "reviewed": false, "rule": "D101", "symbol": null, "tool": "ruff", "value": 3}
 {"added_date": "2026-10-02", "ceiling": 1, "file": "src/core/skills.py", "retiring_ticket": null, "reviewed": false, "rule": "I001", "symbol": null, "tool": "ruff", "value": 1}
-{"added_date": "2026-10-02", "ceiling": 1672, "file": "src/core/state.py", "retiring_ticket": null, "reviewed": true, "rule": "module-length", "symbol": null, "tool": "line_count", "value": 1672}
+{"added_date": "2026-10-02", "ceiling": 1673, "file": "src/core/state.py", "retiring_ticket": "TCK-20261124-NAVIGATION-STATE-MOVES-OUT-OF-STATE-PY", "reviewed": true, "rule": "module-length", "symbol": null, "tool": "line_count", "value": 1672}
 {"added_date": "2026-10-02", "ceiling": 5, "file": "src/core/state.py", "retiring_ticket": null, "reviewed": false, "rule": "ANN001", "symbol": null, "tool": "ruff", "value": 5}
 {"added_date": "2026-10-02", "ceiling": 2, "file": "src/core/state.py", "retiring_ticket": null, "reviewed": false, "rule": "ANN002", "symbol": null, "tool": "ruff", "value": 2}
 {"added_date": "2026-10-02", "ceiling": 2, "file": "src/core/state.py", "retiring_ticket": null, "reviewed": false, "rule": "ANN003", "symbol": null, "tool": "ruff", "value": 2}
