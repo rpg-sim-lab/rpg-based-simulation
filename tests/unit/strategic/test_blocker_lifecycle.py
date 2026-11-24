@@ -71,7 +71,7 @@ def test_a_re_inference_keeps_the_suppression_and_failure_count_and_refreshes_wh
 
 def test_the_canonical_dict_omits_the_lifecycle_fields_while_default_and_carries_them_after():
     plain = _blocker()
-    assert plain.canonical_dict() == {k: v for k, v in dataclasses.asdict(plain).items() if k not in ("failure_count", "last_seen_tick", "last_project_end_tick", "giveup_count")}
+    assert plain.canonical_dict() == {k: v for k, v in dataclasses.asdict(plain).items() if k not in ("failure_count", "last_seen_tick", "last_project_end_tick")}
     assert _blocker(failures=1, seen=7).canonical_dict()["failure_count"] == 1
     assert _blocker(seen=7).canonical_dict()["last_seen_tick"] == 7
     assert _blocker(end=9).canonical_dict()["last_project_end_tick"] == 9

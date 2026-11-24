@@ -7,15 +7,15 @@ from src.core.navigation_purpose import TargetPurpose
 from src.core.builder import V2EntityBuilder
 from src.core.giveup_records import GiveUpRecord
 from src.core.state import AuthoritativeState, RegionState
-from src.core.strategic import BlockerState
-from src.core.updates import EntityUpdate, NavigationUpdate, StrategicUpdate
+from src.core.navigation_experience import ExperienceReview, NavigationExperienceUpdate, ReviewReason
+from src.core.updates import EntityUpdate, NavigationUpdate
 from src.engine.executor import _entity_move_updates
 from src.engine.intent.action_intent import ActionIntent, ActionIntentAdapter
 from src.engine.tactical_destinations import RETREAT_STEP, retreat_destination
+from tests.unit.strategic.experience_fixture import an_experience, refuse
 from src.strategy.destination_suppression import (
     DestinationSuppressedEnd,
     ObjectiveDestinationSuppressed,
-    access_blocker_id,
     destination_open,
     propose_target,
     regroup_to_town_update,
@@ -24,40 +24,40 @@ from src.strategy.destination_suppression import (
 ANCHOR = (9, 5)
 
 
-def _subject(blockers=(), records=(), pos=(5.0, 5.0), home=None):
+def _subject(refused=(), records=(), pos=(5.0, 5.0), home=None, until=500):
+    """A subject at ``pos`` that remembers a failed WANDER approach to each anchor in ``refused`` (until the tick ``until``) and holds ``records`` as pending give-ups."""
     e = V2EntityBuilder(1).kind("HERO").location(*pos).build()
-    strat = replace(e.strategic, blockers={b.id: b for b in blockers}, home_region_id=home)
-    return replace(e, strategic=strat, navigation=replace(e.navigation, giveup_records=tuple(records)))
-
-
-def _blocker(until=500, anchor=ANCHOR, giveups=1):
-    return BlockerState(id=access_blocker_id(anchor), kind="access", subject=f"{anchor}", suppression_until_tick=until, giveup_count=giveups)
+    e = replace(e, strategic=replace(e.strategic, home_region_id=home), navigation=replace(e.navigation, giveup_records=tuple(records)))
+    return refuse(e, *refused, until=until) if refused else e
 
 
 # --- the proposal point ---------------------------------------------------------------------------------------------------------------------------
 def test_propose_target_returns_the_position_when_open_and_none_when_suppressed_or_pending():
     assert propose_target(_subject(), (9.0, 5.0), 10, TargetPurpose("none", "WANDER")) == (9.0, 5.0)
-    assert propose_target(_subject(blockers=(_blocker(),)), (10.0, 6.0), 10, TargetPurpose("none", "WANDER")) is None  # Chebyshev 1 of the anchor
-    assert propose_target(_subject(blockers=(_blocker(),)), (11.0, 5.0), 10, TargetPurpose("none", "WANDER")) == (11.0, 5.0)  # two tiles away is open
-    assert propose_target(_subject(blockers=(_blocker(until=10),)), (9.0, 5.0), 10, TargetPurpose("none", "WANDER")) == (9.0, 5.0)  # the suppression has passed
+    assert propose_target(_subject(refused=(ANCHOR,)), (10.0, 6.0), 10, TargetPurpose("none", "WANDER")) is None  # Chebyshev 1 of the anchor
+    assert propose_target(_subject(refused=(ANCHOR,)), (11.0, 5.0), 10, TargetPurpose("none", "WANDER")) == (11.0, 5.0)  # two tiles away is open
+    assert propose_target(_subject(refused=(ANCHOR,), until=10), (9.0, 5.0), 10, TargetPurpose("none", "WANDER")) == (9.0, 5.0)  # the refusal has passed (due at tick 10)
     assert propose_target(_subject(records=(GiveUpRecord(ANCHOR, 9),)), (9.0, 5.0), 10, TargetPurpose("none", "WANDER")) is None  # a stored pending record
 
 
 # --- D1: the staged update of the same pass --------------------------------------------------------------------------------------------------------
-def test_the_staged_give_up_record_and_the_staged_blocker_forbid_the_tile_in_the_pass_that_learns_of_them():
+def test_the_staged_give_up_record_forbids_the_tile_in_the_pass_that_learns_of_it_and_a_staged_experience_does_not_refuse_until_the_next_read():
     e = _subject()
     assert destination_open(e, (9.0, 5.0), 10, TargetPurpose("none", "WANDER")) and destination_open(e, (9.0, 5.0), 10, TargetPurpose("none", "WANDER"), EntityUpdate(entity_id=1))
     staged_record = EntityUpdate(entity_id=1, navigation=NavigationUpdate(giveup_record_add=GiveUpRecord(ANCHOR, 10)))
     assert not destination_open(e, (9.0, 5.0), 10, TargetPurpose("none", "WANDER"), staged_record)
-    staged_blocker = EntityUpdate(entity_id=1, strategic=StrategicUpdate(blockers_add_or_update=[_blocker()]))
-    assert not destination_open(e, (9.0, 5.0), 10, TargetPurpose("none", "WANDER"), staged_blocker)
-    assert destination_open(e, (20.0, 5.0), 10, TargetPurpose("none", "WANDER"), staged_blocker) and destination_open(e, (9.0, 5.0), 10, TargetPurpose("none", "WANDER")) is True  # the staged arg changes nothing stored
+    assert destination_open(e, (20.0, 5.0), 10, TargetPurpose("none", "WANDER"), staged_record) and destination_open(e, (9.0, 5.0), 10, TargetPurpose("none", "WANDER")) is True  # the staged arg changes nothing stored
+    staged_experience = EntityUpdate(entity_id=1, navigation_experience=NavigationExperienceUpdate(upserts=(an_experience(ANCHOR),)))
+    assert destination_open(e, (9.0, 5.0), 10, TargetPurpose("none", "WANDER"), staged_experience)  # the filing pass does not refuse by its own upsert: it applies from the next read
 
 
-def test_a_staged_removal_lifts_a_stored_suppression_for_the_pass():
-    e = _subject(blockers=(_blocker(),))
-    staged = EntityUpdate(entity_id=1, strategic=StrategicUpdate(blockers_remove=[access_blocker_id(ANCHOR)]))
+def test_a_staged_review_lifts_a_stored_experiences_refusal_for_the_pass():
+    e = _subject(refused=(ANCHOR,))
+    record = e.cognition.memory.navigation.records[0]
+    staged = EntityUpdate(entity_id=1, navigation_experience=NavigationExperienceUpdate(reviews=(ExperienceReview(record.experience_id, record.cycle, 10, ReviewReason.DUE_TICK),)))
     assert not destination_open(e, (9.0, 5.0), 10, TargetPurpose("none", "WANDER")) and destination_open(e, (9.0, 5.0), 10, TargetPurpose("none", "WANDER"), staged)
+    stale = EntityUpdate(entity_id=1, navigation_experience=NavigationExperienceUpdate(reviews=(ExperienceReview(record.experience_id, record.cycle + 1, 10, ReviewReason.DUE_TICK),)))
+    assert not destination_open(e, (9.0, 5.0), 10, TargetPurpose("none", "WANDER"), stale)  # a review of another cycle lifts nothing (failing control)
 
 
 # --- D2 class F: flight candidates ---------------------------------------------------------------------------------------------------------------
@@ -73,13 +73,11 @@ def test_a_flight_tries_the_computed_point_then_half_the_distance_then_home_and_
     full = (20.0 + RETREAT_STEP, 20.0)
     half = (20.0 + RETREAT_STEP / 2.0, 20.0)
     assert retreat_destination(state, e, threats, TargetPurpose("none", "WANDER")) == full
-    e_full = replace(e, strategic=replace(e.strategic, blockers={_blocker(anchor=(30, 20)).id: _blocker(anchor=(30, 20))}))
+    e_full = refuse(e, (30, 20))
     assert retreat_destination(state, e_full, threats, TargetPurpose("none", "WANDER")) == half  # (2)
-    both = {b.id: b for b in (_blocker(anchor=(30, 20)), _blocker(anchor=(25, 20)))}
-    e_both = replace(e, strategic=replace(e.strategic, blockers=both))
+    e_both = refuse(e, (30, 20), (25, 20))
     assert retreat_destination(state, e_both, threats, TargetPurpose("none", "WANDER")) == (40.0, 40.0)  # (3) home.center
-    all_three = {b.id: b for b in (_blocker(anchor=(30, 20)), _blocker(anchor=(25, 20)), _blocker(anchor=(40, 40)))}
-    assert retreat_destination(state, replace(e, strategic=replace(e.strategic, blockers=all_three)), threats, TargetPurpose("none", "WANDER")) is None  # the caller's existing no-destination hold
+    assert retreat_destination(state, refuse(e, (30, 20), (25, 20), (40, 40)), threats, TargetPurpose("none", "WANDER")) is None  # the caller's existing no-destination hold
 
 
 def test_an_unsuppressed_flight_is_the_old_derivation():
@@ -90,7 +88,7 @@ def test_an_unsuppressed_flight_is_the_old_derivation():
 
 # --- D2 class X: the executor's re-emission -------------------------------------------------------------------------------------------------------
 def test_the_executor_ends_a_held_move_whose_target_is_suppressed_typed_and_does_not_re_emit_it():
-    e = _subject(blockers=(_blocker(),))
+    e = _subject(refused=(ANCHOR,))
     e = replace(e, navigation=replace(e.navigation, target_purpose=TargetPurpose("none", "WANDER")))  # the #996 rework: a re-emission carries the STORED purpose, so the fixture's held move has one
     out = _entity_move_updates(e, {"target_position": (9.0, 5.0)}, {1: e}, [], 10)[1]
     assert isinstance(out, DestinationSuppressedEnd) and out.navigation.target_clear is True and out.navigation.target_set is None
@@ -112,7 +110,7 @@ def test_a_held_move_with_no_stored_purpose_ends_typed_even_toward_an_open_tile_
 
 # --- D2 class O: the investigate path -----------------------------------------------------------------------------------------------------------
 def test_a_move_to_intent_at_a_suppressed_position_is_the_typed_idle_and_sets_no_target():
-    e = _subject(blockers=(_blocker(),))
+    e = _subject(refused=(ANCHOR,))
     intent = ActionIntent(kind="MOVE_TO", actor_id=1, payload={"position": (9.0, 5.0)}, reason="investigate")
     out = ActionIntentAdapter.execute(e, intent, current_tick=10)[1]
     assert isinstance(out, ObjectiveDestinationSuppressed) and out.navigation is None
@@ -131,24 +129,12 @@ def test_the_regroup_builder_matches_both_forms_the_fused_pass_wrote_by_hand():
     assert built.navigation.path_set == [(1.0, 1.0)] and built.navigation.target_set == town and built.interaction.reset is True
 
 
-# --- D4: the counter's state rule ------------------------------------------------------------------------------------------------------------------
-def test_giveup_count_is_omitted_at_zero_carried_above():
-    b0 = _blocker(giveups=0)
-    assert "giveup_count" not in b0.canonical_dict()
-    assert _blocker(giveups=2).canonical_dict()["giveup_count"] == 2
-
-
-def test_an_older_checkpoint_blocker_fills_giveup_count_to_zero():
-    from src.engine.checkpoint_fields import FIELD_RULES
-    rule = next(r for r in FIELD_RULES if r.field == "giveup_count")
-    assert rule.fill(None, None) == 0 and rule.ruling
-
-
-def test_the_fingerprint_of_a_blocker_is_the_pre_f2_string_at_zero_and_adds_g_n_above():
-    """D4, executed: the blockers' fragment is byte-identical to the pre-F2 format while giveup_count is 0, and carries ':g2' at 2."""
+# --- D4: the blocker fingerprint is the pre-F2 string (the give-up counter on a blocker is gone) ------------------------------------------------------
+def test_the_fingerprint_of_a_blocker_is_the_pre_f2_string():
+    """The blockers' fragment is the pre-F2 format: the give-up counter lives on the navigation experience (`project_giveups`), not on a blocker."""
+    from src.core.strategic import BlockerState
     from src.replay.fingerprint import _blocker_ident
 
     plain = BlockerState(id="b1", kind="access", subject="(9.0, 5.0)", severity=0.8)
     pre_f2 = f"{plain.id}:{plain.kind}:{plain.subject}:{plain.severity:.3f}:{plain.resolved}"
     assert _blocker_ident({"b1": plain}) == pre_f2
-    assert _blocker_ident({"b1": replace(plain, giveup_count=2)}) == pre_f2 + ":g2"

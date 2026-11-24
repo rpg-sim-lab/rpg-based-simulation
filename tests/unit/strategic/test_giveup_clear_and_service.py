@@ -15,6 +15,7 @@ from src.engine.cadence import SystemCadence
 from src.engine.patches import NavigationPatch
 from src.systems.strategic import StrategicIntelligenceSystem
 from src.systems.strategic_systems.work_queue import StrategicWorkQueue
+from tests.unit.strategic.experience_fixture import WANDER, an_experience, refuse
 
 P = (20, 20)  # the anchor of the give-up in the update
 Q = (60, 60)  # another anchor
@@ -186,16 +187,26 @@ def test_control_the_same_scene_without_the_rule_keeps_the_walk_set(monkeypatch)
     assert _applied_target(_suppression_clear(target_set=(20.0, 20.0)))[0] == (20.0, 20.0)
 
 
-def test_the_fused_pass_clears_a_suppressed_stored_target_and_names_the_anchor_that_refused_it():
-    from src.core.strategic import BlockerState
-    from src.strategy.destination_suppression import access_blocker_id, suppression_anchors
+def _holding(e, target, purpose=WANDER):
+    """``e`` holding ``target`` as its stored target, accepted with ``purpose`` (and not through the gate: no latch)."""
+    return replace(e, navigation=replace(e.navigation, target=target, target_purpose=purpose, target_gated=False))
+
+
+def test_the_fused_pass_clears_a_stored_target_near_an_active_experience_of_its_purpose_and_names_the_anchor_that_refused_it():
+    from src.strategy.destination_suppression import suppression_anchors
     anchor = (20, 20)
-    e = V2EntityBuilder(1).kind("worker").location(10.0, 10.0).navigation(target=(20.0, 20.0)).build()
-    blocker = BlockerState(id=access_blocker_id(anchor), kind="access", subject=f"{anchor}", suppression_until_tick=500, giveup_count=1)
-    e = replace(e, strategic=replace(e.strategic, blockers={blocker.id: blocker}))
-    assert suppression_anchors(e, (21.0, 20.0), 5, TargetPurpose("none", "WANDER")) == (anchor,) and suppression_anchors(e, (40.0, 40.0), 5, TargetPurpose("none", "WANDER")) == ()
+    e = refuse(_holding(V2EntityBuilder(1).kind("worker").location(10.0, 10.0).build(), (20.0, 20.0)), anchor)
+    assert suppression_anchors(e, (21.0, 20.0), 5, WANDER) == (anchor,) and suppression_anchors(e, (40.0, 40.0), 5, WANDER) == ()
     upd = _pass(e).entity_updates.get(1)
     assert upd is not None and upd.navigation is not None and upd.navigation.target_clear is True and upd.navigation.target_clear_anchors == (anchor,)
+
+
+def test_a_stored_target_of_another_purpose_at_the_anchor_is_not_cleared():
+    """Design section 7, the purpose-scoped source: the experience is of PURSUE, the stored target walks for WANDER, so the gate for the stored purpose does not refuse it and the pass clears nothing."""
+    anchor = (20, 20)
+    e = refuse(_holding(V2EntityBuilder(1).kind("worker").location(10.0, 10.0).build(), (20.0, 20.0)), anchor, purpose=TargetPurpose("none", "PURSUE"))
+    upd = _pass(e).entity_updates.get(1)
+    assert upd is None or upd.navigation is None or (upd.navigation.target_clear is False and not upd.navigation.target_clear_anchors)
 
 
 # --- the filing anchor: the pass that files a suppression for P says so (target_clear_anchors WITHOUT target_clear) --------------------------------------------
@@ -252,24 +263,20 @@ def test_filing_control_without_the_rule_the_near_set_stands_and_the_near_stored
     assert _applied_with_stored(_filing(), (21.0, 20.0))[0] == (21.0, 20.0)
 
 
-def test_the_pass_that_files_a_suppression_carries_its_anchors_and_nothing_else_clears():
-    from src.core.strategic import BlockerState
-    from src.core.updates import StrategicUpdate
-    from src.strategy.destination_suppression import access_blocker_id, filed_suppression_anchors, navigation_with_filing_anchor
-    e = V2EntityBuilder(1).kind("worker").location(10.0, 10.0).build()
-    filed = BlockerState(id=access_blocker_id(P), kind="access", subject=f"{P}", suppression_until_tick=500, giveup_count=1)
-    staged = StrategicUpdate(blockers_add_or_update=[filed])
-    assert filed_suppression_anchors(e, staged, 5) == (P,)
-    nav = navigation_with_filing_anchor(e, None, staged, 5)
+def test_the_pass_that_files_an_experience_carries_its_anchors_and_nothing_else_clears():
+    from src.core.navigation_experience import NavigationExperienceUpdate
+    from src.strategy.destination_suppression import filed_suppression_anchors, navigation_with_filing_anchor
+    e = _holding(V2EntityBuilder(1).kind("worker").location(10.0, 10.0).build(), (40.0, 40.0))  # a stored target for WANDER, far from P
+    filed = NavigationExperienceUpdate(upserts=(an_experience(P, from_position=(10, 10)),))
+    assert filed_suppression_anchors(e, filed) == (P,)
+    nav = navigation_with_filing_anchor(e, None, filed)
     assert nav.target_clear_anchors == (P,) and nav.target_clear is False and nav.clear_target is False  # a bare clear would clear a far stored target: it is not emitted
-    assert filed_suppression_anchors(e, StrategicUpdate(), 5) == () and navigation_with_filing_anchor(e, None, StrategicUpdate(), 5) is None
-    expired = replace(filed, suppression_until_tick=5)
-    assert filed_suppression_anchors(e, StrategicUpdate(blockers_add_or_update=[expired]), 5) == ()  # not suppressed past the tick
-    held = replace(e, strategic=replace(e.strategic, blockers={filed.id: filed}))
-    assert filed_suppression_anchors(held, staged, 5) == ()  # unchanged stored suppression is not a filing
-    assert filed_suppression_anchors(held, StrategicUpdate(blockers_add_or_update=[replace(filed, suppression_until_tick=900)]), 5) == (P,)  # extended
+    assert filed_suppression_anchors(e, NavigationExperienceUpdate()) == () and navigation_with_filing_anchor(e, None, NavigationExperienceUpdate()) is None and filed_suppression_anchors(e, None) == ()
+    other = replace(e, navigation=replace(e.navigation, target_purpose=TargetPurpose("none", "PURSUE")))
+    assert filed_suppression_anchors(other, filed) == ()  # a stored target moving for ANOTHER purpose stays: the filing source is purpose-scoped
+    assert filed_suppression_anchors(replace(e, navigation=replace(e.navigation, target=None, target_purpose=None)), filed) == ()  # no stored purpose, no filing anchor
     own = NavigationUpdate(target_clear=True, target_clear_anchors=(Q,))
-    assert navigation_with_filing_anchor(e, own, staged, 5).target_clear_anchors == tuple(sorted({P, Q})) and navigation_with_filing_anchor(e, own, staged, 5).target_clear is True  # united with the refusal clear's, the clear kept
+    assert navigation_with_filing_anchor(e, own, filed).target_clear_anchors == tuple(sorted({P, Q})) and navigation_with_filing_anchor(e, own, filed).target_clear is True  # united with the refusal clear's, the clear kept
 
 
 # --- the filing source end to end through the fused pass, and the several-anchors cases (architecture review) ------------------------------------------------
@@ -277,9 +284,9 @@ def _with_records(e, records):
     return replace(e, navigation=replace(e.navigation, giveup_records=tuple(records)))
 
 
-def test_the_fused_pass_that_files_a_suppression_returns_its_anchor_without_a_clear():
-    """End to end: a pending record for P is consumed by the pass, which files the blocker; the update the pass returns carries P and NO clear. Removing the final-update wiring in intelligence.py fails this."""
-    e = _with_records(V2EntityBuilder(1).kind("worker").location(10.0, 10.0).build(), [GiveUpRecord(P, 3)])
+def test_the_fused_pass_that_files_an_experience_returns_its_anchor_without_a_clear():
+    """End to end: a pending record for P (with a purpose) is consumed by the pass, which files the experience; the subject's stored target is a far one of the same purpose; the update the pass returns carries P and NO clear. Removing the final-update wiring in intelligence.py fails this."""
+    e = _with_records(_holding(V2EntityBuilder(1).kind("worker").location(10.0, 10.0).build(), (60.0, 60.0)), [GiveUpRecord(P, 3, purpose=WANDER)])
     upd = _pass(e).entity_updates.get(1)
     assert upd is not None and upd.navigation is not None
     assert upd.navigation.target_clear_anchors == (P,) and upd.navigation.target_clear is False and upd.navigation.clear_target is False
@@ -326,19 +333,17 @@ def test_the_anchors_are_normalised_at_construction_so_a_no_op_merge_returns_the
 
 
 def test_the_lowest_anchor_selection_is_gone_every_filing_is_carried():
-    from src.core.strategic import BlockerState
-    from src.core.updates import StrategicUpdate
-    from src.strategy.destination_suppression import access_blocker_id, filed_suppression_anchors
-    e = V2EntityBuilder(1).kind("worker").location(10.0, 10.0).build()
+    from src.core.navigation_experience import NavigationExperienceUpdate
+    from src.strategy.destination_suppression import filed_suppression_anchors
+    e = _holding(V2EntityBuilder(1).kind("worker").location(10.0, 10.0).build(), (60.0, 60.0))
     a, b = (20, 20), (30, 30)
-    filed = [BlockerState(id=access_blocker_id(t), kind="access", subject=f"{t}", suppression_until_tick=500, giveup_count=1) for t in (b, a)]
-    assert filed_suppression_anchors(e, StrategicUpdate(blockers_add_or_update=filed), 5) == (a, b) == filed_suppression_anchors(e, StrategicUpdate(blockers_add_or_update=filed[::-1]), 5)
+    filed = [an_experience(t, from_position=(10, 10)) for t in (b, a)]
+    assert filed_suppression_anchors(e, NavigationExperienceUpdate(upserts=tuple(filed))) == (a, b) == filed_suppression_anchors(e, NavigationExperienceUpdate(upserts=tuple(filed[::-1])))
 
 
-def test_a_blocker_the_same_update_removes_is_not_a_filing():
-    from src.core.strategic import BlockerState
-    from src.core.updates import StrategicUpdate
-    from src.strategy.destination_suppression import access_blocker_id, filed_suppression_anchors
-    e = V2EntityBuilder(1).kind("worker").location(10.0, 10.0).build()
-    blocker = BlockerState(id=access_blocker_id(P), kind="access", subject=f"{P}", suppression_until_tick=500, giveup_count=1)
-    assert filed_suppression_anchors(e, StrategicUpdate(blockers_add_or_update=[blocker], blockers_remove=[blocker.id]), 5) == ()
+def test_an_experience_the_same_update_evicts_is_not_a_filing():
+    from src.core.navigation_experience import NavigationExperienceUpdate
+    from src.strategy.destination_suppression import filed_suppression_anchors
+    e = _holding(V2EntityBuilder(1).kind("worker").location(10.0, 10.0).build(), (60.0, 60.0))
+    record = an_experience(P, from_position=(10, 10))
+    assert filed_suppression_anchors(e, NavigationExperienceUpdate(upserts=(record,), evictions=(record.experience_id,))) == ()

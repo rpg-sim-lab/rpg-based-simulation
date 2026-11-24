@@ -170,22 +170,22 @@ def test_last_moved_tick_survives_a_checkpoint_round_trip_and_the_hash_includes_
 
 
 def test_a_blocker_without_the_lifecycle_fields_restores_to_none_and_no_failures_and_keeps_every_other_field():
-    """2.214: `failure_count`, `last_seen_tick` and `last_project_end_tick` were appended to BlockerState, and F2 (2.220 D4) appended `giveup_count`; a pickle from before them loads four values short until the restore step fills them."""
+    """2.214: `failure_count`, `last_seen_tick` and `last_project_end_tick` were appended to BlockerState; a pickle from before them loads three values short until the restore step fills them."""
     from dataclasses import replace
     from src.core.strategic import BlockerState
     k = kernel([hero(1, REACH[0], action=None)], beds=1)
     try:
         st = k._state
         blk = BlockerState(id="blocker_congestion", kind="access", subject="congestion", severity=0.5, suppression_until_tick=40)
-        old = _old_shape(blk, ["failure_count", "last_seen_tick", "last_project_end_tick", "giveup_count"])
+        old = _old_shape(blk, ["failure_count", "last_seen_tick", "last_project_end_tick"])
         with pytest.raises(AttributeError):
             old.failure_count
         e = st.entities[1]
         object.__setattr__(e, "strategic", replace(e.strategic, blockers={old.id: old}))
-        fill_missing_fields(st, [r for r in FIELD_RULES if r.field in ("failure_count", "last_seen_tick", "last_project_end_tick", "giveup_count")])
+        fill_missing_fields(st, [r for r in FIELD_RULES if r.field in ("failure_count", "last_seen_tick", "last_project_end_tick")])
         restored = st.entities[1].strategic.blockers[old.id]
-        assert restored.failure_count == 0 and restored.last_seen_tick is None and restored.last_project_end_tick is None and restored.giveup_count == 0
-        assert _values(restored, skip=("failure_count", "last_seen_tick", "last_project_end_tick", "giveup_count")) == _values(blk, skip=("failure_count", "last_seen_tick", "last_project_end_tick", "giveup_count"))
+        assert restored.failure_count == 0 and restored.last_seen_tick is None and restored.last_project_end_tick is None
+        assert _values(restored, skip=("failure_count", "last_seen_tick", "last_project_end_tick")) == _values(blk, skip=("failure_count", "last_seen_tick", "last_project_end_tick"))
     finally:
         k.shutdown()
 
@@ -213,7 +213,7 @@ def test_a_project_without_ended_tick_restores_to_no_end_tick_and_keeps_every_ot
 
 
 def test_a_blocker_without_last_project_end_tick_restores_to_none_and_a_set_one_round_trips():
-    """2.214 (churn): `last_project_end_tick` was appended after `last_seen_tick` (and F2's `giveup_count` after it); a pickle from before them loads two values short and the slots are unset until the restore step fills None / 0. A set value survives the canonical dict."""
+    """2.214 (churn): `last_project_end_tick` was appended after `last_seen_tick`; a pickle from before it loads one value short and the slot is unset until the restore step fills None. A set value survives the canonical dict."""
     from dataclasses import replace
     from src.core.strategic import BlockerState
     k = kernel([hero(1, REACH[0], action=None)], beds=1)
@@ -221,14 +221,14 @@ def test_a_blocker_without_last_project_end_tick_restores_to_none_and_a_set_one_
         st = k._state
         blk = BlockerState(id="blocker_congestion", kind="access", subject="congestion", failure_count=2, last_seen_tick=30, last_project_end_tick=55)
         assert blk.canonical_dict()["last_project_end_tick"] == 55 and "last_project_end_tick" not in replace(blk, last_project_end_tick=None).canonical_dict()
-        old = _old_shape(blk, ["last_project_end_tick", "giveup_count"])
+        old = _old_shape(blk, ["last_project_end_tick"])
         with pytest.raises(AttributeError):
             old.last_project_end_tick
         e = st.entities[1]
         object.__setattr__(e, "strategic", replace(e.strategic, blockers={old.id: old}))
-        fill_missing_fields(st, [r for r in FIELD_RULES if r.field in ("last_project_end_tick", "giveup_count")])
+        fill_missing_fields(st, [r for r in FIELD_RULES if r.field == "last_project_end_tick"])
         restored = st.entities[1].strategic.blockers[old.id]
-        assert restored.last_project_end_tick is None and restored.giveup_count == 0
-        assert _values(restored, skip=("last_project_end_tick", "giveup_count")) == _values(blk, skip=("last_project_end_tick", "giveup_count"))
+        assert restored.last_project_end_tick is None
+        assert _values(restored, skip=("last_project_end_tick",)) == _values(blk, skip=("last_project_end_tick",))
     finally:
         k.shutdown()
