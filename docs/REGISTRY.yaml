@@ -14138,7 +14138,7 @@
   tags:
   - determinism
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH.md
+  path: agent-working/tickets/inprogress/TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH.md
   ticket_id: TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH
   title: An escalated hunger or fatigue goal that has already won scoring still loses
     evaluate_project_switch to the lock or retention margin of an ordinary current

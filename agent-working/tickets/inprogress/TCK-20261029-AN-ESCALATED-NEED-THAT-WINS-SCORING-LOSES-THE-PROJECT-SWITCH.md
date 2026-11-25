@@ -15,7 +15,7 @@ tags: []
 An escalated hunger or fatigue goal that has already won scoring still loses evaluate_project_switch to the lock or retention margin of an ordinary current project
 
 ## Status
-OPEN
+INPROGRESS (plan stage: dispatched by rpg-planner 2026-11-25, owner #715 7159601467; no src code until the designer and planner review the plan)
 
 ## Tier
 standard
@@ -82,6 +82,7 @@ Lean fix shape, for the counts to confirm (rpg-designer's call):
 - src/ai/goals/escalation.py (escalated_need_wins)
 
 ## Assumptions / Open Questions
+Plan, investigation and test plan: agent-working/staging_artifacts/TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH/ (written before code). Open questions Q1-Q5 are in plan.md section 7.
 - Sequenced after :1610 lands. Independent of the mapped-kinds and orphan tickets. Not dispatched.
 
 ## Implementation Notes
