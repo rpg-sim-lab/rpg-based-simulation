@@ -34,7 +34,7 @@ class SystemCadence(BaseModel):
     building_sabotage: int = Field(100, ge=1)
     boss_spawn: int = Field(100, ge=1)
     births: int = Field(30, ge=1)
-    rises: int = Field(30, ge=1)
+    rises: int = Field(default=30, ge=1)  # a keyword default: the pydantic mypy plugin then treats the field as optional at every call site
 
 
 def should_run(tick: int, entity_id: int | None, cadence: int) -> bool:
