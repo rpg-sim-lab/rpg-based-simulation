@@ -177,7 +177,9 @@ class Phase0Spy:
             strategic = getattr(ent_update, "strategic", None)
             entries = [project_view(p) for p in (getattr(strategic, "projects_add_or_update", None) or []) if p.id == before["current_project_id"]]
             after = {"current_project_id": ent.strategic.current_project_id, "project": project_view(project), "value": value_after, "need_met": value_after < value_before or service_delivered(prior_ent, ent, prior.buildings, state.buildings),
-                     "service_delivered": service_delivered(prior_ent, ent, prior.buildings, state.buildings), "hunger": ent.biological.hunger, "sleep_debt": ent.biological.sleep_debt,
+                     "service_delivered": service_delivered(prior_ent, ent, prior.buildings, state.buildings), "fresh_accepted_results": sum(1 for r in fresh_results(prior_ent, ent) if r.accepted),
+                     "gold_delta": ent.inventory.gold - prior_ent.inventory.gold, "purse_rises": {b: nb.inventory.gold - prior.buildings[b].inventory.gold for b, nb in state.buildings.items() if b in prior.buildings and nb.inventory.gold > prior.buildings[b].inventory.gold},
+                     "hunger": ent.biological.hunger, "sleep_debt": ent.biological.sleep_debt,
                      "update_strategic": None if strategic is None else {"current_project_id_set": getattr(strategic, "current_project_id_set", None), "project_entries": entries,
                                                                            "projects_remove_names_it": before["current_project_id"] in (getattr(strategic, "projects_remove", None) or [])},
                      "writer": "not readable"}

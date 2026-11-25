@@ -51,6 +51,8 @@ def main(argv: List[str]) -> int:
     print(f"{doc['cell']}: valid={doc['valid']} baseline_ok={doc['baseline_ok']} classes={doc['classes']} d2_by_reason={doc['d2_by_reason']} baseline_after_d1={doc['baseline_after_d1']} problems={doc['problems']}")
     for row in doc["rows"] or []:
         print(f"  subject {row['subject']} t{row['tick']} {row['need']} {row['class']}: project {row['before']['current_project_id']} -> current {row['after']['current_project_id']!r} status {(row['after']['project'] or {}).get('status')} ended_by {(row['after']['project'] or {}).get('ended_by')}")
+    if doc["classes"].get("D1"):
+        print("LIMIT: the paid-transfer branch of 'service delivered' accepts ANY building whose purse rose by at least what the subject spent (the service building is not known at d+1); a D1 claim is read with its raw fields (need change, gold_delta, purse_rises, fresh_accepted_results) in the rows above/in the JSON.")
     for f in doc["flags"]:
         print(f)
     return 0 if doc["valid"] and not doc["flags"] else 2

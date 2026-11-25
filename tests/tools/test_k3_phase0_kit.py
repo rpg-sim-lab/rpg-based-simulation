@@ -79,6 +79,32 @@ def test_d1_a_service_delivered_counts_as_the_need_met_even_when_the_value_did_n
     assert spy.report()["classes"] == {"D1": 1}
 
 
+def test_a_stale_accepted_result_carried_over_is_not_a_delivery_so_the_row_is_d2_and_a_fresh_one_is_d1():
+    """m3 control (designer review 1a065963): patches.py keeps the previous latest_intent_results when an update has none; that carry-over must NOT count as the need met."""
+    stale = NS(transaction_id="t-old", accepted=True)
+    spy = spy_mod.Phase0Spy(funcs())
+    cycle(spy, entity(hunger=80.0, projects=[project()], results=[stale]), entity(hunger=80.0, projects=[project(status="COMPLETED")], current="", results=[stale]))
+    row = spy.report()["rows"][0]
+    assert row["class"] == "D2" and row["after"]["need_met"] is False and row["after"]["fresh_accepted_results"] == 0
+    spy = spy_mod.Phase0Spy(funcs())
+    cycle(spy, entity(hunger=80.0, projects=[project()], results=[stale]), entity(hunger=80.0, projects=[project(status="COMPLETED")], current="", results=[stale, NS(transaction_id="t-new", accepted=True)]))
+    row = spy.report()["rows"][0]
+    assert row["class"] == "D1" and row["after"]["fresh_accepted_results"] == 1
+    spy = spy_mod.Phase0Spy(funcs())                                     # a fresh REJECTED result is no delivery either
+    cycle(spy, entity(hunger=80.0, projects=[project()]), entity(hunger=80.0, projects=[project(status="COMPLETED")], current="", results=[NS(transaction_id="t-r", accepted=False)]))
+    assert spy.report()["rows"][0]["class"] == "D2"
+
+
+def test_a_paid_transfer_is_d1_with_its_raw_fields_recorded():
+    spy = spy_mod.Phase0Spy(funcs())
+    before, after = entity(hunger=80.0, projects=[project()], gold=10), entity(hunger=80.0, projects=[project(status="COMPLETED")], current="", gold=5)
+    spy.decision(before, state(10, [before]), scores())
+    prior = NS(tick=10, entities={1: before}, buildings={7: NS(inventory=NS(gold=100))})
+    spy.observe(prior, NS(tick=11, entities={1: after}, buildings={7: NS(inventory=NS(gold=105))}), update())
+    row = spy.report()["rows"][0]
+    assert row["class"] == "D1" and row["after"]["gold_delta"] == -5 and row["after"]["purse_rises"] == {7: 5}
+
+
 def test_d2_a_typed_end_while_the_need_rises_is_listed_by_reason_and_a_completed_without_the_need_met_is_d2_too():
     spy = spy_mod.Phase0Spy(funcs())
     cycle(spy, entity(hunger=80.0, projects=[project()]), entity(hunger=81.0, projects=[project(status="ABANDONED", ended="WAY_CLOSED")], current=""), tick=10)
