@@ -65,8 +65,11 @@ def service_dispatch(entity: Any, service_actions: frozenset, buildings: Any) ->
     return str(val(action)), target
 
 
-def delivered_pairs(prior_ent: Any, ent: Any, pairs: List[Tuple[str, int]]) -> Tuple[List[Tuple[str, int]], Dict[Tuple[str, int], List[Any]], Dict[str, int]]:
-    """Which of the subject's pending (action, building) pairs the apply of this tick delivered: (delivered pairs, refusal reasons per pair, channel counts)."""
+def delivered_pairs(prior_ent: Any, ent: Any, pairs: List[Tuple[str, int]], prior_buildings: Any = None, buildings: Any = None) -> Tuple[List[Tuple[str, int]], Dict[Tuple[str, int], List[Any]], Dict[str, int]]:
+    """Which of the subject's pending (action, building) pairs the apply of this tick delivered (Amendment 1, A1): an accepted result of the action's source kind for b, OR the paid transfer at b
+    (EAT/REST/REPAIR/BUY: the subject's gold falls by D > 0 and b's purse rises by at least D in the same apply; SELL: the subject's gold rises by D > 0 and b's purse falls by at least D, or the item the subject lost
+    is gained by b's inventory). A need drop with no payment (hunger lowered for EAT, sleep_debt lowered for REST) is its own channel, ``need_drop_unpaid``, and NEVER delivers.
+    Returns (delivered pairs, refusal reasons per undelivered pair, channel counts)."""
     results = list(getattr(ent.identity, "latest_intent_results", ()) or ())
     delivered: List[Tuple[str, int]] = []
     reasons: Dict[Tuple[str, int], List[Any]] = {}
@@ -80,11 +83,21 @@ def delivered_pairs(prior_ent: Any, ent: Any, pairs: List[Tuple[str, int]]) -> T
         if any(r.accepted for r in mine):
             ok = True
             channels["accepted_result"] += 1
-        state_change = {"EAT": ent.biological.hunger < prior_ent.biological.hunger or gold1 < gold0, "REST": ent.biological.sleep_debt < prior_ent.biological.sleep_debt or gold1 < gold0,
-                        "REPAIR": gold1 < gold0, "SELL": gold1 > gold0 or (inv0 is not None and inv1 is not None and inv1 < inv0), "BUY": gold1 < gold0 or (inv0 is not None and inv1 is not None and inv1 > inv0)}.get(action, False)
-        if state_change:
-            ok = True
-            channels["state_change"] += 1
+        pb = None if prior_buildings is None else prior_buildings.get(b)
+        nb = None if buildings is None else buildings.get(b)
+        if pb is not None and nb is not None:
+            purse0, purse1 = pb.inventory.gold, nb.inventory.gold
+            paid = (gold0 - gold1) > 0 and (purse1 - purse0) >= (gold0 - gold1)
+            sold = (gold1 - gold0) > 0 and (purse0 - purse1) >= (gold1 - gold0)
+            b_inv0, b_inv1 = inventory_total(pb), inventory_total(nb)
+            item_moved = inv0 is not None and inv1 is not None and b_inv0 is not None and b_inv1 is not None and inv1 < inv0 and b_inv1 > b_inv0
+            transfer = {"EAT": paid, "REST": paid, "REPAIR": paid, "BUY": paid, "SELL": sold or item_moved}.get(action, False)
+            if transfer:
+                ok = True
+                channels["paid_transfer"] += 1
+        unpaid = {"EAT": ent.biological.hunger < prior_ent.biological.hunger, "REST": ent.biological.sleep_debt < prior_ent.biological.sleep_debt}.get(action, False)
+        if unpaid and not ok:
+            channels["need_drop_unpaid"] += 1
         if ok:
             delivered.append((action, b))
         else:
@@ -100,11 +113,16 @@ def blockers_view(entity: Any) -> List[Dict[str, Any]]:
 
 
 class CountSpy:
-    def __init__(self, k: int, service_actions: frozenset, same_kind: Any, need_is_pressing: Any, present_threat_to: Any, acting_threat_to: Any, live_statuses: Any) -> None:
+    def __init__(self, k: int, service_actions: frozenset, same_kind: Any, need_is_pressing: Any, present_threat_to: Any, acting_threat_to: Any, live_statuses: Any, service_kinds: Any = None) -> None:
         logic = load_sibling("k2k3_count_logic")
         self.logic = logic
         self.k2 = logic.K2Tracker(k)
         self.service_actions = service_actions
+        self.visibility = logic.DispatchVisibility({a: SOURCE_KINDS[a] for a in sorted(service_actions) if a in SOURCE_KINDS}, service_kinds or {})
+        self.router_seen: Dict[int, List[Tuple[int, str, Any]]] = {}      # router current_tick -> [(subject, action, target_id)], read on the apply that executes it
+        self.router_calls = 0
+        self.router_service_calls = 0
+        self.visibility_unattributed: Counter = Counter()
         self.same_kind, self.need_is_pressing, self.present_threat_to, self.acting_threat_to, self.live_statuses = same_kind, need_is_pressing, present_threat_to, acting_threat_to, live_statuses
         self.pending_decisions: Dict[int, Dict[str, Any]] = {}     # eid -> the decision of state tick d awaiting row d+1
         self.decisions: List[Dict[str, Any]] = []
@@ -126,10 +144,20 @@ class CountSpy:
         self._patched: List[tuple] = []
 
     # ---- install / restore
-    def install(self, apply_path: Any, score_cls: Any) -> "CountSpy":
+    def install(self, apply_path: Any, score_cls: Any, router_cls: Any = None) -> "CountSpy":
         original_apply = apply_path.__dict__["apply_generation"].__func__
         original_mod = score_cls.__dict__["apply_modifiers"].__func__
         spy = self
+        if router_cls is not None:
+            original_exec = router_cls.__dict__["execute_action"].__func__
+
+            def execute_action(*args, **kwargs):
+                result = original_exec(*args, **kwargs)
+                spy.guarded(spy.router_call, args, kwargs)
+                return result  # the ORIGINAL result, untouched
+
+            self._patched.append((router_cls, "execute_action", original_exec))
+            router_cls.execute_action = staticmethod(execute_action)
 
         def apply_generation(prior_state, update, *args, **kwargs):
             new_state = original_apply(prior_state, update, *args, **kwargs)
@@ -157,6 +185,19 @@ class CountSpy:
         except BaseException:
             self.spy_exceptions.append(traceback.format_exc()[-1500:])
             raise
+
+    # ---- A2 router channel: ActionRouter.execute_action (the call that executes a dispatch while the apply of tick current_tick+1 is produced)
+    def router_call(self, args: tuple, kwargs: dict) -> None:
+        self.router_calls += 1
+        entity = args[0] if args else kwargs.get("entity")
+        payload = args[1] if len(args) > 1 else kwargs.get("payload")
+        tick = args[2] if len(args) > 2 else kwargs.get("current_tick", 0)
+        if not isinstance(payload, dict) or payload.get("action") is None:
+            return
+        action = str(val(payload["action"]))
+        if action in self.service_actions and payload.get("target_id") is not None:
+            self.router_service_calls += 1
+            self.router_seen.setdefault(int(tick), []).append((entity.id, action, payload["target_id"]))
 
     # ---- K3 decision side (state tick d)
     def decision(self, entity: Any, state: Any, scores: Any) -> None:
@@ -207,32 +248,49 @@ class CountSpy:
             self.decisions.append(row)
             if klass in ("loss_L1", "loss_L2"):
                 self.loss_rows.append(dict(row, row_d_plus_1_tick=tick, gate_outcome="not_readable_by_spy"))
-        # K2: per subject
+        # K2: per subject (Amendment 1: the dispatch of t-1 is the union of the post-apply task of t-1 and the router calls with current_tick == t-1, which executed while this apply was produced)
         buildings = state.buildings
         kinds = {b: str(val(getattr(bld, "kind", None))) for b, bld in buildings.items()}
+        router_prev: Dict[int, set] = {}
+        for eid, action, target in self.router_seen.pop(tick - 1, []):
+            if target in buildings:
+                router_prev.setdefault(eid, set()).add((action, target))
+        for stale in [t for t in self.router_seen if t < tick - 1]:      # a call whose tick was never applied (cannot happen in one process): dropped, counted
+            self.visibility_unattributed["router_calls_dropped"] += len(self.router_seen.pop(stale))
         for eid, ent in state.entities.items():
             prior_ent = prior.entities.get(eid)
             alive = bool(ent.combat.alive)
+            dispatch = service_dispatch(ent, self.service_actions, buildings) if alive else None
+            now = set() if dispatch is None else {dispatch}
             if prior_ent is None:
-                dispatch = service_dispatch(ent, self.service_actions, buildings) if alive else None
-                self.k2.step(tick, eid, True, alive, dispatch, [], None, kinds)
+                self.k2.step(tick, eid, True, alive, now, [], None, kinds)
+                if dispatch is not None:
+                    self.service_dispatch_seen += 1
                 continue
-            pending = self.k2.pending.get(eid)
-            pairs = [pending] if pending is not None else []
-            delivered, reasons, channels = delivered_pairs(prior_ent, ent, pairs) if alive and pairs else ([], {}, {})
+            task_prev = set(self.k2.pending.get(eid, set()))
+            router_pairs = router_prev.get(eid, set())
+            union = task_prev | router_pairs
+            if union:
+                self.k2.pending[eid] = set(union)
+            for pair in sorted(union):
+                self.visibility.note_dispatch(pair[0], router=pair in router_pairs, task=pair in task_prev)
+            if alive:
+                for r in getattr(ent.identity, "latest_intent_results", ()) or ():
+                    if r.accepted and r.source_kind in ("TOWN_SERVICE", "SHOP_SELL", "SHOP_BUY") and r.source_id in buildings:
+                        self.visibility.note_accepted(r.source_kind, r.source_id, kinds.get(r.source_id), union)
+            delivered, reasons, channels = delivered_pairs(prior_ent, ent, sorted(union), prior.buildings, buildings) if alive and union else ([], {}, {})
             for name, n in channels.items():
                 self.channel_counts[name] += n
             for rs in reasons.values():
                 for r in rs:
                     self.reasons_seen[r] += 1
-            dispatch = service_dispatch(ent, self.service_actions, buildings) if alive else None
             if dispatch is not None:
                 self.service_dispatch_seen += 1
                 self.record_blockers(ent, eid, dispatch, tick)
             task = ent.task
             if str(val(task.work_kind)) == "ENTITY_ACT" and isinstance(task.payload, dict) and task.payload.get("action") is not None and task.payload.get("target_id") in buildings:
                 self.action_census[str(val(task.payload["action"]))] += 1
-            self.k2.step(tick, eid, True, alive, dispatch, delivered, reasons, kinds)
+            self.k2.step(tick, eid, True, alive, now, delivered, reasons, kinds)
         for eid in [e for e in list(self.k2.pending) if e not in state.entities]:
             self.k2.step(tick, eid, False, False, None, [], None, kinds)
 
@@ -253,16 +311,26 @@ class CountSpy:
         for run in k2["runs"]:
             key = (run["subject"], run["action"], run["building"])
             run["blockers_named_building"] = [b for b in self.run_blockers.get(key, []) if run["first_failed"] <= b["tick"] <= run["last_failed"] + self.k2.k]
+        vis = self.visibility.summary()
+        not_measured = sorted(a for a, v in vis.items() if not v["measured"])
+        by_action: Dict[str, int] = {}
+        for run in k2["runs"]:
+            if run["length"] > logic.K2_LONG:
+                by_action[run["action"]] = by_action.get(run["action"], 0) + 1
         k2["long_runs"] = [r for r in k2["runs"] if r["length"] > logic.K2_LONG]
+        k2["k2_count_by_action"] = {a: (None if a in not_measured else by_action.get(a, 0)) for a in sorted(vis)}
+        k2["k2_count_measured"] = sum(n for a, n in by_action.items() if a not in not_measured)
+        k2["not_measured_actions"] = not_measured
         k3 = logic.k3_summary([d for d in self.decisions if d["klass"] in ("win", "loss_L1", "loss_L2", "excluded_threat")])
         acting = logic.k3_summary([dict(d, klass="excluded_threat" if d["acting_threat"] and d["klass"] in ("loss_L1", "loss_L2", "excluded_threat") else d["klass"]) for d in self.decisions
                                    if d["klass"] in ("win", "loss_L1", "loss_L2", "excluded_threat")])
         return {"k2": k2, "k3": k3, "k3_if_acting_threat_test": {"k3_count": acting["k3_count"], "per_need": acting["per_need"]}, "loss_rows": self.loss_rows,
+                "dispatch_visibility": vis, "decision_policy": logic.DECISION_POLICY, "rule_source": logic.RULE_SOURCE,
                 "decisions_unresolved": self.unresolved_decisions, "duplicate_decisions": self.duplicate_decisions,
                 "reach": {"apply_calls": self.apply_calls, "goal_calls": self.goal_calls, "goal_selections_with_winner": self.goal_selections_seen, "escalated_need_wins": self.escalated_wins,
-                          "service_dispatches_seen": self.service_dispatch_seen},
+                          "service_dispatches_seen": self.service_dispatch_seen, "router_calls": self.router_calls, "router_service_calls": self.router_service_calls},
                 "service_actions_read": sorted(self.service_actions), "action_census_with_building_target": dict(self.action_census), "delivered_channel_counts": dict(self.channel_counts),
-                "refusal_reasons_seen": dict(self.reasons_seen), "spy_exceptions": self.spy_exceptions, "probe_errors": self.probe_errors}
+                "refusal_reasons_seen": dict(self.reasons_seen), "visibility_unattributed": dict(self.visibility_unattributed), "spy_exceptions": self.spy_exceptions, "probe_errors": self.probe_errors}
 
 
 def read_tree_facts() -> Dict[str, Any]:
@@ -331,6 +399,7 @@ def main(argv: List[str]) -> int:
     if mode == "spy":
         from src.ai.score_modifiers import ScoreModifierSystem
         from src.engine.apply import ApplyPath
+        from src.engine.domain.action_router import ActionRouter
 
         facts = read_tree_facts()
         if facts["findings"]:
@@ -340,7 +409,7 @@ def main(argv: List[str]) -> int:
             Path(out).write_text(json.dumps(doc, sort_keys=True), encoding="utf-8")
             return EXIT_WRAPPER_MISSING
         spy = CountSpy(int(facts["k"]), frozenset(str(a) for a in facts["service_kinds"]), facts["same_kind"], facts["need_is_pressing"], facts["present_threat_to"], facts["acting_threat_to"],
-                       facts["live_statuses"]).install(ApplyPath, ScoreModifierSystem)
+                       facts["live_statuses"], {str(a): sorted(str(k) for k in v) for a, v in facts["service_kinds"].items()}).install(ApplyPath, ScoreModifierSystem, ActionRouter)
     fatal: Optional[str] = None
     try:
         final_state = run_ticks(kernel, ticks, spy)
@@ -355,7 +424,7 @@ def main(argv: List[str]) -> int:
         spy.finish(final_state.tick)
         doc.update(spy.report())
         reach = doc["reach"]
-        doc["reach_void"] = reach["service_dispatches_seen"] < 1 or reach["escalated_need_wins"] < 1
+        doc["reach_void"] = reach["service_dispatches_seen"] < 1 or reach["escalated_need_wins"] < 1 or reach["router_service_calls"] < 1
         doc["hash_equals_plain"] = None if plain_hash is None else final_hash == plain_hash
         if fatal is not None or spy.spy_exceptions:
             code = EXIT_SPY_EXCEPTION

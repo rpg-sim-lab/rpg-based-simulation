@@ -159,12 +159,19 @@ def fake_entity(eid, hunger=0.0, sleep=0.0, gold=10, action=None, target=None, r
               combat=NS(alive=alive), strategic=NS(current_project_id=project, projects=projects or {}, blockers={}))
 
 
+def building(purse=0, kind="inn"):
+    return NS(kind=kind, inventory=NS(gold=purse, items=()))
+
+
 def fake_state(tick, entities, buildings=None):
-    return NS(tick=tick, entities={e.id: e for e in entities}, buildings=buildings if buildings is not None else {7: NS(kind="inn")})
+    return NS(tick=tick, entities={e.id: e for e in entities}, buildings=buildings if buildings is not None else {7: building()})
+
+
+SERVICE_KINDS = {"REST": ["home", "inn"], "EAT": ["inn"], "SELL": ["shop"], "REPAIR": ["blacksmith"]}
 
 
 def make_spy(present=False, acting=False, same_kind=lambda p, k: str(getattr(p.kind, "value", p.kind)) == str(getattr(k, "value", k))):
-    return spy_mod.CountSpy(K, frozenset({"EAT", "REST", "SELL", "REPAIR"}), same_kind, lambda h, s: h >= 57.0 or s >= 58.8, lambda e, s: present, lambda e, s: acting, ("ACTIVE", "SUSPENDED"))
+    return spy_mod.CountSpy(K, frozenset({"EAT", "REST", "SELL", "REPAIR"}), same_kind, lambda h, s: h >= 57.0 or s >= 58.8, lambda e, s: present, lambda e, s: acting, ("ACTIVE", "SUSPENDED"), SERVICE_KINDS)
 
 
 def test_spy_k2_planted_positive_over_fake_states_and_delivery_channels():
@@ -179,26 +186,188 @@ def test_spy_k2_planted_positive_over_fake_states_and_delivery_channels():
     assert rep["k2"]["k2_count"] == 1 and rep["reach"]["service_dispatches_seen"] > 100
     assert rep["refusal_reasons_seen"] == {"absent": rep["refusal_reasons_seen"]["absent"]}
     assert rep["service_actions_read"] == ["EAT", "REPAIR", "REST", "SELL"]
-    # a delivered service (hunger lowered) ends the run
+    # a PAID meal (subject gold down, the inn's purse up by the same) ends the run (Amendment 1, A1); a bare hunger drop would not (control (b))
     spy2 = make_spy()
-    prior = fake_state(0, [fake_entity(1, hunger=60.0, action="EAT", target=7)])
+    prior = fake_state(0, [fake_entity(1, hunger=60.0, gold=10, action="EAT", target=7)])
     for t in range(1, 30):
-        new = fake_state(t, [fake_entity(1, hunger=60.0 if t < 20 else 30.0, action="EAT", target=7)])
+        paid = t == 20
+        new = fake_state(t, [fake_entity(1, hunger=30.0 if paid else 60.0, gold=5 if paid else 10, action="EAT", target=7)], {7: building(purse=5 if paid else 0)})
         spy2.observe(prior, new)
         prior = new
     spy2.finish(30)
-    assert spy2.report()["k2"]["runs"][0]["ended_by"] == "delivered" and spy2.report()["delivered_channel_counts"].get("state_change", 0) >= 1
+    assert spy2.report()["k2"]["runs"][0]["ended_by"] == "delivered" and spy2.report()["delivered_channel_counts"].get("paid_transfer", 0) >= 1
+
+
+def pair_result(prior, ent, prior_purse=0, purse=0, b=7, action="EAT", pair_building=7):
+    return spy_mod.delivered_pairs(prior, ent, [(action, b)], {7: building(prior_purse), 8: building(prior_purse)}, {7: building(purse if pair_building == 7 else prior_purse), 8: building(purse if pair_building == 8 else prior_purse)})
 
 
 def test_spy_k2_accepted_result_for_the_building_is_delivered_and_refusal_reason_recorded():
-    ok = spy_mod.delivered_pairs(fake_entity(1, hunger=60.0), fake_entity(1, hunger=60.0, results=[NS(source_kind="TOWN_SERVICE", source_id=7, accepted=True, reason=None)]), [("EAT", 7)])
+    ok = pair_result(fake_entity(1, hunger=60.0), fake_entity(1, hunger=60.0, results=[NS(source_kind="TOWN_SERVICE", source_id=7, accepted=True, reason=None)]))
     assert ok[0] == [("EAT", 7)] and ok[2] == {"accepted_result": 1}
-    refused = spy_mod.delivered_pairs(fake_entity(1, hunger=60.0), fake_entity(1, hunger=60.0, results=[NS(source_kind="TOWN_SERVICE", source_id=7, accepted=False, reason=None)]), [("EAT", 7)])
+    refused = pair_result(fake_entity(1, hunger=60.0), fake_entity(1, hunger=60.0, results=[NS(source_kind="TOWN_SERVICE", source_id=7, accepted=False, reason=None)]))
     assert refused[0] == [] and refused[1] == {("EAT", 7): ["None"]}
-    other_building = spy_mod.delivered_pairs(fake_entity(1), fake_entity(1, results=[NS(source_kind="TOWN_SERVICE", source_id=9, accepted=True, reason=None)]), [("EAT", 7)])
+    other_building = pair_result(fake_entity(1), fake_entity(1, results=[NS(source_kind="TOWN_SERVICE", source_id=9, accepted=True, reason=None)]))
     assert other_building[0] == []
 
 
+# ---- Amendment 1, A1: the service's OWN change at b (controls a-d)
+def test_a_rest_refused_while_sleep_debt_falls_with_no_payment_is_not_delivered_and_the_run_grows():            # control (a)
+    r = pair_result(fake_entity(1, sleep=50.0), fake_entity(1, sleep=40.0), action="REST")
+    assert r[0] == [] and r[2] == {"need_drop_unpaid": 1}
+    spy = make_spy()
+    prior = fake_state(0, [fake_entity(1, sleep=90.0, action="REST", target=7)])
+    for t in range(1, 140):
+        new = fake_state(t, [fake_entity(1, sleep=90.0 - 0.1 * t, action="REST", target=7)])          # sleeps rough: sleep_debt falls by itself, nothing is paid
+        spy.observe(prior, new)
+        prior = new
+    spy.finish(140)
+    rep = spy.report()
+    assert rep["k2"]["k2_count"] == 1 and rep["delivered_channel_counts"].get("need_drop_unpaid", 0) > 100 and "paid_transfer" not in rep["delivered_channel_counts"]
+
+
+def test_an_eat_refused_while_hunger_falls_from_carried_food_with_gold_unchanged_is_not_delivered():            # control (b)
+    r = pair_result(fake_entity(1, hunger=80.0, gold=10), fake_entity(1, hunger=60.0, gold=10))
+    assert r[0] == [] and r[2] == {"need_drop_unpaid": 1}
+
+
+def test_an_eat_paid_to_the_building_is_delivered():                                                          # control (c): subject -5, b +5
+    r = pair_result(fake_entity(1, hunger=80.0, gold=10), fake_entity(1, hunger=60.0, gold=5), prior_purse=0, purse=5)
+    assert r[0] == [("EAT", 7)] and r[2] == {"paid_transfer": 1}
+    short = pair_result(fake_entity(1, hunger=80.0, gold=10), fake_entity(1, hunger=60.0, gold=5), prior_purse=0, purse=3)   # the purse must rise by at least the subject's loss
+    assert short[0] == []
+
+
+def test_an_eat_paid_at_another_building_is_not_delivered_for_b():                                             # control (d)
+    r = pair_result(fake_entity(1, hunger=80.0, gold=10), fake_entity(1, hunger=60.0, gold=5), prior_purse=0, purse=5, pair_building=8)
+    assert r[0] == []
+
+
+def test_a_sell_delivers_on_the_reverse_payment_or_the_item_moving():
+    ent0, ent1 = fake_entity(1, gold=5), fake_entity(1, gold=9)
+    r = spy_mod.delivered_pairs(ent0, ent1, [("SELL", 7)], {7: building(10, "shop")}, {7: building(6, "shop")})
+    assert r[0] == [("SELL", 7)] and r[2] == {"paid_transfer": 1}
+    nothing = spy_mod.delivered_pairs(ent0, ent1, [("SELL", 7)], {7: building(10, "shop")}, {7: building(10, "shop")})
+    assert nothing[0] == []
+
+
+# ---- Amendment 1, A2: per-action dispatch visibility, the router channel (controls e-f)
+def test_an_accepted_eat_result_with_no_seen_dispatch_is_a_miss_and_eat_is_not_measured():                    # control (e)
+    spy = make_spy()
+    prior = fake_state(0, [fake_entity(1)])
+    new = fake_state(1, [fake_entity(1, results=[NS(source_kind="TOWN_SERVICE", source_id=7, accepted=True, reason=None)])])       # an accepted inn service, no task and no router call before it
+    spy.observe(prior, new)
+    rep = spy.report()
+    assert rep["dispatch_visibility"]["EAT"]["misses"] == 1 and rep["dispatch_visibility"]["EAT"]["measured"] is False
+    assert rep["dispatch_visibility"]["REST"]["measured"] is False                                          # an unattributed town-service result is a miss for every action the inn serves
+    assert rep["dispatch_visibility"]["SELL"]["measured"] is True                                           # a shop action is not touched by an inn result
+    assert rep["k2"]["k2_count_by_action"]["EAT"] is None and "EAT" in rep["k2"]["not_measured_actions"]    # NOT MEASURED, never 0
+
+
+def test_a_seen_dispatch_makes_the_action_measured():
+    spy2 = make_spy()
+    spy2.observe(fake_state(0, []), fake_state(1, [fake_entity(1, action="EAT", target=7)]))                     # the post-apply task of tick 1 is the dispatch of t=1 ...
+    spy2.observe(fake_state(1, [fake_entity(1, action="EAT", target=7)]), fake_state(2, [fake_entity(1, results=[NS(source_kind="TOWN_SERVICE", source_id=7, accepted=True, reason=None)])]))
+    vis2 = spy2.report()["dispatch_visibility"]["EAT"]
+    assert vis2["measured"] is True and vis2["seen_by_task"] == 1 and vis2["accepted_results"] == 1
+
+
+def test_a_router_channel_dispatch_with_no_post_apply_task_still_opens_and_extends_a_run():                  # control (f)
+    spy = make_spy()
+    prior = fake_state(0, [fake_entity(1)])
+    for t in range(1, 150):
+        spy.router_call((fake_entity(1), {"action": "EAT", "target_id": 7}, t - 1), {})                        # executed while the apply of tick t is produced; the post-apply task never shows EAT
+        new = fake_state(t, [fake_entity(1, hunger=60.0)])
+        spy.observe(prior, new)
+        prior = new
+    spy.finish(150)
+    rep = spy.report()
+    assert rep["k2"]["k2_count"] == 1 and rep["k2"]["long_runs"][0]["action"] == "EAT" and rep["dispatch_visibility"]["EAT"]["seen_by_router"] > 100 and rep["dispatch_visibility"]["EAT"]["seen_by_task"] == 0
+    assert rep["reach"]["router_service_calls"] == 149
+
+
+def test_the_router_wrapper_is_a_pass_through_and_restores():
+    class Router:
+        result = []
+
+        @staticmethod
+        def execute_action(entity, payload=None, current_tick=0, neighbor_view=None, context=None):
+            return Router.result
+
+    class Apply:
+        @staticmethod
+        def apply_generation(prior, update, *a, **k):
+            return NS(tick=prior.tick + 1, entities={}, buildings={})
+
+    class Score:
+        @staticmethod
+        def apply_modifiers(entity, state, scores):
+            return []
+
+    orig = Router.__dict__["execute_action"]
+    spy = make_spy().install(Apply, Score, Router)
+    assert Router.execute_action(fake_entity(1), {"action": "EAT", "target_id": 7}, 5) is Router.result
+    assert Router.execute_action(fake_entity(1), {"action": "WORK"}, 5) is Router.result
+    assert spy.router_calls == 2 and spy.router_service_calls == 1 and spy.router_seen == {5: [(1, "EAT", 7)]}
+    spy.restore()
+    assert Router.__dict__["execute_action"].__func__ is orig.__func__
+
+
+def test_the_last_decision_of_a_tick_wins_and_is_stated():
+    spy = make_spy()
+    ent = fake_entity(1, hunger=70.0)
+    for utility in (80.0, 90.0):
+        spy.decision(ent, fake_state(10, [ent]), [NS(kind=NS(value="hunger"), utility=utility, target_id=7, target_pos=None)])
+    assert spy.duplicate_decisions == 1 and spy.pending_decisions[1]["utility"] == 90.0
+    assert "last decision of a tick wins" in spy.report()["decision_policy"]
+
+
+# ---- Amendment 1, A3: the 7-cell K3 rule and the rule text
+def vcell(name, seed, stage, k3=0, k2=0, valid=True, not_measured=()):
+    return {"name": name, "world": "frontier_living_world", "seed": seed, "stage": stage, "valid": valid, "k2_count_measured": k2, "k2_not_measured": list(not_measured), "k3_count": k3}
+
+
+S42 = [vcell("crowded_frontier_s42", 42, 1), vcell("frontier_living_world_s42", 42, 1), vcell("urban_political_s42", 42, 1)]
+S46 = [vcell("urban_political_s46", 46, 1)]
+STAGE2 = [vcell(f"frontier_living_world_s{s}", s, 2) for s in (43, 44, 45, 46)]
+
+
+def test_the_close_rule_text_names_the_amendment_and_cannot_close_k3_with_only_the_s42_cells():
+    assert "Amendment 1 e6cc644c" in logic.RULE_SOURCE and "992b7ce3" in logic.RULE_SOURCE
+    only_s42 = logic.close_verdicts(S42 + S46)
+    assert only_s42["k3"].startswith("NOT PROPOSED") and "PROPOSE CLOSE" not in only_s42["k3"] and only_s42["rule_source"] == logic.RULE_SOURCE
+
+
+def test_the_k3_close_needs_all_seven_valid_cells_at_zero():
+    assert logic.close_verdicts(S42 + S46 + STAGE2)["k3"] == "PROPOSE CLOSE (K3 = 0 in all 7 cells)"
+    assert logic.close_verdicts(S42 + S46 + STAGE2[:3])["k3"].startswith("NOT PROPOSED")
+    bad = STAGE2[:3] + [vcell("frontier_living_world_s46", 46, 2, valid=False)]
+    assert logic.close_verdicts(S42 + S46 + bad)["k3"].startswith("NOT PROPOSED")
+    assert logic.close_verdicts(S42 + S46 + STAGE2[:3] + [vcell("frontier_living_world_s46", 46, 2, k3=2)])["k3"].startswith("STAYS HARD")
+    dup = [STAGE2[0]] * 4                                                            # four copies of one cell are one cell, not four
+    assert logic.close_verdicts(S42 + S46 + dup)["k3"].startswith("NOT PROPOSED")
+
+
+def test_a_nonzero_s42_k3_total_stays_hard_without_stage_two_and_an_invalid_s42_cell_is_void():
+    nonzero = [vcell("crowded_frontier_s42", 42, 1, k3=1)] + S42[1:]
+    assert logic.close_verdicts(nonzero + S46)["k3"].startswith("STAYS HARD")
+    assert logic.close_verdicts([dict(S42[0], valid=False)] + S42[1:] + S46)["k3"].startswith("VOID")
+
+
+def test_k2_is_not_proposed_for_close_while_an_action_is_not_measured_and_stays_hard_on_a_count():
+    assert logic.close_verdicts(S42 + S46)["k2"].startswith("PROPOSE CLOSE")
+    nm = logic.close_verdicts(S42 + [vcell("urban_political_s46", 46, 1, not_measured=["EAT"])])
+    assert nm["k2"].startswith("NOT PROPOSED") and "EAT" in nm["k2"]
+    assert logic.close_verdicts(S42 + [vcell("urban_political_s46", 46, 1, k2=1)])["k2"].startswith("STAYS HARD")
+    assert logic.close_verdicts(S42)["k2"].startswith("VOID")
+
+
+def test_the_visibility_summary_marks_an_unseen_action_with_results_and_a_wrong_building_kind():
+    vis = logic.DispatchVisibility({"EAT": "TOWN_SERVICE", "REST": "TOWN_SERVICE", "SELL": "SHOP_SELL"}, {"EAT": ["inn"], "REST": ["inn", "home"], "SELL": ["shop"]})
+    assert vis.candidates("TOWN_SERVICE", "home") == ["REST"]
+    vis.note_accepted("SHOP_SELL", 3, "shop", [])
+    s = vis.summary()
+    assert s["SELL"]["measured"] is False and s["EAT"]["measured"] is True and s["EAT"]["visibility_tested"] is False
 def k3_cycle(spy, entity_state_d, entity_state_d1, tick_d=10):
     """One decision at state tick d, read on row d+1."""
     spy.decision(entity_state_d, fake_state(tick_d, [entity_state_d]), [NS(kind=NS(value="hunger"), utility=80.0, target_id=7, target_pos=None)])

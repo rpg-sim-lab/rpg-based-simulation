@@ -7,12 +7,14 @@ K2 (a service dispatch that keeps failing): ``K2Tracker.step`` is fed once per t
   failed at t+1  = the apply of tick t+1 delivered no service for (subject, action, b); ``delivered`` is decided by the spy (accepted result for b, or the service's own state change).
   run            = maximal sequence of failed dispatches of one (subject, action, b), consecutive failed ticks at most K = NEED_WAKE_CADENCE apart; it ends at a delivered service
                    for that triple, at death/removal, or at a gap of more than K with no dispatch of that triple. Length = last failed - first failed + 1. One K2 count = a run of length > 100.
+AMENDMENT 1 (rpg-designer-k2k3-kit-v1-review.md, e6cc644c87cff181..., written before any data; it only tightens): A1 "delivered" is the paid transfer at b or an accepted result, never a bare need drop; A2 every service dispatch must be seen
+(router pass-through plus the post-apply task, per-action visibility control, a miss means NOT MEASURED, never 0); A3 K3's close needs frontier_living_world s43-46 as well (7 cells).
 K3 (an escalated need wins scoring and loses the switch): ``classify_k3`` is fed one decision with its row-d state read and its row-d+1 outcome.
 """
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 K2_LONG = 100
 K2_MID = 10
@@ -20,6 +22,12 @@ K2_MID = 10
 HUNGER_KIND = "hunger"
 FATIGUE_KIND = "fatigue"
 NEED_KINDS = (HUNGER_KIND, FATIGUE_KIND)
+SPEC_SHA = "992b7ce37e1a7325a9afab517cd87ce65221627ea2ddd2be4377962940cd5855"
+AMENDMENT_1_SHA_PREFIX = "e6cc644c87cff1818180"          # rpg-designer-k2k3-kit-v1-review.md (the full sha256 is in the review's own record)
+RULE_SOURCE = f"992b7ce3 + Amendment 1 {AMENDMENT_1_SHA_PREFIX}"
+K3_S42_CELLS = 3
+K3_CLOSE_CELLS = 7                                         # A3: the three s42 cells plus frontier_living_world s43-46
+DECISION_POLICY = "the last decision of a tick wins: a second apply_modifiers call for the same subject and tick overwrites the pending decision (duplicates are counted)"
 
 
 # ----------------------------------------------------------------------------- K2
@@ -28,7 +36,7 @@ class K2Tracker:
 
     def __init__(self, k: int) -> None:
         self.k = int(k)
-        self.pending: Dict[int, Optional[Tuple[str, int]]] = {}      # subject -> the dispatch (action, building) of the previous tick
+        self.pending: Dict[int, Set[Tuple[str, int]]] = {}      # subject -> the dispatches (action, building) of the previous tick (post-apply task and router channel)
         self.open: Dict[Tuple[int, str, int], Dict[str, Any]] = {}   # (subject, action, building) -> the run being built
         self.closed: List[Dict[str, Any]] = []
         self.dispatch_ticks = 0
@@ -60,10 +68,10 @@ class K2Tracker:
         for reason in reasons:
             run["reasons"][str(reason)] += 1
 
-    def step(self, tick: int, subject: int, present: bool, alive: bool, dispatch: Optional[Tuple[str, int]], delivered: List[Tuple[str, int]],
+    def step(self, tick: int, subject: int, present: bool, alive: bool, dispatch: Any, delivered: List[Tuple[str, int]],
              reasons: Optional[Dict[Tuple[str, int], List[Any]]] = None, building_kinds: Optional[Dict[int, str]] = None) -> None:
-        """``dispatch`` = (action, building_id) of the task on the post-apply state of ``tick`` (None when not a service dispatch); ``delivered`` = the (action, building_id) pairs the apply of ``tick`` delivered;
-        ``reasons`` = the refusal reasons the apply of ``tick`` gave for each (action, building) pair, recorded as found (typed, None, or the string 'absent')."""
+        """``dispatch`` = the (action, building_id) pair(s) of the post-apply task of ``tick`` (None, one tuple, or an iterable of tuples; the caller merges the router channel into ``pending`` for the PREVIOUS tick before calling);
+        ``delivered`` = the (action, building_id) pairs the apply of ``tick`` delivered; ``reasons`` = the refusal reasons the apply of ``tick`` gave for each pair, recorded as found (typed, 'None', or 'absent')."""
         reasons = reasons or {}
         building_kinds = building_kinds or {}
         if not present or not alive:
@@ -72,16 +80,17 @@ class K2Tracker:
                 self._close(key, "removed" if not present else "died")
             return
         self.alive_subject_ticks += 1
-        prev = self.pending.get(subject)
-        for pair in delivered:                                           # a delivered service ends that triple's run whether or not it was the pending dispatch
+        now: Set[Tuple[str, int]] = set() if dispatch is None else ({dispatch} if isinstance(dispatch, tuple) else set(dispatch))
+        for pair in delivered:                                           # a delivered service ends that triple's run whether or not it was a pending dispatch
             self._delivered((subject, pair[0], pair[1]), tick)
-        if prev is not None and prev not in delivered:                 # the dispatch of t-1 was not delivered by the apply of t: FAILED at t (the dispatch tick is t-1)
-            self._failed((subject, prev[0], prev[1]), tick - 1, reasons.get(prev, ["absent"]), building_kinds.get(prev[1]))
-        self.pending[subject] = dispatch
-        if dispatch is not None:
+        for prev in sorted(self.pending.get(subject, set())):           # a dispatch of t-1 the apply of t did not deliver FAILED (the dispatch tick is t-1)
+            if prev not in delivered:
+                self._failed((subject, prev[0], prev[1]), tick - 1, reasons.get(prev, ["absent"]), building_kinds.get(prev[1]))
+        self.pending[subject] = now
+        if now:
             self.dispatch_ticks += 1
             self.dispatch_subjects.add(subject)
-        for key in [k for k in self.open if k[0] == subject and tick - self.open[k]["last_failed"] > self.k and (dispatch is None or (dispatch[0], dispatch[1]) != (k[1], k[2]))]:
+        for key in [k for k in self.open if k[0] == subject and tick - self.open[k]["last_failed"] > self.k and (k[1], k[2]) not in now]:
             self._close(key, "gap")
 
     def finish(self, final_tick: int) -> None:
@@ -141,3 +150,85 @@ def k3_summary(decisions: List[Dict[str, Any]]) -> Dict[str, Any]:
                                     "k3_count": losses, "episodes": episodes[need], "subjects": len(subjects[need])}
     result["k3_count"] = total_losses
     return result
+
+
+# ----------------------------------------------------------------------------- A2: per-action dispatch visibility
+class DispatchVisibility:
+    """Every accepted service result (source kind, building b) for a subject at t must be preceded by a SEEN dispatch of an action of that source kind at b by that subject at t-1 (union of the router channel and the post-apply task).
+    A miss, or accepted results with 0 seen dispatches, makes that action's K2 NOT MEASURED, never 0. ``TOWN_SERVICE`` results carry no action (F1), so an unseen one is a miss for EVERY town-service action the building kind serves."""
+
+    def __init__(self, action_source: Dict[str, str], service_kinds: Dict[str, Iterable[str]]) -> None:
+        self.action_source = dict(action_source)
+        self.service_kinds = {a: set(v) for a, v in service_kinds.items()}
+        self.accepted: Counter = Counter()
+        self.misses: Counter = Counter()
+        self.seen: Counter = Counter()              # dispatches seen by either channel, per action
+        self.seen_router: Counter = Counter()
+        self.seen_task: Counter = Counter()
+
+    def note_dispatch(self, action: str, router: bool, task: bool) -> None:
+        self.seen[action] += 1
+        if router:
+            self.seen_router[action] += 1
+        if task:
+            self.seen_task[action] += 1
+
+    def candidates(self, source_kind: str, building_kind: Optional[str]) -> List[str]:
+        return sorted(a for a, k in self.action_source.items() if k == source_kind and (source_kind != "TOWN_SERVICE" or building_kind in self.service_kinds.get(a, set())))
+
+    def note_accepted(self, source_kind: str, building: int, building_kind: Optional[str], pending: Iterable[Tuple[str, int]]) -> bool:
+        """Returns True when the accepted result was preceded by a seen dispatch."""
+        cand = self.candidates(source_kind, building_kind)
+        seen = sorted(a for a, b in pending if b == building and a in cand)
+        if seen:
+            self.accepted[seen[0]] += 1
+            return True
+        for a in cand:
+            self.accepted[a] += 1
+            self.misses[a] += 1
+        return False
+
+    def summary(self) -> Dict[str, Any]:
+        out: Dict[str, Any] = {}
+        for action in sorted(self.action_source):
+            measured = not (self.misses[action] > 0 or (self.accepted[action] > 0 and self.seen[action] == 0))
+            out[action] = {"accepted_results": self.accepted[action], "misses": self.misses[action], "dispatches_seen": self.seen[action], "seen_by_router": self.seen_router[action],
+                           "seen_by_task": self.seen_task[action], "measured": measured, "visibility_tested": self.accepted[action] > 0,
+                           "status": "MEASURED" if measured else "NOT MEASURED (never 0)"}
+        return out
+
+
+# ----------------------------------------------------------------------------- the close rules (A3)
+def close_verdicts(cells: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """PURE. ``cells``: each {name, world, seed, stage (1|2), valid, k2_count_measured, k2_not_measured (list of actions), k3_count}. Stage 1 = the three s42 cells plus urban_political s46; stage 2 = frontier_living_world s43-46.
+    K2 (rule: 992b7ce3 + Amendment 1): proposed for close only when the four stage-1 cells are valid, every K2 count is 0 and NO action is NOT MEASURED in any of them; any K2 count > 0 stays HARD.
+    K3 (A3): a nonzero s42 total stays HARD with no stage 2 needed; a close needs K3 = 0 in all 7 cells (three s42 plus frontier s43-46), each valid; with fewer than 7 valid cells it can never print a close."""
+    s42 = [c for c in cells if c["seed"] == 42]
+    stage1 = [c for c in cells if c["stage"] == 1]
+    stage2 = [c for c in cells if c["stage"] == 2]
+    out: Dict[str, Any] = {"rule_source": RULE_SOURCE}
+    # K2
+    k2_cells = stage1
+    if len(k2_cells) < 4 or not all(c["valid"] for c in k2_cells):
+        out["k2"] = "VOID: a stage-1 cell is missing or invalid, no rule applied"
+    elif any(c["k2_count_measured"] > 0 for c in k2_cells):
+        out["k2"] = "STAYS HARD: a K2 count > 0"
+    elif any(c["k2_not_measured"] for c in k2_cells):
+        out["k2"] = "NOT PROPOSED: K2 is 0 only for the measured actions; an action is NOT MEASURED (" + ", ".join(sorted({a for c in k2_cells for a in c["k2_not_measured"]})) + ")"
+    else:
+        out["k2"] = "PROPOSE CLOSE (K2 = 0 in all 4 cells, every service action measured)"
+    # K3
+    s42_valid = [c for c in s42 if c["valid"]]
+    if len(s42) < K3_S42_CELLS or len(s42_valid) < K3_S42_CELLS:
+        out["k3"] = "VOID: an s42 cell is missing or invalid, no rule applied"
+    elif sum(c["k3_count"] for c in s42) > 0:
+        out["k3"] = "STAYS HARD: the s42 total is nonzero (stage 2 not needed)"
+    else:
+        valid_all = [c for c in s42 + stage2 if c["valid"]]
+        if len(valid_all) < K3_CLOSE_CELLS or len({c["name"] for c in valid_all}) < K3_CLOSE_CELLS:
+            out["k3"] = f"NOT PROPOSED: s42 total is 0 but only {len(valid_all)} of {K3_CLOSE_CELLS} cells are valid (stage 2: frontier_living_world s43-46 still needed)"
+        elif sum(c["k3_count"] for c in valid_all) > 0:
+            out["k3"] = "STAYS HARD: a K3 count > 0 in a stage-2 cell"
+        else:
+            out["k3"] = "PROPOSE CLOSE (K3 = 0 in all 7 cells)"
+    return out
