@@ -218,8 +218,8 @@ class ArchetypeEntityFactory:
 
 
 def _newborn_properties(contract: ResolvedEntityRuntimeContract, mother: EntityState) -> dict:
-    """Species, the mother's faction and population keys (a key is omitted when she has none, never written as None) and the body's profile ids; no job ids."""
-    properties: dict = {"species_id": contract.species_id}
+    """The mother's faction and population keys (a key is omitted when she has none, never written as None) and the body's profile ids; no job ids."""
+    properties: dict = {}
     for key in ("faction_id", "population_id", "spawn_region"):
         inherited = mother.identity.properties.get(key)
         if inherited is not None:

@@ -2,7 +2,7 @@
 """ArchetypeEntityFactory.build_newborn: the species' newborn body at CHILD, none of the archetype's job (M1 births, rulings v2.2 D3)."""
 import pytest
 
-from src.core.species import SenseProfileError
+from src.core.species import SenseProfileError, species_of
 from src.engine.behavior_consumers import configure_behavior_consumers, reset_behavior_consumers
 
 from src.content.repository import CatalogRepository
@@ -43,6 +43,7 @@ def _newborn(catalog, archetype_id="village_worker", entity_id=900, seed=42, mot
 def test_newborn_takes_the_archetype_body_and_none_of_its_job(catalog):
     contract, mother, mate, child = _newborn(catalog)
     assert child.kind == contract.species_id
+    assert species_of(child) == species_of(mother) == contract.species_id and "species_id" not in child.identity.properties  # K8: the newborn's species is its kind (the parents' species), read through species_of; the mirror key is gone (main's step 5)
     assert (child.combat.hp, child.combat.max_hp, child.combat.atk, child.combat.def_stat) == (contract.hp, contract.max_hp, contract.atk, contract.def_stat)
     assert child.identity.occupation is None
     assert child.identity.life_stage == LifeStage.CHILD
