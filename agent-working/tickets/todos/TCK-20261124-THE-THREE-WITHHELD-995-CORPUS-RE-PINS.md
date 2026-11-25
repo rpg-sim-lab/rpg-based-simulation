@@ -45,6 +45,7 @@ Deferred outside #995 by the owner's scope freeze (#715 7132422805). The three s
 - TCK-20261117-THE-SLOW-CORPUS-GRADE-PINS-ARE-STALE-ON-MAIN
 - TCK-20261030-SIMQ-ANCHOR-REDS-SINCE-V1-REANCHOR-NEED-A-BISECT (related, not a duplicate: a different row, urban_political_selfmodel_probe 200t WORLD, and a bisect, not a re-pin)
 - overlap scan: 2 hits; the second, TCK-20260822-STANDARD-SLOW-REGRESSION-CI-JOB-EXIT-CODE-2, is not a duplicate (a CI job exit code, not a pin value).
+- overlap scan (pre-push, 2026-11-25): 1 more hit, TCK-20261124-BUILDINGS-AND-FACTIONS-START-WITH-GOLD. Not a duplicate: it gives wage-paying buildings starting gold (a content/economy change), while this ticket re-pins three corpus values withheld from #995.
 
 ## Related Docs
 - docs/simulation_quality/ (corpus grades)
