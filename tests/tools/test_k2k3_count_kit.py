@@ -593,3 +593,74 @@ def test_the_held_actions_are_rest_only_and_sell_and_repair_executions_are_dispa
 
 def test_the_rule_text_names_amendment_3():
     assert "Amendment 3 62534b6fc372e025" in logic.RULE_SOURCE
+
+
+# ---- kit v5: the kit dir is a TOOL CHECKOUT (tools/rpg_measure + tools/test_architecture/pinned_runner.py); the v1-v4 flat dir could not resolve arm_child._pinned_runner() (the STAGE=neg STOP, 2026-11-25)
+import shutil
+import subprocess
+
+REPO = KIT.parents[1]
+KIT_FILES = ("arm_child.py", "person_attack_spy.py", "person_attack_summary.py", "k2k3_count_logic.py", "k2k3_count_spy.py", "k2k3_count_summary.py", "k2k3_count_launch.sh")
+
+
+def build_kit_layout(root, with_pinned_runner=True):
+    (root / "tools" / "rpg_measure").mkdir(parents=True)
+    for name in KIT_FILES:
+        shutil.copy(KIT / name, root / "tools" / "rpg_measure" / name)
+    if with_pinned_runner:
+        (root / "tools" / "test_architecture").mkdir(parents=True)
+        shutil.copy(REPO / "tools" / "test_architecture" / "pinned_runner.py", root / "tools" / "test_architecture" / "pinned_runner.py")
+    return root
+
+
+def load_from(path, key):
+    import sys
+    spec = importlib.util.spec_from_file_location(key, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[key] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_arm_child_resolves_the_pinned_runner_from_the_v5_kit_layout(tmp_path):
+    kit = build_kit_layout(tmp_path / "kit")
+    arm = load_from(kit / "tools" / "rpg_measure" / "arm_child.py", "_v5_arm_child")
+    runner = arm._pinned_runner()
+    from pathlib import Path as _P
+    assert _P(runner.__file__).resolve() == (kit / "tools" / "test_architecture" / "pinned_runner.py").resolve() and hasattr(runner, "require_pinned")
+
+
+def test_the_spy_imports_and_reaches_the_pinned_runner_through_its_own_sibling_loader_in_the_v5_layout(tmp_path):
+    kit = build_kit_layout(tmp_path / "kit")
+    spy = load_from(kit / "tools" / "rpg_measure" / "k2k3_count_spy.py", "_v5_spy")
+    assert hasattr(spy, "main") and hasattr(spy.load_sibling("arm_child")._pinned_runner(), "require_pinned")
+
+
+def test_a_flat_kit_dir_cannot_resolve_the_pinned_runner_the_defect_of_v1_to_v4(tmp_path):
+    flat = tmp_path / "a" / "b" / "flat"
+    flat.mkdir(parents=True)
+    shutil.copy(KIT / "arm_child.py", flat / "arm_child.py")
+    arm = load_from(flat / "arm_child.py", "_flat_arm_child")
+    with pytest.raises(FileNotFoundError):
+        arm._pinned_runner()
+
+
+def _launch(kit, tmp_path, **env):
+    import os
+    full = dict(os.environ, KIT=str(kit), OUT=str(tmp_path / "out"), TREE=str(tmp_path / "tree"), LAUNCH_DRY_RUN="1", **env)
+    return subprocess.run(["bash", str(kit / "tools" / "rpg_measure" / "k2k3_count_launch.sh")], env=full, capture_output=True, text=True, timeout=60)
+
+
+def test_the_launcher_exits_1_with_a_message_when_the_pinned_runner_is_missing(tmp_path):
+    kit = build_kit_layout(tmp_path / "kit", with_pinned_runner=False)
+    done = _launch(kit, tmp_path)
+    assert done.returncode == 1 and "pinned_runner.py is missing" in done.stdout
+
+
+def test_the_launcher_dry_run_names_the_layout_paths_for_every_stage(tmp_path):
+    kit = build_kit_layout(tmp_path / "kit")
+    for stage, cells, ticks in (("neg", 1, "2400"), ("1", 4, "5000"), ("2", 4, "5000")):
+        done = _launch(kit, tmp_path, STAGE=stage)
+        assert done.returncode == 0, done.stdout + done.stderr
+        lines = [line for line in done.stdout.splitlines() if line.startswith("CELL ")]
+        assert len(lines) == cells and all(f"{kit}/tools/rpg_measure/k2k3_count_spy.py" in line and f" {ticks} " in line for line in lines)
