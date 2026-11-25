@@ -13760,6 +13760,19 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261031-DEATH-CLOSES-NO-PROJECT.md
+  ticket_id: TCK-20261031-DEATH-CLOSES-NO-PROJECT
+  title: 'Death closes no project: a dead entity keeps ACTIVE and SUSPENDED project
+    records'
+  tier: standard
+  ticket_type: bug
+  date: '2026-10-31'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (project lifecycle, :1610 path);
+    the death apply path (to locate)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261031-AN-INN-BED-IS-CHARGED-TWICE-PER-HOLD.md
   ticket_id: TCK-20261031-AN-INN-BED-IS-CHARGED-TWICE-PER-HOLD
   title: 'An inn bed is charged twice per hold: the worker result and the actions
@@ -13770,19 +13783,6 @@
   related_code_areas:
   - src/systems/building_services.py; the worker result merge and the actions phase
     merge (to locate)
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261031-DEATH-CLOSES-NO-PROJECT.md
-  ticket_id: TCK-20261031-DEATH-CLOSES-NO-PROJECT
-  title: 'Death closes no project: a dead entity keeps ACTIVE and SUSPENDED project
-    records'
-  tier: standard
-  ticket_type: bug
-  date: '2026-10-31'
-  related_code_areas:
-  - src/systems/strategic_systems/intelligence.py (project lifecycle, :1610 path);
-    the death apply path (to locate)
   artifact_files: []
   tags: []
 - type: ticket
