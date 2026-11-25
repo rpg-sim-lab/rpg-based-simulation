@@ -26,6 +26,8 @@ def passes_mate_gate(mother: EntityState, mate: EntityState, profile: Reproducti
     for holder in (mother, mate):
         if any(m.status == MarriageStatus.ACCEPTED and {m.proposer_entity_id, m.target_entity_id} == pair for m in holder.strategic.marriages.values()):
             return True
+    if profile.min_mutual_sentiment is None:  # the loader requires a line with `bond`; none means no bond can pass
+        return False
     threshold = _THRESHOLDS[profile.min_mutual_sentiment]
     toward_mate, toward_mother = mother.social.bonds.get(mate.id), mate.social.bonds.get(mother.id)
     return toward_mate is not None and toward_mother is not None and toward_mate.sentiment >= threshold and toward_mother.sentiment >= threshold

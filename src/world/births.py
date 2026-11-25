@@ -56,12 +56,15 @@ class BirthService:
         check = _Check(state, generator, catalog)
         result = StateUpdate()
         for mother in _mothers_at_term(state, profiles):
-            result = result.merge(_birth_at_term(check, mother, profiles.of(species_of(mother))))
+            term_profile = profiles.of(species_of(mother))
+            if term_profile is None:
+                continue
+            result = result.merge(_birth_at_term(check, mother, term_profile))
         candidates = _candidates(state, profiles)
         used: Set[int] = set()
         for mother in candidates.values():
             profile = profiles.of(species_of(mother))
-            if mother.id in used or not _may_conceive(mother, profile, state.tick):
+            if profile is None or mother.id in used or not _may_conceive(mother, profile, state.tick):
                 continue
             # Draw first: it is stateless and independent of any mate, so a failed draw skips the spatial query.
             if generator.rng.get_float(Domain.SPAWN, state.tick, mother.id, sub_id=BIRTH_DRAW_SUB_ID) >= profile.birth_chance_per_check:
@@ -184,6 +187,8 @@ def _birth_at_term(check: _Check, mother: EntityState, profile: ReproductionProf
     the parents' bonds and the region's birth count are written only when at least one newborn is born."""
     state, generator = check.state, check.generator
     pregnancy = mother.lifecycle.pregnancy
+    if pregnancy is None:  # `_mothers_at_term` only yields carrying mothers
+        return StateUpdate()
     father = state.entities[pregnancy.father_entity_id]
     species_id = species_of(mother)
     region = SpatialQueryService.get_region_at(state, mother.navigation.position)

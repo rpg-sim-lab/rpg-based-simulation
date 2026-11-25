@@ -198,16 +198,16 @@ def check_reproduction_profiles(repo: "CatalogRepository") -> None:
     for profile_id, profile in repo.reproduction_profiles.items():
         _check_gestation_and_litter(profile_id, profile)
     for species_id, species in repo.species.items():
-        profile_id = species.reproduction_profile
-        if profile_id is None:
+        declared_profile = species.reproduction_profile
+        if declared_profile is None:
             if species.newborn_archetype is not None:
                 raise ReproductionProfileError(f"species {species_id!r} declares newborn_archetype {species.newborn_archetype!r} but no reproduction_profile")
             continue
-        if profile_id not in repo.reproduction_profiles:
-            raise ReproductionProfileError(f"species {species_id!r} names reproduction profile {profile_id!r}, which is not declared")
+        if declared_profile not in repo.reproduction_profiles:
+            raise ReproductionProfileError(f"species {species_id!r} names reproduction profile {declared_profile!r}, which is not declared")
         need_profile = repo.need_profiles.get(species.need_profile)
         if need_profile is not None and need_profile.needs.get("hunger") == "none":
-            raise ReproductionProfileError(f"species {species_id!r} declares reproduction profile {profile_id!r} but its need profile {species.need_profile!r} has hunger 'none': a kind that does not eat has no births")
+            raise ReproductionProfileError(f"species {species_id!r} declares reproduction profile {declared_profile!r} but its need profile {species.need_profile!r} has hunger 'none': a kind that does not eat has no births")
         _check_newborn_archetype(repo, species_id, species)
 
 
