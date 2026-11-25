@@ -390,8 +390,8 @@ def test_wider_scope_numbers_pinned():
     # 270 -> 271 on 2026-11-24 (S8 #715 7123495747): the same file, src/core/need_lines.py, is unbound
     # 271 -> 272 on 2026-11-24 (the same S8): src/core/arrival.py is unbound
     # 272 -> 273 on 2026-11-24 (the same S8): +src/core/navigation_component.py, unbound
-    # 273 -> 274 on 2026-11-25 (TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER, rpg-planner ruling, from the check's own output): src/core/service_refusals.py is unbound (a frozen record and two functions; the candidates and wired numbers did not move)
-    assert wider["unbound_files"] == 274
+    # 273 -> 274 -> 273 on 2026-11-25 (TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER, rpg-planner ruling, from the check's own output): the new src/core/service_refusals.py first counted as unbound and is now bound under `goal_hierarchy`, so the number is unchanged
+    assert wider["unbound_files"] == 273
     # 73 -> 72 on 2026-10-07 (row 7 (b) pass): src/quests/generator.py::QuestGenerator is now bound under `guilds`.
     # 72 -> 71 on 2026-10-11 (#500, D57): src/engine/rpg_depth.py::LeashService is cited under `tactical_decision` (it became wired when
     # the hunger and fatigue goals started calling `way_in_range`), so it is no longer an unbound candidate.
