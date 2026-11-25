@@ -15,7 +15,7 @@ tags: []
 A dispatch that fails the same way more than 1100 times (EAT at a non-serving building, SOURCE_MISSING) never becomes a blocker, so the subject loops in place until it dies
 
 ## Status
-OPEN
+INPROGRESS (plan stage: dispatched by rpg-planner 2026-11-25, owner #715 7159601467; no src code until the designer and planner review the plan)
 
 ## Tier
 standard
@@ -70,6 +70,7 @@ Counts first. Numbers go to rpg-designer through rpg-planner before any fix shap
 - src/core/strategic.py (BlockerState)
 
 ## Assumptions / Open Questions
+Plan, investigation and test plan: agent-working/staging_artifacts/TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER/ (written before code). Open questions 1-6 are in plan.md section 7.
 - Not a D73 blocker. Sequence after EARN. Not dispatched.
 
 ## Implementation Notes

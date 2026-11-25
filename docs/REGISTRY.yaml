@@ -14120,7 +14120,7 @@
   tags:
   - determinism
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER.md
+  path: agent-working/tickets/inprogress/TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER.md
   ticket_id: TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER
   title: A dispatch that fails the same way more than 1100 times (EAT at a non-serving
     building, SOURCE_MISSING) never becomes a blocker, so the subject loops in place
