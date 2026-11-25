@@ -14,6 +14,7 @@ from src.core.service_refusals import consecutive_refusals, service_blocker_id
 from src.core.state import AuthoritativeState, EntityState
 from src.core.strategic import (
     CONGESTION_BLOCKER_ID,
+    BlockerKind,
     BlockerRemoval,
     BlockerState,
     ObjectiveStatus,
@@ -109,7 +110,7 @@ def infer_blockers(
         for action, building in sorted({(r.action, r.building) for r in entity.navigation.service_refusals}):
             newest = max(r.tick for r in entity.navigation.service_refusals if (r.action, r.building) == (action, building))
             if tick - newest <= settings.window and consecutive_refusals(entity.navigation.service_refusals, action, building, settings.window, settings.reasons) >= settings.limit:
-                blockers.append(BlockerState(id=service_blocker_id(action, building), kind="access", subject=str(building), severity=settings.severity))  # type: ignore[arg-type]  # the plain string kind, as every other branch of this function files it
+                blockers.append(BlockerState(id=service_blocker_id(action, building), kind=BlockerKind.ACCESS, subject=str(building), severity=settings.severity))
 
     # 2. Material/Resource Failure (Interactions)
     if last_task == "ENTITY_ACT" and last_payload.get("action") == "INTERACT":
