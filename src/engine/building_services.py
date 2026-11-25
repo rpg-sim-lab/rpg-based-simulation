@@ -16,9 +16,9 @@ from src.core.updates import (
     EntityUpdate,
     ResourceTransferIntent,
 )
-from src.engine.lodging import bed_delta, finds_no_bed, lodge_claim, lodges, refuse_rest
+from src.engine.lodging import bed_delta, lodge_claim, lodges, refuse_rest
 from src.engine.serves import keeps_coin, serves
-from src.engine.service_admission import admits_at, service_terms
+from src.engine.service_admission import admits_at, no_bed_for, service_terms
 from src.engine.service_prices import INN_MEAL_HUNGER
 from src.engine.service_reach import service_building_where, service_tile
 from src.engine.shop_sale import plan_sale
@@ -30,10 +30,10 @@ SERVICE_KINDS = {"REST": frozenset({"inn", "home"}), "EAT": frozenset({"inn"}), 
 
 
 def no_bed_in_reach(state: Any, entity: Any) -> Optional[Any]:
-    """The building in whose reach the subject stands (the REST service reach) that declares beds and has none free for it, or None (F3, divergence 2.155)."""
+    """The building in whose reach the subject stands (the REST service reach) that declares beds and has none for it (none free, or the bed not payable: `service_admission.no_bed_for`), or None (F3, divergence 2.155)."""
     tile = service_tile(state, (int(entity.navigation.position[0]), int(entity.navigation.position[1])), SERVICE_KINDS["REST"])
     building = SpatialQueryService.get_building_at(state, tile) if tile is not None else None
-    return building if finds_no_bed(state, entity, building) else None
+    return building if no_bed_for(state, entity, building) else None
 
 
 def maintenance_open(building: Any) -> bool:
