@@ -55,8 +55,9 @@ def test_k2_delivered_service_ends_the_run():
     s = t.summary()
     assert s["runs"][0]["ended_by"] == "delivered" and s["runs"][0]["length"] == 29      # dispatches 10..38 failed; the delivery on tick 40 judges the dispatch of 39
     t2 = logic.K2Tracker(K)
-    run_ticks(t2, set(range(10, 200)), deliver_at={60})         # Amendment 2: the later executions of the SAME attempt are held repeats, never a new run
-    assert t2.summary()["k2_count"] == 0 and t2.summary()["held_repeats"]["EAT"] > 100
+    run_ticks(t2, set(range(10, 200)), deliver_at={60})         # Amendment 3 (A5): an EAT is never held, so the undelivered executions after the delivery form a NEW run of more than 100 ticks
+    s2 = t2.summary()
+    assert s2["runs"][0]["ended_by"] == "delivered" and s2["k2_count"] == 1 and s2["long_runs"][0]["first_failed"] == 60 and s2["held_repeats"] == {}
 
 
 def test_k2_gap_larger_than_k_splits_runs():
@@ -568,3 +569,27 @@ def test_the_negative_control_is_void_when_the_spy_hash_differs(tmp_path):
 
 def test_the_rule_text_names_both_amendments():
     assert "Amendment 1 e6cc644c" in logic.RULE_SOURCE and "Amendment 2 125c8a23" in logic.RULE_SOURCE
+
+
+# ---- Amendment 3, A5: only REST is held (control k)
+def test_an_eat_paid_then_refused_for_150_ticks_in_the_same_attempt_is_one_run_over_100():                    # control (k)
+    spy = make_spy()
+    def make(t):                                         # EAT at the inn paid once at t=2 (subject -5, inn +5, hunger down), then every execution is refused: no payment, no result
+        return fake_state(t, [fake_entity(1, hunger=60.0 if t >= 2 else 80.0, gold=5 if t >= 2 else 10, action="EAT", target=7)], {7: building(purse=5 if t >= 2 else 0)})
+    spy_run(spy, 160, make)
+    spy.finish(161)
+    rep = spy.report()
+    assert rep["k2"]["k2_count"] == 1 and rep["k2"]["long_runs"][0]["action"] == "EAT" and rep["k2"]["long_runs"][0]["length"] > 100
+    assert rep["k2"]["held_repeats"] == {} and rep["delivered_channel_counts"]["held_repeat"] == 0
+
+
+def test_the_held_actions_are_rest_only_and_sell_and_repair_executions_are_dispatches_too():
+    assert logic.HELD_ACTIONS == frozenset({"REST"})
+    for action in ("SELL", "REPAIR"):
+        t = logic.K2Tracker(K)
+        run_ticks(t, set(range(10, 200)), deliver_at={60}, action=action)
+        assert t.summary()["k2_count"] == 1 and t.summary()["held_repeats"] == {}
+
+
+def test_the_rule_text_names_amendment_3():
+    assert "Amendment 3 62534b6fc372e025" in logic.RULE_SOURCE

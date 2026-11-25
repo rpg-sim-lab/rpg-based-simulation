@@ -7,7 +7,9 @@ K2 (a service dispatch that keeps failing): ``K2Tracker.step`` is fed once per t
   failed at t+1  = the apply of tick t+1 delivered no service for (subject, action, b); ``delivered`` is decided by the spy (accepted result for b, or the service's own state change).
   run            = maximal sequence of failed dispatches of one (subject, action, b), consecutive failed ticks at most K = NEED_WAKE_CADENCE apart; it ends at a delivered service
                    for that triple, at death/removal, or at a gap of more than K with no dispatch of that triple. Length = last failed - first failed + 1. One K2 count = a run of length > 100.
-AMENDMENT 2 (rpg-designer-k2k3-kit-v2-review.md, 125c8a23f1192d51...): A4 a HELD service repeat is not a dispatch. A K2 dispatch is an execution of (action, b) NOT already delivered in the current attempt; the attempt starts when the subject takes (action, b) and ends when
+AMENDMENT 3 (rpg-designer-k2k3-kit-v3-review.md, 62534b6fc372e025...): A5 held_repeat applies to REST ONLY (``HELD_ACTIONS``): only the bed is paid once (building_services.py:86-88). EAT, SELL and REPAIR are fresh on every execution, so every
+execution is a dispatch judged by A1 on its own tick; holding EAT would mask the K2 loop itself.
+AMENDMENT 2 (rpg-designer-k2k3-kit-v2-review.md, 125c8a23f1192d51...): A4 a HELD service repeat is not a dispatch (REST only, see A5). A K2 dispatch is an execution of (action, b) NOT already delivered in the current attempt; the attempt starts when the subject takes (action, b) and ends when
 that pair stops being executed (the task changes or ends). Once a delivery is seen in the attempt (a paid transfer, an accepted result, or for REST the granted bed: navigation.lodged_in == b) later executions are ``held_repeat``: counted in their own channel, never failing, never extending a run.
 AMENDMENT 1 (rpg-designer-k2k3-kit-v1-review.md, e6cc644c87cff181..., written before any data; it only tightens): A1 "delivered" is the paid transfer at b or an accepted result, never a bare need drop; A2 every service dispatch must be seen
 (router pass-through plus the post-apply task, per-action visibility control, a miss means NOT MEASURED, never 0); A3 K3's close needs frontier_living_world s43-46 as well (7 cells).
@@ -27,7 +29,9 @@ NEED_KINDS = (HUNGER_KIND, FATIGUE_KIND)
 SPEC_SHA = "992b7ce37e1a7325a9afab517cd87ce65221627ea2ddd2be4377962940cd5855"
 AMENDMENT_1_SHA_PREFIX = "e6cc644c87cff1818180"          # rpg-designer-k2k3-kit-v1-review.md (the full sha256 is in the review's own record)
 AMENDMENT_2_SHA_PREFIX = "125c8a23f1192d51"              # rpg-designer-k2k3-kit-v2-review.md
-RULE_SOURCE = f"992b7ce3 + Amendment 1 {AMENDMENT_1_SHA_PREFIX} + Amendment 2 {AMENDMENT_2_SHA_PREFIX}"
+AMENDMENT_3_SHA_PREFIX = "62534b6fc372e025"              # rpg-designer-k2k3-kit-v3-review.md
+RULE_SOURCE = f"992b7ce3 + Amendment 1 {AMENDMENT_1_SHA_PREFIX} + Amendment 2 {AMENDMENT_2_SHA_PREFIX} + Amendment 3 {AMENDMENT_3_SHA_PREFIX}"
+HELD_ACTIONS = frozenset({"REST"})                         # A5: only the bed is paid once and heals once; every other service execution is a fresh attempt at service
 K3_S42_CELLS = 3
 K3_CLOSE_CELLS = 7                                         # A3: the three s42 cells plus frontier_living_world s43-46
 DECISION_POLICY = "the last decision of a tick wins: a second apply_modifiers call for the same subject and tick overwrites the pending decision (duplicates are counted)"
@@ -102,7 +106,7 @@ class K2Tracker:
             if prev in delivered or (prev in evidence and not attempt["delivered"]):     # the grant (lodged_in == b) is the delivery ONCE per attempt; on later ticks it is the held state itself
                 attempt["delivered"] = True
                 self._delivered(key, tick)
-            elif attempt["delivered"]:
+            elif attempt["delivered"] and prev[0] in HELD_ACTIONS:                                  # A5: REST only; an undelivered EAT/SELL/REPAIR execution is a dispatch that FAILS (a K2 run) even after a delivery
                 self.held_repeats[prev[0]] += 1
             else:
                 self._failed(key, tick - 1, reasons.get(prev, ["absent"]), building_kinds.get(prev[1]), contexts.get(prev))
