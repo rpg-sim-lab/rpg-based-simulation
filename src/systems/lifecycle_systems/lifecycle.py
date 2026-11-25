@@ -2,6 +2,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, List, Optional
 from dataclasses import replace
 from src.core.updates import StateUpdate, EntityUpdate, LifecycleUpdate, InventoryUpdate, IdentityUpdate
+from src.core.update_models.strategic import StrategicUpdate
+from src.core.strategic import end_live_on_death, ended_blocker_stamps
 from src.core.state import LifeStage
 from src.core.death_cause import DeathCause, DeathRecord, death_cause_of
 from src.core.enums import EntityRole
@@ -168,6 +170,23 @@ class LifecycleSystem:
         return candidates[0][2]
 
     @staticmethod
+    def _end_projects_on_death(entity: EntityState, ent_upd: EntityUpdate, tick: int) -> EntityUpdate:
+        """``ent_upd`` with the typed strategic writes of a death (divergence 2.226): every live project (ACTIVE or SUSPENDED, counting what this tick already staged) ends ABANDONED / `DEATH`, the blocker a
+        resolve_blocker end names is stamped as at any other end, and the current project and objective are cleared. A body with no live project and no current project gets the update unchanged."""
+        staged = ent_upd.strategic or StrategicUpdate()
+        written = end_live_on_death(entity.strategic.projects, staged.projects_add_or_update, staged.projects_remove, tick)
+        has_current = bool(entity.strategic.current_project_id) or bool(staged.current_project_id_set)
+        if not written and not has_current:
+            return ent_upd
+        return replace(ent_upd, strategic=replace(
+            staged,
+            projects_add_or_update=staged.projects_add_or_update + written,
+            blockers_add_or_update=staged.blockers_add_or_update + ended_blocker_stamps(entity.strategic.blockers, written),
+            current_project_id_set="",
+            current_objective_id_set="",
+        ))
+
+    @staticmethod
     def resolve_lifecycle(state: AuthoritativeState, update: StateUpdate) -> StateUpdate:
         """
         Identify entities that have died and process succession/permadeath.
@@ -277,6 +296,8 @@ class LifecycleSystem:
                         death_record_set=LifecycleSystem._death_record(state, entity, ent_upd, death_reason),
                     )
                 )
+                # Death ends every live project of the body (divergence 2.226): ABANDONED / DEATH through the typed strategic update, the record kept, the current project and objective cleared.
+                refined_entity_updates[e_id] = LifecycleSystem._end_projects_on_death(entity, refined_entity_updates[e_id], state.tick)
                 
                 # Process Succession / Heirlooms
                 heir_id = entity.lifecycle.heir_entity_id

@@ -15,7 +15,7 @@ tags: []
 Death closes no project: a dead entity keeps ACTIVE and SUSPENDED project records
 
 ## Status
-OPEN (counts first; ruled its own defect by rpg-designer 2026-10-31; seated by rpg-planner; not dispatched)
+INPROGRESS (dispatched by rpg-planner 2026-11-25; rulings a-d on #715 relay; code written, tests held for the host)
 
 ## Tier
 standard
@@ -59,11 +59,14 @@ Phase 2: fix shape after rpg-designer reads Phase 1.
 - src/systems/strategic_systems/intelligence.py (project lifecycle, :1610 path); the death apply path (to locate)
 
 ## Assumptions / Open Questions
-- Order: after the retention fix, unless the reader check shows :1610 depends on it (designer).
+- Order: after the retention fix, unless the reader check shows :1610 depends on it (designer). The :1610 path (now live_record_route / orphan_switch_candidate near intelligence.py:1550) skips dead bodies (alive/active filter), so it does not depend on this.
+- Candidate follow-up (not filed): a dead body's quest project ends ABANDONED while `quest_status` is unchanged.
 
 ## Implementation Notes
+Rulings (rpg-planner, 2026-11-25): (a) ABANDONED, `ProjectEnd.DEATH`; (b) staged in `LifecycleSystem.resolve_lifecycle`'s death block via a typed StrategicUpdate; the 1-tick passive-death lag is a limit line; (c) `quest_status` left alone (limit line; follow-up candidate, no ticket yet); (d) `current_project_id_set=""` in the same update. Divergence 2.226 (lane C's births branch takes 2.225). Phase 1 item 1 (readers) is in staging investigation.md; items 2 and 3 ride the measured step.
 
 ## Test Summary
+Written, NOT RUN (the host is held by another lane): tests/unit/strategic/test_death_ends_live_projects.py, tests/unit/strategic/test_project_end_record.py (enum-set pin gains DEATH).
 
 ## Files Changed
 
