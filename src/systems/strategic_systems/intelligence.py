@@ -90,6 +90,8 @@ from src.systems.world_systems.routine import RoutineService
 from src.systems.world_systems.intake import ConcernIntakeSystem
 from src.engine.domain_logic import SimulationDomainLogic
 from src.ai.goals import GoalRegistry, escalated_need_wins
+from src.ai.goals.escalation import is_need_kind
+from src.ai.goals.present_threat import present_threat_to
 from src.ai.goals.base import GoalScore
 from src.ai.goals.live_record_route import orphan_switch_candidate, route_live_record, supersede_on_win
 from src.ai.score_modifiers import ScoreModifierSystem
@@ -162,6 +164,46 @@ def _threat_resolved(hero: EntityState, state: AuthoritativeState) -> bool:
         for eid in nearby_ids
     )
     return not has_hostile
+
+
+def _escalated_need_takes_switch(entity: EntityState, candidate: ProjectState, current: ProjectState, state: Optional[AuthoritativeState]) -> bool:
+    """SURV-07 (Standing Needs Escalate): an escalated hunger or fatigue candidate takes the project switch past the lock and the retention margin, unless a present threat exists.
+
+    Pure read. False when no `state` is supplied (the pre-existing direct call sites), when the candidate is not an escalated need (`escalated_need_wins`, the tree's own
+    pressing test), when the CURRENT project is itself a need project (need against need stays with scoring, by kind identity, escalated or not), or while `present_threat_to`
+    (SURV-07's tier-1 test) holds. TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH."""
+    if state is None or not escalated_need_wins(entity, candidate.kind) or is_need_kind(current.kind):
+        return False
+    return not present_threat_to(entity, state)
+
+
+def _ordinary_switch_allows(entity: EntityState, candidate_project: ProjectState, current: ProjectState, current_tick: int, state: Optional[AuthoritativeState]) -> bool:
+    """The lock-and-margin decision of `evaluate_project_switch` (STRAT-005/006/186), moved out unchanged: True when the candidate may replace the live, ACTIVE current project."""
+    profile = entity.strategic.profile
+    # Logic ID: STRAT-005 (Project switching uses interruption resistance)
+    retention_margin = profile.interruption_resistance * profile.resistance_multiplier
+    # Logic ID: STRAT-006 (Current project gets retention priority)
+    effective_current_score = current.score + retention_margin
+
+    if current.lock_until_tick > current_tick:
+        # STRAT-236: a real `state` whose threat has resolved releases the lock; `state is None` (the direct test call sites) skips the check. Computed only for a locked current (the spatial scan).
+        threat_resolved = state is not None and _threat_resolved(entity, state)
+
+        if not threat_resolved:
+            # STRAT-186: only "detour" bypasses the lock unconditionally; any other kind needs a normalized score above the current's effective score and above the urgency floor (the raw comparison below is separate).
+            if candidate_project.kind == "detour":
+                pass
+            else:
+                candidate_max = _score_scale_max(candidate_project.kind)
+                current_max = _score_scale_max(current.kind)
+                candidate_pct = candidate_project.score / candidate_max
+                # TCK-20260811-INTERRUPTION-BYPASS-RETENTION-MARGIN-SCALE-BUG: the margin term is normalized against _GOAL_UTILITY_SCORE_MAX, not current_max (as small as 2.9).
+                normalized_effective_current_pct = (current.score / current_max) + (retention_margin / _GOAL_UTILITY_SCORE_MAX)
+                if not (candidate_pct > normalized_effective_current_pct
+                        and candidate_pct > _INTERRUPTION_URGENCY_FLOOR_PCT):
+                    return False
+
+    return candidate_project.score > effective_current_score
 
 
 class StrategicIntelligenceSystem:
@@ -802,7 +844,6 @@ class StrategicIntelligenceSystem:
         VERIFIED v2: current_project_retention
         """
         # Logic ID: STRAT-003 (Cognition profiles enforce bandwidth)
-        profile = entity.strategic.profile
         current_id = entity.strategic.current_project_id
 
         if not current_id:
@@ -820,46 +861,8 @@ class StrategicIntelligenceSystem:
                 current_objective_id_set=candidate_project.active_objective_id
             )
 
-        # Logic ID: STRAT-005 (Project switching uses interruption resistance)
-        retention_margin = profile.interruption_resistance * profile.resistance_multiplier
-        # Logic ID: STRAT-006 (Current project gets retention priority)
-        effective_current_score = current.score + retention_margin
-
-        if current.lock_until_tick > current_tick:
-            # STRAT-236 (generalized): when a real world `state` is supplied and the triggering
-            # threat has resolved (HP > 80%, no hostile within radius 10.0), the lock is treated
-            # as already expired. `state is None` (the default for the 27 pre-existing direct
-            # test call sites that predate this check) short-circuits `and` before
-            # `_threat_resolved` is ever called, preserving today's behavior exactly. Computed
-            # here, inside the lock-active gate, rather than above it, so the O(radius^2) spatial
-            # scan in SpatialQueryService.nearby_entities() only runs when the current project is
-            # actually locked — not on every evaluate_project_switch() call for an unlocked,
-            # healthy entity (the common case across all 3 real production call sites).
-            threat_resolved = state is not None and _threat_resolved(entity, state)
-
-            if not threat_resolved:
-                # STRAT-186 (generalized): the lock may be bypassed only for the unconditional "detour"
-                # structural override, or when the candidate's score — expressed as a percentage of its own
-                # system's declared max — both exceeds the current project's own normalized effective score
-                # AND clears the urgency floor. This comparison is intentionally normalized and kept separate
-                # from the raw `effective_current_score` comparison below: the raw formula and the unlocked
-                # path must stay byte-identical (test_interruption_resistance_margin depends on this).
-                if candidate_project.kind == "detour":
-                    pass
-                else:
-                    candidate_max = _score_scale_max(candidate_project.kind)
-                    current_max = _score_scale_max(current.kind)
-                    candidate_pct = candidate_project.score / candidate_max
-                    # TCK-20260811-INTERRUPTION-BYPASS-RETENTION-MARGIN-SCALE-BUG: the margin term is
-                    # deliberately normalized against the universal baseline scale (_GOAL_UTILITY_SCORE_MAX),
-                    # not current_max — current_max can be as small as _ADVENTURE_ROUTE_SCORE_MAX (2.9),
-                    # which made retention_margin/current_max structurally dominate the comparison.
-                    normalized_effective_current_pct = (current.score / current_max) + (retention_margin / _GOAL_UTILITY_SCORE_MAX)
-                    if not (candidate_pct > normalized_effective_current_pct
-                            and candidate_pct > _INTERRUPTION_URGENCY_FLOOR_PCT):
-                        return None
-
-        if candidate_project.score > effective_current_score:
+        # TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH (SURV-07): an escalated need with no present threat takes the switch; every other case is the ordinary lock-and-margin decision, unchanged.
+        if _escalated_need_takes_switch(entity, candidate_project, current, state) or _ordinary_switch_allows(entity, candidate_project, current, current_tick, state):
             return StrategicUpdate(
                 projects_add_or_update=[
                     suspend_record(current, current_tick),

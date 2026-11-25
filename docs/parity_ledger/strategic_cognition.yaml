@@ -4792,3 +4792,13 @@
   test_path: tests/unit/engine/test_no_bed_for_purse.py, tests/unit/strategic/test_service_refusal_blocker.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.227.
   support_boundary: 'Unit and real-kernel rows: the predicate (free bed, purse half, trait scope, bedless building, CLAMP), the arrival and first-execution paths, the typed refusal for REST and EAT, the clear on delivery, the streak (N, window, uncounted reason, lapse), the patch (add, clear, cap), the canonical omission and round trip, the blocker effect and the quiet-spell removal, the real kernel (N refusals file the blocker, N-1 file nothing, a delivered meal files nothing). Not measured in a run: the hash, the firing counts and the K2 re-count on the fix tree (the S9 measurement).'
+- id: STRAT-359
+  text: 'TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH (SURV-07, STRAT-186 / 2.228): an escalated HUNGER or FATIGUE winner (`escalated_need_wins`) with no present threat (`present_threat_to`) takes the project switch past the lock and the retention margin when the current ACTIVE project is not of a need kind (kind identity); the current is suspended and the need project becomes current in the same update. Need against need, a non-escalated winner, a present threat and a call with no state keep the ordinary lock-and-margin decision (`_ordinary_switch_allows`, moved out of `evaluate_project_switch` unchanged); `detour` keeps its own bypass.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/systems/strategic_systems/intelligence.py (_escalated_need_takes_switch, _ordinary_switch_allows, evaluate_project_switch), src/ai/goals/escalation.py (is_need_kind)'
+  proof_type: regression
+  test_path: tests/unit/strategic/test_escalated_need_takes_the_project_switch.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.228.
+  support_boundary: 'Unit rows: the switch from a locked town_return and a resolve_blocker, the present threat, a non-escalated winner, need against need by kind identity (four rows), a fatigue winner, detour, no state and no current, the same update as the ordinary path, and the pre-refactor oracle over 360 combinations with the rule off. Not measured in a run: the K3 count on the fix tree and the hash (the S9 measurement).'
