@@ -70,7 +70,7 @@ def delivered(prior_ent: Any, ent: Any, prior_buildings: Any, buildings: Any, ac
     if pb is None or nb is None:
         return False
     spent = prior_ent.inventory.gold - ent.inventory.gold
-    return spent > 0 and (nb.inventory.gold - pb.inventory.gold) >= spent
+    return bool(spent > 0 and (nb.inventory.gold - pb.inventory.gold) >= spent)
 
 
 def classify_way_closed(prior: Any, prior_ent: Any, building_id: Optional[int], funcs: Dict[str, Callable]) -> str:
