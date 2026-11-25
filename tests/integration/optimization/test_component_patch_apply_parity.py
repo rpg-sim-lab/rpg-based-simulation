@@ -222,7 +222,7 @@ def test_birth_commits_through_authoritative_apply_path(monkeypatch):
             combat=CombatComponent(hp=100, max_hp=100, alive=True),
             identity=IdentityComponent(role="CITIZEN", life_stage=LifeStage.ADULT),
             lifecycle=LifecycleComponent(age_ticks=5000, max_age_ticks=20000, active=True),
-            social=dataclasses.replace(EntityState(id=entity_id).social, bonds={partner_id: SocialBond(target_id=partner_id, sentiment=line)}),
+            social=dataclasses.replace(EntityState(id=entity_id, kind="human").social, bonds={partner_id: SocialBond(target_id=partner_id, sentiment=line)}),
         )
 
     parent_a, parent_b = _person(101, (10.0, 10.0), 102), _person(102, (10.5, 10.5), 101)
