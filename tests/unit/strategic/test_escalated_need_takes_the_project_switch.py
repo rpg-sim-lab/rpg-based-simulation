@@ -95,7 +95,7 @@ def test_a_taken_case_the_ordinary_path_also_allows_gives_the_same_update_as_the
     candidate = project("h", GoalKind.HUNGER, 70.0)
     taken = switch(entity, candidate)
     monkeypatch.setattr(intel, "escalated_need_takes_switch", lambda *a: False)
-    assert intel.ordinary_switch_allows(entity, candidate, entity.strategic.projects["tr"], 50, _state(entity, tick=50)) is True
+    assert intel.ordinary_switch_allows(entity, candidate, 50, _state(entity, tick=50), intel._SWITCH_ENV) is True
     assert switch(entity, candidate) == taken
 
 

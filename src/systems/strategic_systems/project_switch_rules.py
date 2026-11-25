@@ -1,12 +1,12 @@
 """The project-switch decision of `StrategicIntelligenceSystem.evaluate_project_switch`, as two pure functions (TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH).
 
-`escalated_need_takes_switch` is the SURV-07 rule (2.228, STRAT-359); `ordinary_switch_allows` is the lock-and-margin decision (STRAT-005/006/186), moved out of `evaluate_project_switch` unchanged. They read the
-scale helpers and constants of `intelligence` at call time (that module imports these names, so a top-level import here would be circular).
+`escalated_need_takes_switch` is the SURV-07 rule (2.228, STRAT-359); `ordinary_switch_allows` is the lock-and-margin decision (STRAT-005/006/186), moved out of `evaluate_project_switch` unchanged. This module imports nothing
+from `intelligence`: the scale ceilings, the urgency floor and the threat-resolved test it needs are passed in as a `SwitchEnv` that `intelligence` builds from its own definitions.
 """
 from __future__ import annotations
 
-from importlib import import_module
-from typing import TYPE_CHECKING, Optional
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Callable, Optional
 
 from src.ai.goals.escalation import escalated_need_wins, is_need_kind
 from src.ai.goals.present_threat import present_threat_to
@@ -14,6 +14,18 @@ from src.ai.goals.present_threat import present_threat_to
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState
     from src.core.strategic import ProjectState
+
+
+@dataclass(frozen=True)
+class SwitchEnv:
+    """What the ordinary decision reads from `intelligence`: the score-scale function, the universal scale ceiling, the urgency floor (STRAT-186) and the threat-resolved test (STRAT-236).
+
+    `threat_resolved` is called only inside the lock-active gate, at the same point as before the move (it is a spatial scan, so it is never evaluated for an unlocked current)."""
+
+    score_scale_max: Callable[[object], float]
+    goal_utility_score_max: float
+    urgency_floor_pct: float
+    threat_resolved: Callable[["EntityState", "AuthoritativeState"], bool]
 
 
 def escalated_need_takes_switch(entity: "EntityState", candidate: "ProjectState", current: "ProjectState", state: Optional["AuthoritativeState"]) -> bool:
@@ -27,10 +39,11 @@ def escalated_need_takes_switch(entity: "EntityState", candidate: "ProjectState"
     return not present_threat_to(entity, state)
 
 
-def ordinary_switch_allows(entity: "EntityState", candidate_project: "ProjectState", current: "ProjectState", current_tick: int, state: Optional["AuthoritativeState"]) -> bool:
-    """The lock-and-margin decision of `evaluate_project_switch` (STRAT-005/006/186), moved out unchanged: True when the candidate may replace the live, ACTIVE current project."""
-    _i = import_module("src.systems.strategic_systems.intelligence")      # call-time: `intelligence` imports this module at its top (a top-level import here is circular)
-
+def ordinary_switch_allows(entity: "EntityState", candidate_project: "ProjectState", current_tick: int, state: Optional["AuthoritativeState"], env: SwitchEnv) -> bool:
+    """The lock-and-margin decision of `evaluate_project_switch` (STRAT-005/006/186), moved out unchanged: True when the candidate may replace the live, ACTIVE current project (read from `entity`)."""
+    current = entity.strategic.projects.get(entity.strategic.current_project_id or "")
+    if current is None:                    # the caller has checked for a live current project
+        return False
     profile = entity.strategic.profile
     # Logic ID: STRAT-005 (Project switching uses interruption resistance)
     retention_margin = profile.interruption_resistance * profile.resistance_multiplier
@@ -47,7 +60,7 @@ def ordinary_switch_allows(entity: "EntityState", candidate_project: "ProjectSta
         # scan in SpatialQueryService.nearby_entities() only runs when the current project is
         # actually locked — not on every evaluate_project_switch() call for an unlocked,
         # healthy entity (the common case across all 3 real production call sites).
-        threat_resolved = state is not None and _i._threat_resolved(entity, state)
+        threat_resolved = state is not None and env.threat_resolved(entity, state)
 
         if not threat_resolved:
             # STRAT-186 (generalized): the lock may be bypassed only for the unconditional "detour"
@@ -59,16 +72,16 @@ def ordinary_switch_allows(entity: "EntityState", candidate_project: "ProjectSta
             if candidate_project.kind == "detour":
                 pass
             else:
-                candidate_max = _i._score_scale_max(candidate_project.kind)
-                current_max = _i._score_scale_max(current.kind)
+                candidate_max = env.score_scale_max(candidate_project.kind)
+                current_max = env.score_scale_max(current.kind)
                 candidate_pct = candidate_project.score / candidate_max
                 # TCK-20260811-INTERRUPTION-BYPASS-RETENTION-MARGIN-SCALE-BUG: the margin term is
                 # deliberately normalized against the universal baseline scale (_GOAL_UTILITY_SCORE_MAX),
                 # not current_max — current_max can be as small as _ADVENTURE_ROUTE_SCORE_MAX (2.9),
                 # which made retention_margin/current_max structurally dominate the comparison.
-                normalized_effective_current_pct = (current.score / current_max) + (retention_margin / _i._GOAL_UTILITY_SCORE_MAX)
+                normalized_effective_current_pct = (current.score / current_max) + (retention_margin / env.goal_utility_score_max)
                 if not (candidate_pct > normalized_effective_current_pct
-                        and candidate_pct > _i._INTERRUPTION_URGENCY_FLOOR_PCT):
+                        and candidate_pct > env.urgency_floor_pct):
                     return False
 
     return candidate_project.score > effective_current_score

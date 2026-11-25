@@ -90,7 +90,7 @@ from src.systems.world_systems.routine import RoutineService
 from src.systems.world_systems.intake import ConcernIntakeSystem
 from src.engine.domain_logic import SimulationDomainLogic
 from src.ai.goals import GoalRegistry, escalated_need_wins
-from src.systems.strategic_systems.project_switch_rules import escalated_need_takes_switch, ordinary_switch_allows
+from src.systems.strategic_systems.project_switch_rules import SwitchEnv, escalated_need_takes_switch, ordinary_switch_allows
 from src.ai.goals.base import GoalScore
 from src.ai.goals.live_record_route import orphan_switch_candidate, route_live_record, supersede_on_win
 from src.ai.score_modifiers import ScoreModifierSystem
@@ -163,6 +163,10 @@ def _threat_resolved(hero: EntityState, state: AuthoritativeState) -> bool:
         for eid in nearby_ids
     )
     return not has_hostile
+
+
+# What the ordinary switch decision reads from this module (project_switch_rules imports nothing from here).
+_SWITCH_ENV = SwitchEnv(_score_scale_max, _GOAL_UTILITY_SCORE_MAX, _INTERRUPTION_URGENCY_FLOOR_PCT, _threat_resolved)
 
 
 class StrategicIntelligenceSystem:
@@ -821,7 +825,7 @@ class StrategicIntelligenceSystem:
             )
 
         # TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH (SURV-07): an escalated need with no present threat takes the switch; every other case is the ordinary lock-and-margin decision, unchanged.
-        if escalated_need_takes_switch(entity, candidate_project, current, state) or ordinary_switch_allows(entity, candidate_project, current, current_tick, state):
+        if escalated_need_takes_switch(entity, candidate_project, current, state) or ordinary_switch_allows(entity, candidate_project, current_tick, state, _SWITCH_ENV):
             return StrategicUpdate(
                 projects_add_or_update=[
                     suspend_record(current, current_tick),

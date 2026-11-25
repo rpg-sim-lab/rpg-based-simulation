@@ -100,7 +100,7 @@ class SwitchSpy:
 
     def record_taken(self, ordinary: Any, entity: Any, candidate: Any, current: Any, state: Any) -> None:
         tick = state.tick if state is not None else self.tick
-        allows = bool(ordinary(entity, candidate, current, self.tick, state))          # read-only, pure
+        allows = bool(ordinary(entity, candidate, self.tick, state, self.intel._SWITCH_ENV))          # read-only, pure
         from src.ai.goals.present_threat import acting_threat_to, present_threat_to
         fire = {"subject": entity.id, "tick": tick, "need": str(val(candidate.kind)), "candidate_id": candidate.id, "candidate_score": candidate.score, "current_id": current.id, "current_kind": str(val(current.kind)),
                 "current_score": current.score, "current_lock_until": current.lock_until_tick, "hunger": entity.biological.hunger, "sleep_debt": entity.biological.sleep_debt,
@@ -182,8 +182,8 @@ def main(argv: List[str]) -> int:
         from src.engine.apply import ApplyPath
         from src.systems.strategic_systems import intelligence as intel
 
-        for name in ("escalated_need_takes_switch", "ordinary_switch_allows"):
-            if not callable(getattr(intel, name, None)):
+        for name in ("escalated_need_takes_switch", "ordinary_switch_allows", "_SWITCH_ENV"):
+            if getattr(intel, name, None) is None:
                 findings.append(f"tree does not expose intelligence.{name}")
         if findings:
             Path(out).parent.mkdir(parents=True, exist_ok=True)

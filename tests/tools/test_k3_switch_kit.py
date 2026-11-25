@@ -61,7 +61,8 @@ intel = NS()
 def rig(monkeypatch):
     holder = NS(rule=True, ordinary=False, threat=False, acting=False, ordinary_calls=[])
     intel.escalated_need_takes_switch = lambda e, c, cur, s: holder.rule
-    intel.ordinary_switch_allows = lambda e, c, cur, t, s: (holder.ordinary_calls.append((e.id, t)) or holder.ordinary)
+    intel._SWITCH_ENV = "env"
+    intel.ordinary_switch_allows = lambda e, c, t, s, env: (holder.ordinary_calls.append((e.id, t)) or holder.ordinary)
     import src.ai.goals.present_threat as pt
     monkeypatch.setattr(pt, "present_threat_to", lambda e, s: holder.threat)
     monkeypatch.setattr(pt, "acting_threat_to", lambda e, s: holder.acting)
