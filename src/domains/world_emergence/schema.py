@@ -71,7 +71,7 @@ class WorldEvent:
     region_id: Optional[str] = None
     subject: Optional[str] = None
     severity: float = 1.0
-    payload: Dict[str, float] = field(default_factory=dict)
+    payload: Dict[str, float | str] = field(default_factory=dict)
 
 @dataclass(frozen=True, slots=True)
 class WorldEventAggregate:
