@@ -8,7 +8,7 @@ FIELD FINDINGS (a field the spec names that the tree does not expose is reported
 * ``IntentResult`` carries (transaction_id, accepted, reason, source_kind, source_id) and NO action/transfer kind, so an accepted TOWN_SERVICE result for building b cannot tell EAT from REST at the same inn;
   ``delivered`` is therefore the spec's own OR (accepted result for b with the action's source kind, or the action's own state change), and every channel that fired is counted.
 * a refusal reason lives in ``IntentResult.reason`` (typed enum, None, or absent when the apply gave no result for b); recorded as found.
-Usage: python k2k3_count_spy.py <world> <seed> <ticks> <out.json> --mode plain|spy [--plain-hash <hex>]
+Usage: python k2k3_count_spy.py <world> <seed> <ticks> <out.json> --mode plain|spy [--plain-hash <hex>] [--neg]
 """
 from __future__ import annotations
 
@@ -103,6 +103,14 @@ def delivered_pairs(prior_ent: Any, ent: Any, pairs: List[Tuple[str, int]], prio
         else:
             reasons[(action, b)] = [str(val(r.reason)) if r.reason is not None else "None" for r in mine if not r.accepted] or ["absent"]
     return delivered, reasons, dict(channels)
+
+
+def run_context(ent: Any, pair: Tuple[str, int]) -> Dict[str, Any]:
+    """The small record kept as a K2 run's first and last context (the real-kernel negative control reads it): lodged_in, sleep_debt, hunger, gold and the task payload's scalar fields."""
+    nav = getattr(ent, "navigation", None)
+    payload = ent.task.payload if isinstance(ent.task.payload, dict) else {}
+    return {"lodged_in": getattr(nav, "lodged_in", None), "sleep_debt": ent.biological.sleep_debt, "hunger": ent.biological.hunger, "gold": ent.inventory.gold,
+            "payload": {str(k): v for k, v in payload.items() if v is None or isinstance(v, (bool, int, float, str))}, "pair": list(pair)}
 
 
 def blockers_view(entity: Any) -> List[Dict[str, Any]]:
@@ -281,6 +289,10 @@ class CountSpy:
                     if r.accepted and r.source_kind in ("TOWN_SERVICE", "SHOP_SELL", "SHOP_BUY") and r.source_id in buildings:
                         self.visibility.note_accepted(r.source_kind, r.source_id, kinds.get(r.source_id), union)
             delivered, reasons, channels = delivered_pairs(prior_ent, ent, sorted(union), prior.buildings, buildings) if alive and union else ([], {}, {})
+            nav = getattr(ent, "navigation", None)
+            lodged_in = getattr(nav, "lodged_in", None)
+            evidence = [pair for pair in sorted(union) if pair[0] == "REST" and lodged_in is not None and lodged_in == pair[1]] if alive else []     # A4: the granted bed (REST: lodged_in == b) is a delivery seen
+            contexts = {pair: run_context(ent, pair) for pair in sorted(union)} if alive and union else {}
             for name, n in channels.items():
                 self.channel_counts[name] += n
             for rs in reasons.values():
@@ -292,7 +304,7 @@ class CountSpy:
             task = ent.task
             if str(val(task.work_kind)) == "ENTITY_ACT" and isinstance(task.payload, dict) and task.payload.get("action") is not None and task.payload.get("target_id") in buildings:
                 self.action_census[str(val(task.payload["action"]))] += 1
-            self.k2.step(tick, eid, True, alive, now, delivered, reasons, kinds)
+            self.k2.step(tick, eid, True, alive, now, delivered, reasons, kinds, evidence, contexts)
         for eid in [e for e in list(self.k2.pending) if e not in state.entities]:
             self.k2.step(tick, eid, False, False, None, [], None, kinds)
 
@@ -331,7 +343,7 @@ class CountSpy:
                 "decisions_unresolved": self.unresolved_decisions, "duplicate_decisions": self.duplicate_decisions,
                 "reach": {"apply_calls": self.apply_calls, "goal_calls": self.goal_calls, "goal_selections_with_winner": self.goal_selections_seen, "escalated_need_wins": self.escalated_wins,
                           "service_dispatches_seen": self.service_dispatch_seen, "router_calls": self.router_calls, "router_service_calls": self.router_service_calls},
-                "service_actions_read": sorted(self.service_actions), "action_census_with_building_target": dict(self.action_census), "delivered_channel_counts": dict(self.channel_counts),
+                "service_actions_read": sorted(self.service_actions), "action_census_with_building_target": dict(self.action_census), "delivered_channel_counts": {**dict(self.channel_counts), "held_repeat": sum(self.k2.held_repeats.values())},
                 "refusal_reasons_seen": dict(self.reasons_seen), "visibility_unattributed": dict(self.visibility_unattributed), "spy_exceptions": self.spy_exceptions, "probe_errors": self.probe_errors}
 
 
@@ -377,6 +389,7 @@ def main(argv: List[str]) -> int:
 
     mode = argv[argv.index("--mode") + 1] if "--mode" in argv else "spy"
     plain_hash = argv[argv.index("--plain-hash") + 1] if "--plain-hash" in argv else None
+    neg = "--neg" in argv     # the real-kernel negative control cell: only the K2 reach (a service dispatch and the router fire) is required, not an escalated-need decision
     world, seed, ticks, out = argv[0], int(argv[1]), int(argv[2]), argv[3]
     if mode not in ("plain", "spy"):
         raise ValueError(f"--mode must be plain or spy, not {mode!r}")
@@ -426,7 +439,7 @@ def main(argv: List[str]) -> int:
         spy.finish(final_state.tick)
         doc.update(spy.report())
         reach = doc["reach"]
-        doc["reach_void"] = reach["service_dispatches_seen"] < 1 or reach["escalated_need_wins"] < 1 or reach["router_service_calls"] < 1
+        doc["reach_void"] = reach["service_dispatches_seen"] < 1 or (reach["escalated_need_wins"] < 1 and not neg) or reach["router_service_calls"] < 1
         doc["hash_equals_plain"] = None if plain_hash is None else final_hash == plain_hash
         if fatal is not None or spy.spy_exceptions:
             code = EXIT_SPY_EXCEPTION

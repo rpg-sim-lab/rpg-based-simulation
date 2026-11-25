@@ -7,6 +7,8 @@ K2 (a service dispatch that keeps failing): ``K2Tracker.step`` is fed once per t
   failed at t+1  = the apply of tick t+1 delivered no service for (subject, action, b); ``delivered`` is decided by the spy (accepted result for b, or the service's own state change).
   run            = maximal sequence of failed dispatches of one (subject, action, b), consecutive failed ticks at most K = NEED_WAKE_CADENCE apart; it ends at a delivered service
                    for that triple, at death/removal, or at a gap of more than K with no dispatch of that triple. Length = last failed - first failed + 1. One K2 count = a run of length > 100.
+AMENDMENT 2 (rpg-designer-k2k3-kit-v2-review.md, 125c8a23f1192d51...): A4 a HELD service repeat is not a dispatch. A K2 dispatch is an execution of (action, b) NOT already delivered in the current attempt; the attempt starts when the subject takes (action, b) and ends when
+that pair stops being executed (the task changes or ends). Once a delivery is seen in the attempt (a paid transfer, an accepted result, or for REST the granted bed: navigation.lodged_in == b) later executions are ``held_repeat``: counted in their own channel, never failing, never extending a run.
 AMENDMENT 1 (rpg-designer-k2k3-kit-v1-review.md, e6cc644c87cff181..., written before any data; it only tightens): A1 "delivered" is the paid transfer at b or an accepted result, never a bare need drop; A2 every service dispatch must be seen
 (router pass-through plus the post-apply task, per-action visibility control, a miss means NOT MEASURED, never 0); A3 K3's close needs frontier_living_world s43-46 as well (7 cells).
 K3 (an escalated need wins scoring and loses the switch): ``classify_k3`` is fed one decision with its row-d state read and its row-d+1 outcome.
@@ -24,7 +26,8 @@ FATIGUE_KIND = "fatigue"
 NEED_KINDS = (HUNGER_KIND, FATIGUE_KIND)
 SPEC_SHA = "992b7ce37e1a7325a9afab517cd87ce65221627ea2ddd2be4377962940cd5855"
 AMENDMENT_1_SHA_PREFIX = "e6cc644c87cff1818180"          # rpg-designer-k2k3-kit-v1-review.md (the full sha256 is in the review's own record)
-RULE_SOURCE = f"992b7ce3 + Amendment 1 {AMENDMENT_1_SHA_PREFIX}"
+AMENDMENT_2_SHA_PREFIX = "125c8a23f1192d51"              # rpg-designer-k2k3-kit-v2-review.md
+RULE_SOURCE = f"992b7ce3 + Amendment 1 {AMENDMENT_1_SHA_PREFIX} + Amendment 2 {AMENDMENT_2_SHA_PREFIX}"
 K3_S42_CELLS = 3
 K3_CLOSE_CELLS = 7                                         # A3: the three s42 cells plus frontier_living_world s43-46
 DECISION_POLICY = "the last decision of a tick wins: a second apply_modifiers call for the same subject and tick overwrites the pending decision (duplicates are counted)"
@@ -39,6 +42,8 @@ class K2Tracker:
         self.pending: Dict[int, Set[Tuple[str, int]]] = {}      # subject -> the dispatches (action, building) of the previous tick (post-apply task and router channel)
         self.open: Dict[Tuple[int, str, int], Dict[str, Any]] = {}   # (subject, action, building) -> the run being built
         self.closed: List[Dict[str, Any]] = []
+        self.attempts: Dict[Tuple[int, str, int], Dict[str, Any]] = {}   # (subject, action, building) -> {"delivered": bool, "last": the last dispatch tick} (A4)
+        self.held_repeats: Counter = Counter()                            # per action: executions after a delivery in the same attempt
         self.dispatch_ticks = 0
         self.dispatch_subjects: set = set()
         self.alive_subject_ticks = 0
@@ -55,22 +60,25 @@ class K2Tracker:
         """A delivered service ends the run of that triple (if any)."""
         self._close(key, "delivered")
 
-    def _failed(self, key: Tuple[int, str, int], failed_tick: int, reasons: List[Any], kind: Optional[str]) -> None:
+    def _failed(self, key: Tuple[int, str, int], failed_tick: int, reasons: List[Any], kind: Optional[str], context: Optional[Dict[str, Any]] = None) -> None:
         run = self.open.get(key)
         if run is not None and failed_tick - run["last_failed"] > self.k:
             self._close(key, "gap")
             run = None
         if run is None:
             self.open[key] = run = {"subject": key[0], "action": key[1], "building": key[2], "building_kind": kind, "first_failed": failed_tick, "last_failed": failed_tick,
-                                    "failed_dispatches": 0, "reasons": Counter()}
+                                    "failed_dispatches": 0, "reasons": Counter(), "first_context": context}
         run["last_failed"] = failed_tick
+        run["last_context"] = context
         run["failed_dispatches"] += 1
         for reason in reasons:
             run["reasons"][str(reason)] += 1
 
     def step(self, tick: int, subject: int, present: bool, alive: bool, dispatch: Any, delivered: List[Tuple[str, int]],
-             reasons: Optional[Dict[Tuple[str, int], List[Any]]] = None, building_kinds: Optional[Dict[int, str]] = None) -> None:
-        """``dispatch`` = the (action, building_id) pair(s) of the post-apply task of ``tick`` (None, one tuple, or an iterable of tuples; the caller merges the router channel into ``pending`` for the PREVIOUS tick before calling);
+             reasons: Optional[Dict[Tuple[str, int], List[Any]]] = None, building_kinds: Optional[Dict[int, str]] = None,
+             held_evidence: Optional[Iterable[Tuple[str, int]]] = None, contexts: Optional[Dict[Tuple[str, int], Dict[str, Any]]] = None) -> None:
+        """``held_evidence`` = the pairs whose service the subject's own state shows as GRANTED (REST: navigation.lodged_in == b); like a delivery it ends a run and marks the attempt delivered (A4). ``contexts`` = a small record of the subject
+        per pair, kept as the run's first and last context for the real-kernel negative control. ``dispatch`` = the (action, building_id) pair(s) of the post-apply task of ``tick`` (None, one tuple, or an iterable of tuples; the caller merges the router channel into ``pending`` for the PREVIOUS tick before calling);
         ``delivered`` = the (action, building_id) pairs the apply of ``tick`` delivered; ``reasons`` = the refusal reasons the apply of ``tick`` gave for each pair, recorded as found (typed, 'None', or 'absent')."""
         reasons = reasons or {}
         building_kinds = building_kinds or {}
@@ -83,9 +91,22 @@ class K2Tracker:
         now: Set[Tuple[str, int]] = set() if dispatch is None else ({dispatch} if isinstance(dispatch, tuple) else set(dispatch))
         for pair in delivered:                                           # a delivered service ends that triple's run whether or not it was a pending dispatch
             self._delivered((subject, pair[0], pair[1]), tick)
-        for prev in sorted(self.pending.get(subject, set())):           # a dispatch of t-1 the apply of t did not deliver FAILED (the dispatch tick is t-1)
-            if prev not in delivered:
-                self._failed((subject, prev[0], prev[1]), tick - 1, reasons.get(prev, ["absent"]), building_kinds.get(prev[1]))
+        evidence = set(held_evidence or ())
+        contexts = contexts or {}
+        for prev in sorted(self.pending.get(subject, set())):           # a dispatch of t-1 the apply of t did not deliver FAILED (the dispatch tick is t-1), unless it is a held repeat (A4)
+            key = (subject, prev[0], prev[1])
+            attempt = self.attempts.get(key)
+            if attempt is None or attempt["last"] != tick - 2:           # the pair was not executed on the tick before: a NEW attempt
+                attempt = {"delivered": False, "last": tick - 1}
+                self.attempts[key] = attempt
+            if prev in delivered or (prev in evidence and not attempt["delivered"]):     # the grant (lodged_in == b) is the delivery ONCE per attempt; on later ticks it is the held state itself
+                attempt["delivered"] = True
+                self._delivered(key, tick)
+            elif attempt["delivered"]:
+                self.held_repeats[prev[0]] += 1
+            else:
+                self._failed(key, tick - 1, reasons.get(prev, ["absent"]), building_kinds.get(prev[1]), contexts.get(prev))
+            attempt["last"] = tick - 1
         self.pending[subject] = now
         if now:
             self.dispatch_ticks += 1
@@ -107,7 +128,7 @@ class K2Tracker:
             out_runs.append(row)
         long_runs = [r for r in out_runs if r["length"] > K2_LONG]
         return {"k": self.k, "runs": out_runs, "runs_all": len(out_runs), "runs_over_10": sum(1 for r in out_runs if r["length"] > K2_MID), "runs_over_100": len(long_runs),
-                "k2_count": len(long_runs), "long_runs": long_runs, "dispatch_ticks": self.dispatch_ticks, "subjects_with_dispatch": len(self.dispatch_subjects),
+                "k2_count": len(long_runs), "long_runs": long_runs, "held_repeats": dict(self.held_repeats), "dispatch_ticks": self.dispatch_ticks, "subjects_with_dispatch": len(self.dispatch_subjects),
                 "alive_subject_ticks": self.alive_subject_ticks}
 
 

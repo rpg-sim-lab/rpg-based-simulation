@@ -1,6 +1,6 @@
 """Summarize the K2/K3 re-count cells (reads the cell JSONs of ``k2k3_count_spy``; evidence only, no verdict about the sim beyond the designer's fixed close rules).
 
-Usage: python k2k3_count_summary.py <stage-1 out dir> [<stage-2 out dir>]  ->  prints the table and writes k2k3_summary.json into the last dir. Exit 0 only when every cell is valid.
+Usage: python k2k3_count_summary.py --neg <neg out dir> (the real-kernel negative control, lists every K2 run > 10 and STOPs on a lodged REST run)   |   python k2k3_count_summary.py <stage-1 out dir> [<stage-2 out dir>]  ->  prints the table and writes k2k3_summary.json into the last dir. Exit 0 only when every cell is valid.
 A cell is VOID unless: spy final_hash == plain final_hash, 0 probe errors / spy exceptions / logging errors, no field finding, and reach (>= 1 service dispatch AND >= 1 escalated-need decision).
 Close rules (the designer's, 992b7ce3 + Amendment 1 e6cc644c): K2 = 0 in the four stage-1 cells (three s42 + urban_political s46) AND no service action NOT MEASURED -> proposed for close; any K2 count > 0 -> stays HARD. K3: a nonzero s42 total stays HARD;
 a close needs K3 = 0 in all 7 cells (A3: the three s42 cells plus frontier_living_world s43-46, stage 2, run only when the s42 total is 0). `close_verdicts` (k2k3_count_logic) can never print a K3 close with fewer than 7 valid cells.
@@ -88,7 +88,29 @@ def load_logic() -> Any:
     return module
 
 
+def neg_summary(out: Path) -> Dict[str, Any]:
+    """The real-kernel NEGATIVE control (Amendment 2): urban_political s42, 2,400 t. Every K2 run longer than 10 is LISTED with the subject's lodged_in, sleep_debt and payload at its first and last failed tick. A REST run whose subject was
+    lodged in b (at either end of the run) is a KIT DEFECT: STOP and go back to the designer. It decides nothing about K2 itself."""
+    plain, spy = load(out, "urban_political", 42, "plain"), load(out, "urban_political", 42, "spy")
+    problems = cell_validity(plain, spy, needs_k2=True)
+    problems = [p for p in problems if not p.startswith("reach: no escalated-need")]       # a 2,400 t cell needs only the K2 reach (spy --neg)
+    runs = [r for r in ((spy.get("k2") or {}).get("runs") or []) if r["length"] > 10]
+    listed = [{"subject": r["subject"], "action": r["action"], "building": r["building"], "building_kind": r.get("building_kind"), "first_failed": r["first_failed"], "last_failed": r["last_failed"], "length": r["length"],
+               "ended_by": r["ended_by"], "reasons": r.get("reasons"), "first_context": r.get("first_context"), "last_context": r.get("last_context")} for r in runs]
+    defects = [r for r in listed if r["action"] == "REST" and any(c and c.get("lodged_in") == r["building"] for c in (r["first_context"], r["last_context"]))]
+    return {"mode": "negative_control", "cell": "urban_political_s42_2400t", "valid": not problems, "problems": problems, "runs_over_10": listed, "kit_defect_rest_runs": defects,
+            "verdict": "VOID" if problems else ("STOP: a REST run whose subject was lodged at its building (kit defect; to the designer)" if defects else "NO DEFECT FOUND (listed for the designer's read)"),
+            "held_repeats": (spy.get("k2") or {}).get("held_repeats"), "rule_source": load_logic().RULE_SOURCE}
+
+
 def main(argv: List[str]) -> int:
+    if argv and argv[0] == "--neg":
+        out = Path(argv[1])
+        doc = neg_summary(out)
+        (out / "k2k3_neg_summary.json").write_text(json.dumps(doc, sort_keys=True, indent=1, default=str), encoding="utf-8")
+        print(f"negative control {doc['cell']}: valid={doc['valid']} runs>10={len(doc['runs_over_10'])} kit_defect_rest_runs={len(doc['kit_defect_rest_runs'])} held_repeats={doc['held_repeats']} problems={doc['problems']}")
+        print(f"verdict: {doc['verdict']}")
+        return 0 if doc["valid"] and not doc["kit_defect_rest_runs"] else 2
     outs = [Path(a) for a in argv]                      # stage-1 dir first, then the stage-2 dir when it exists; the summary is written into the LAST one
     out = outs[-1]
     doc = summarize(outs)

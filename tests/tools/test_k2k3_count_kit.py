@@ -51,10 +51,12 @@ def test_k2_run_of_exactly_100_is_not_counted_and_101_is():
 
 def test_k2_delivered_service_ends_the_run():
     t = logic.K2Tracker(K)
-    run_ticks(t, set(range(10, 200)), deliver_at={60})       # delivered on tick 60 ends the run; the rest is a new, shorter run
+    run_ticks(t, set(range(10, 60)) | {70}, deliver_at={40})   # delivered on tick 40 ends the run; the earlier failing dispatches stay a run
     s = t.summary()
-    assert s["runs"][0]["ended_by"] == "delivered"
-    assert s["runs"][0]["length"] < 60 and s["k2_count"] == 1       # 61..199 is a second run of length > 100, counted on its own
+    assert s["runs"][0]["ended_by"] == "delivered" and s["runs"][0]["length"] == 29      # dispatches 10..38 failed; the delivery on tick 40 judges the dispatch of 39
+    t2 = logic.K2Tracker(K)
+    run_ticks(t2, set(range(10, 200)), deliver_at={60})         # Amendment 2: the later executions of the SAME attempt are held repeats, never a new run
+    assert t2.summary()["k2_count"] == 0 and t2.summary()["held_repeats"]["EAT"] > 100
 
 
 def test_k2_gap_larger_than_k_splits_runs():
@@ -153,10 +155,10 @@ def test_k3_excluded_does_not_break_an_episode_and_win_does():
 
 
 # ---------------------------------------------------------------- spy against fake states
-def fake_entity(eid, hunger=0.0, sleep=0.0, gold=10, action=None, target=None, results=(), alive=True, project=None, projects=None):
+def fake_entity(eid, hunger=0.0, sleep=0.0, gold=10, action=None, target=None, results=(), alive=True, project=None, projects=None, lodged=None):
     task = NS(work_kind="ENTITY_ACT", payload={} if action is None else {"action": action, "target_id": target})
     return NS(id=eid, task=task, biological=NS(hunger=hunger, sleep_debt=sleep), inventory=NS(gold=gold, items=()), identity=NS(latest_intent_results=tuple(results)),
-              combat=NS(alive=alive), strategic=NS(current_project_id=project, projects=projects or {}, blockers={}))
+              combat=NS(alive=alive), navigation=NS(lodged_in=lodged), strategic=NS(current_project_id=project, projects=projects or {}, blockers={}))
 
 
 def building(purse=0, kind="inn"):
@@ -446,3 +448,123 @@ def test_the_tree_exposes_every_field_the_kit_reads():
         sys.path.remove(root)
     assert facts["findings"] == []
     assert set(facts["service_kinds"]) >= {"EAT", "REST", "SELL", "REPAIR"} and facts["k"] == 10
+
+
+# ---- Amendment 2, A4: a held service repeat is not a dispatch (controls g-j)
+def spy_run(spy, ticks, make_state, start=1):
+    prior = make_state(start - 1)
+    for t in range(start, start + ticks):
+        new = make_state(t)
+        spy.observe(prior, new)
+        prior = new
+    return prior
+
+
+def test_a_rest_paid_once_then_repeated_for_200_ticks_gives_no_run_and_200_held_repeats():                    # control (g)
+    spy = make_spy()
+    def make(t):                                         # the bed is paid at t=2 (subject -5, inn +5); every later tick executes REST again with no payment
+        return fake_state(t, [fake_entity(1, sleep=80.0, gold=5 if t >= 2 else 10, action="REST", target=7)], {7: building(purse=5 if t >= 2 else 0)})
+    spy_run(spy, 210, make)
+    spy.finish(211)
+    rep = spy.report()
+    assert rep["k2"]["runs_all"] == 0 and rep["k2"]["k2_count"] == 0
+    assert rep["k2"]["held_repeats"]["REST"] >= 200 and rep["delivered_channel_counts"]["held_repeat"] >= 200
+
+
+def test_a_rest_executed_200_ticks_and_never_delivered_still_gives_a_run():                                   # control (h)
+    spy = make_spy()
+    spy_run(spy, 205, lambda t: fake_state(t, [fake_entity(1, sleep=80.0, action="REST", target=7)]))
+    spy.finish(206)
+    rep = spy.report()
+    assert rep["k2"]["k2_count"] == 1 and rep["k2"]["long_runs"][0]["length"] > 100 and rep["k2"]["held_repeats"] == {}
+
+
+def test_a_rest_with_the_bed_granted_lodged_in_b_is_held_from_the_first_tick_with_no_payment_seen():            # control (i)
+    spy = make_spy()
+    spy_run(spy, 210, lambda t: fake_state(t, [fake_entity(1, sleep=80.0, action="REST", target=7, lodged=7)]))
+    spy.finish(211)
+    rep = spy.report()
+    assert rep["k2"]["runs_all"] == 0 and rep["k2"]["held_repeats"]["REST"] >= 200
+    other = make_spy()                                                                                      # lodged elsewhere is no evidence for b
+    spy_run(other, 210, lambda t: fake_state(t, [fake_entity(1, sleep=80.0, action="REST", target=7, lodged=8)], {7: building(), 8: building()}))
+    other.finish(211)
+    assert other.report()["k2"]["k2_count"] == 1
+
+
+def test_after_the_task_changes_target_a_new_undelivered_rest_at_b_prime_is_a_new_run():                      # control (j)
+    spy = make_spy()
+    def make(t):
+        if t < 60:                                       # REST at 7, paid at t=2, then held
+            return fake_state(t, [fake_entity(1, sleep=80.0, gold=5 if t >= 2 else 10, action="REST", target=7)], {7: building(purse=5 if t >= 2 else 0), 8: building()})
+        return fake_state(t, [fake_entity(1, sleep=80.0, gold=5, action="REST", target=8)], {7: building(purse=5), 8: building()})      # a NEW target, never delivered
+    spy_run(spy, 230, make)
+    spy.finish(231)
+    runs = spy.report()["k2"]["runs"]
+    assert [(r["action"], r["building"]) for r in runs] == [("REST", 8)] and runs[0]["length"] > 100
+
+
+def test_a_held_attempt_that_stops_and_restarts_is_a_new_attempt():
+    t = logic.K2Tracker(K)
+    for tick in range(1, 40):
+        t.step(tick, 1, True, True, {("REST", 7)} if tick < 20 or tick > 25 else set(), [("REST", 7)] if tick == 3 else [], {}, {7: "inn"})
+    t.finish(40)
+    s = t.summary()
+    assert s["runs_all"] == 2 and s["runs"][0]["ended_by"] == "delivered" and s["runs"][1]["first_failed"] == 26   # the first attempt: one failure, delivered, then held 3..19; a gap; REST again at b is a NEW attempt with no delivery: failures from the restart
+    assert s["held_repeats"]["REST"] >= 15
+
+
+def run_context_of(**kw):
+    return spy_mod.run_context(fake_entity(1, sleep=kw.get("sleep", 70.0), action="REST", target=7, lodged=kw.get("lodged")), ("REST", 7))
+
+
+def test_the_run_contexts_carry_lodged_in_sleep_debt_and_payload():
+    ctx = run_context_of(lodged=7)
+    assert ctx["lodged_in"] == 7 and ctx["sleep_debt"] == 70.0 and ctx["payload"] == {"action": "REST", "target_id": 7}
+    spy = make_spy()
+    spy_run(spy, 30, lambda t: fake_state(t, [fake_entity(1, sleep=80.0, action="REST", target=7)]))
+    spy.finish(31)
+    run = spy.report()["k2"]["runs"][0]
+    assert run["first_context"]["sleep_debt"] == 80.0 and run["last_context"]["payload"]["action"] == "REST"
+
+
+def _neg_cell(tmp_path, runs, hash_spy="h"):
+    import json
+    base = {"final_hash": "h", "logging_errors": [], "fatal": None}
+    (tmp_path / "urban_political_s42_plain.json").write_text(json.dumps(base))
+    spy = dict(base, final_hash=hash_spy, probe_errors=[], spy_exceptions=[], findings=[], reach={"service_dispatches_seen": 5, "escalated_need_wins": 0, "router_service_calls": 5},
+               k2={"runs": runs, "held_repeats": {"REST": 9}})
+    (tmp_path / "urban_political_s42_spy.json").write_text(json.dumps(spy))
+
+
+def _run(action, lodged, length=30, building=7):
+    ctx = {"lodged_in": lodged, "sleep_debt": 70.0, "payload": {"action": action}}
+    return {"subject": 1, "action": action, "building": building, "building_kind": "inn", "first_failed": 10, "last_failed": 10 + length - 1, "length": length, "ended_by": "died", "reasons": {"None": 3},
+            "first_context": ctx, "last_context": ctx}
+
+
+def test_the_negative_control_lists_every_run_over_10_and_passes_when_no_rest_run_was_lodged(tmp_path):
+    summary = load("k2k3_count_summary")
+    _neg_cell(tmp_path, [_run("EAT", None), _run("REST", None, 8), _run("REST", 9)])
+    doc = summary.neg_summary(tmp_path)
+    assert doc["valid"] is True and len(doc["runs_over_10"]) == 2 and doc["kit_defect_rest_runs"] == [] and doc["verdict"].startswith("NO DEFECT")
+    assert summary.main(["--neg", str(tmp_path)]) == 0
+
+
+def test_the_negative_control_stops_on_a_rest_run_whose_subject_was_lodged_at_its_building(tmp_path):
+    summary = load("k2k3_count_summary")
+    _neg_cell(tmp_path, [_run("REST", 7)])
+    doc = summary.neg_summary(tmp_path)
+    assert len(doc["kit_defect_rest_runs"]) == 1 and doc["verdict"].startswith("STOP")
+    assert summary.main(["--neg", str(tmp_path)]) == 2
+    _neg_cell(tmp_path, [_run("REST", 8)])                                       # lodged at ANOTHER building is not the defect
+    assert summary.neg_summary(tmp_path)["kit_defect_rest_runs"] == []
+
+
+def test_the_negative_control_is_void_when_the_spy_hash_differs(tmp_path):
+    summary = load("k2k3_count_summary")
+    _neg_cell(tmp_path, [_run("EAT", None)], hash_spy="other")
+    assert summary.neg_summary(tmp_path)["verdict"] == "VOID"
+
+
+def test_the_rule_text_names_both_amendments():
+    assert "Amendment 1 e6cc644c" in logic.RULE_SOURCE and "Amendment 2 125c8a23" in logic.RULE_SOURCE
