@@ -8,11 +8,21 @@ Rules (rpg-designer-k2-fix-plan-rulings.md a73bc655d487395b): A(i) WAY_CLOSED en
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
-CELLS = [("crowded_frontier", 42, 5000), ("frontier_living_world", 42, 5000), ("urban_political", 42, 5000), ("urban_political", 42, 2400)]
+DEFAULT_CELLS = [("crowded_frontier", 42, 5000), ("frontier_living_world", 42, 5000), ("urban_political", 42, 5000), ("urban_political", 42, 2400)]
+
+
+def configured_cells() -> List[Any]:
+    """The cells to summarize: ``OWNJOB_CELLS`` ("world:seed:ticks ...", the same variable the launcher reads) or the four default cells."""
+    raw = os.environ.get("OWNJOB_CELLS", "").split()
+    return [(w, int(sd), int(t)) for w, sd, t in (c.split(":") for c in raw)] if raw else list(DEFAULT_CELLS)
+
+
+CELLS = configured_cells()
 
 
 def load(out: Path, arm: str, world: str, seed: int, ticks: int, mode: str) -> Dict[str, Any]:
@@ -60,7 +70,7 @@ def cell_summary(out: Path, world: str, seed: int, ticks: int) -> Dict[str, Any]
 
 
 def summarize(out: Path) -> Dict[str, Any]:
-    cells = [cell_summary(out, *c) for c in CELLS]
+    cells = [cell_summary(out, *c) for c in configured_cells()]
     flags = [f"{c['cell']}: {f}" for c in cells for f in c["flags"]]
     return {"cells": cells, "all_valid": all(c["valid"] for c in cells), "flags": flags}
 

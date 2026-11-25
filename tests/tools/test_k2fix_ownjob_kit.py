@@ -451,3 +451,17 @@ def test_a_subject_reaching_the_collapse_line_keeps_its_last_200_ticks_before_th
     for t in range(1, 6):
         again.observe(state(t - 1, [entity(debt=99.0)]), state(t, [entity(debt=99.0)]))
     assert len(again.report()["A_ii"]["collapse_windows"]) == 1
+
+
+def test_the_cell_subset_override_runs_and_summarizes_only_the_named_cells(tmp_path, monkeypatch):
+    kit = build_kit_layout(tmp_path / "kit")
+    done = _launch(kit, tmp_path, OWNJOB_CELLS="frontier_living_world:42:5000")
+    lines = [l for l in done.stdout.splitlines() if l.startswith("CELL ")]
+    assert done.returncode == 0 and len(lines) == 2 and all("frontier_living_world s42 5000t" in l for l in lines) and {" main " in l for l in lines} == {True, False}
+    monkeypatch.setenv("OWNJOB_CELLS", "frontier_living_world:42:5000")
+    _doc(tmp_path, "main", "frontier_living_world_s42_t5000", "h")
+    _doc(tmp_path, "fix", "frontier_living_world_s42_t5000", "different", {"A_i": {"purse_half": 1, "bed_half": 0, "other_unresolved": 0}})
+    doc = summary.summarize(tmp_path)
+    assert [c["cell"] for c in doc["cells"]] == ["frontier_living_world_s42_t5000"] and doc["all_valid"] and doc["flags"] == []
+    monkeypatch.delenv("OWNJOB_CELLS")
+    assert len(summary.configured_cells()) == 4

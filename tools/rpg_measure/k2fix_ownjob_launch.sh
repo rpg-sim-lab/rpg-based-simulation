@@ -5,6 +5,7 @@
 # Cells (ONE process at a time, each behind its own host gate): per cell and per arm (main, then fix) the PLAIN twin, then the SPY with the twin's hash (a spy hash != plain hash is VOID, rc 3):
 #   crowded_frontier s42 5000t, frontier_living_world s42 5000t, urban_political s42 5000t, urban_political s42 2400t (the cell that holds the v6 rows).
 # Exit codes: 1 kit sha mismatch / pinned_runner missing, 9 host busy / OUT exists, 15 disk floor, 18 a used tree named, 13 plain rc, 124 timeout, otherwise the spy's own (3 hash, 6 finding, 8 exception).
+# OWNJOB_CELLS="frontier_living_world:42:5000" runs only those cells (both arms), e.g. the frontier re-run after the v3 amendment; unset = the four cells above.
 # The caller runs `. /mnt/data2/rpg-measure/lib/busy_gate.sh; rpg_host_gate` as its OWN command first. Writes only under $OUT; nothing is deleted. LAUNCH_DRY_RUN=1 prints the cells and exits.
 set -u
 . /mnt/data2/rpg-measure/lib/busy_gate.sh
@@ -12,7 +13,7 @@ py=${PY:-/mnt/data/venv-sync2/bin/python}
 : "${OUT:?}" "${TREE_MAIN:?}" "${TREE_FIX:?}" "${KIT:?}"
 [ -f "$KIT/tools/test_architecture/pinned_runner.py" ] || { echo "STOP: $KIT/tools/test_architecture/pinned_runner.py is missing (the kit must be laid out as a tool checkout)"; exit 1; }
 for t in "$TREE_MAIN" "$TREE_FIX"; do case "$t" in *w781_*|*w995*|*tree_995*|*base_tree_995*|*tgt_6ee88*|*trace_v6_tree*|*fixtree_trace*|*h3fix_13844_tree*|*v8fix_*|*k2k3_tree_main*|*k2k3_tree2_main*) echo "STOP: a used tree was named; use a fresh extract"; exit 18;; esac; done
-CELLS="crowded_frontier:42:5000 frontier_living_world:42:5000 urban_political:42:5000 urban_political:42:2400"
+CELLS=${OWNJOB_CELLS:-"crowded_frontier:42:5000 frontier_living_world:42:5000 urban_political:42:5000 urban_political:42:2400"}   # OWNJOB_CELLS="world:seed:ticks ..." runs a subset (the summary reads the same variable)
 run() { # tree world seed ticks outjson mode [plainhash]
   local tmo; tmo=$($py -c "import math;print(math.ceil($4*0.5)+600)")
   local extra=""; [ -n "${7:-}" ] && extra="--plain-hash $7"
