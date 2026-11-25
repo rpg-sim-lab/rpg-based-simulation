@@ -615,6 +615,7 @@ def build_kit_layout(root, with_pinned_runner=True):
 
 def load_from(path, key):
     import sys
+    sys.modules.pop("_arm_child_pinned_runner", None)      # arm_child caches the pinned runner by this name: a test must not inherit another layout's cached module
     spec = importlib.util.spec_from_file_location(key, path)
     module = importlib.util.module_from_spec(spec)
     sys.modules[key] = module
