@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: strategy
 authority: P1
 audience: agent
 ticket_id: TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH
-phase: open
+phase: done
 date: 2026-10-29
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 An escalated hunger or fatigue goal that has already won scoring still loses evaluate_project_switch to the lock or retention margin of an ordinary current project
 
 ## Status
-INPROGRESS (plan stage: dispatched by rpg-planner 2026-11-25, owner #715 7159601467; no src code until the designer and planner review the plan)
+DONE (hand-orchestrated close; PR prepared, local, not pushed)
 
 ## Tier
 standard
@@ -76,6 +76,7 @@ Lean fix shape, for the counts to confirm (rpg-designer's call):
 - docs/guidelines/intentional_divergences.md 2.40, 2.79, 2.143
 
 ## Related Stored Artifacts
+agent-working/stored_artifacts/TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH/ (investigation.md, plan.md, plan_v2.md, test_plan.md, test_plan_v2.md). Investigation, plan and test plan were written before any src change (plan stage, dispatched by rpg-planner 2026-11-25); plan_v2 and test_plan_v2 fold in the designer rulings 972600b6.
 
 ## Related Code Areas
 - src/systems/strategic_systems/intelligence.py (evaluate_project_switch, the project lookup and switch path)
@@ -84,6 +85,9 @@ Lean fix shape, for the counts to confirm (rpg-designer's call):
 ## Assumptions / Open Questions
 Plan, investigation and test plan: agent-working/staging_artifacts/TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH/ (written before code). Open questions Q1-Q5 are in plan.md section 7.
 - Sequenced after :1610 lands. Independent of the mapped-kinds and orphan tickets. Not dispatched.
+
+## Durable state, lifecycle and clocks
+None new. The rule writes only the existing suspend and current-project updates (`suspend_record`, `current_project_id_set`); the only added module-level object is the immutable `_SWITCH_ENV` (functions and constants), not state. No canonical-dict, checkpoint or hash change except through the behaviour.
 
 ## Implementation Notes
 - 2026-10-31 DESIGNER RULING (SURV-07 family, from the F3-base family table). THE ONE PRECEDENCE LAW P: at every decision site choosing between a need past its escalation onset and any other goal or act, the need wins unless acting_threat_to(subject) holds (memo row 88: a perceived hostile attacking or pursuing the subject, or one that hit it within the window). No owner row is needed. Whether to flee at all stays on present_threat_to (AGENCY-07); where flight is warranted but the hostile is not acting, a pressing need still wins. ONE shared predicate pair, both reads: need_is_pressing(subject) (need_pull ESCALATION_ONSET line) and need_yields(subject, state) = acting_threat_to. Every site calls them; none re-derives them. ONE PRECEDENCE GRID test: {need pressing y/n} x {no hostile / perceived only / present-not-acting / acting} x site -> winner; each site's ticket adds its rows. Provisional order until harm-per-tag is counted: ENGAGEMENT -> LOW-HP-RETREAT -> TOWN-RETURN -> ESCALATED-SWITCH -> FLEE-LINE.
@@ -98,5 +102,19 @@ Plan, investigation and test plan: agent-working/staging_artifacts/TCK-20261029-
 - 2026-11-09 OWNER ORDER RULING (#715 6731822583, relayed by lead-planner-u24 and verified by rpg-planner), on the §12.5 order: "Unit rows only (Recommended)". This site gets unit precedence-grid rows only. A behaviour step follows only if a count shows a defect, and that step then needs its own owner yes. FLEE-LINE stays a full fix. Applies with the standing depth rule (#715 6731764470) and the measurement floor (#715 6731822583).
 
 ## Test Summary
+New: tests/unit/strategic/test_escalated_need_takes_the_project_switch.py (372: 12 behaviour rows plus a 360-combination neutrality oracle, the pre-refactor code copied, with the rule off); tests/tools/test_k3_phase0_kit.py (17) and tests/tools/test_k3_switch_kit.py (10), the controls of the two measurement kits. Mutants (in place, restored): the pressing test off (2 fail), the threat test off (1), the kind exclusion off (3), the rule for every kind (2). Phase 0 kit m3 (stale accepted result counted) fails its control after kit v2.
+K3-FORCED SETUP CHANGES (the loser made non-escalated; the claim and assertions unchanged, rpg-planner ruling, lead agreed): tests/unit/strategic/test_project_lookup_live_record_first.py::test_a_different_target_candidate_that_loses_the_switch_changes_nothing_and_creates_nothing and ::test_an_orphan_that_loses_the_margin_leaves_the_current_project_unchanged (sleep_debt 50.0, with a comment citing the ticket, STRAT-359 and 2.228).
+COMPLETENESS PINS (from the check's own output): tests/unit/tools/test_mechanism_registry_completeness_check.py total_targets 60 -> 61, bound 56 -> 57 (+systems/strategic_systems/project_switch_rules, bound under goal_hierarchy).
+Gates (HEAD 2721f7b38, lock env, host gate each run): full tests/unit -m "not slow and not extra_slow", one directory per process: every directory rc 0 (strategic 1088 passed, tools 1455 passed), motivation collects no test (unchanged), observability per file 0 failures (as one process it segfaults in DuckDB, also on main); code-health `check --summary-for` OK, packages validate 0 problems, import_contracts ci 17 kept 0 broken, `mypy src | mypy_baseline filter` clean.
+
 ## Files Changed
+src: systems/strategic_systems/project_switch_rules.py (new: `SwitchEnv`, `escalated_need_takes_switch`, `ordinary_switch_allows`; imports nothing from intelligence), systems/strategic_systems/intelligence.py (evaluate_project_switch calls them; `_SWITCH_ENV`), ai/goals/escalation.py (`is_need_kind`).
+tests: tests/unit/strategic/test_escalated_need_takes_the_project_switch.py (new), tests/unit/strategic/test_project_lookup_live_record_first.py (two setup rows), tests/unit/tools/test_mechanism_registry_completeness_check.py (pins), tests/tools/test_k3_phase0_kit.py and tests/tools/test_k3_switch_kit.py (new).
+tools: tools/rpg_measure/k3_phase0_{spy,summary}.py, k3_phase0_launch.sh, k3_switch_{spy,summary}.py, k3_switch_launch.sh (measurement kits, tools only).
+docs and registries: docs/mechanics/04_strategic_cognition.md (Escalated Need Takes The Switch), docs/guidelines/intentional_divergences.md (2.228), docs/parity_ledger/strategic_cognition.yaml (STRAT-359), registries/mechanisms.yaml (goal_hierarchy summary sentence and implemented_by), docs/REGISTRY.yaml.
+
 ## Completion Summary
+K3 (an escalated hunger or fatigue need that won scoring lost the project switch to an ordinary current project's lock or margin) is fixed: an escalated need with no present threat takes the switch when the current project is not itself a need project (by kind identity); everything else is the unchanged lock-and-margin decision, now in `ordinary_switch_allows`. No new scoring, setting or typed field; `SwitchEnv` passes the scale function, ceilings, urgency floor and threat-resolved test in, so the new module imports nothing from intelligence.
+EVIDENCE CHAIN (owner order #715 7159601467 "fix K2 then K3"; the designer's reads): Phase 0 (583d6408): the 10 group-D rows are the winner's own hunger project ended or orphaned in the same update, outside a switch rule (-> TCK-20261123 and TCK-20261028); the K3 baseline is 30 on e39fe7873 (A 12 town_return, B 6 resolve_blocker, C 2 need against need, D 10). DECISIVE (runs 1-3, ec63111f; kit v6 STAGE=neg on the fix head, urban_political s42 2,400 t): K3 13 = A 0, B 0, E 0 (A+B+E 18 -> 0), C 5, D 8. OWN JOB (kit v3, 4 cells): TAKEN/FIRES crowded 11/3, frontier 25/14, urban 5,000 t 23/17, urban 2,400 t 11/7; TAKEN under a present threat 0 in every cell (acting threat 0 too); neutrality not applicable (TAKEN > 0 everywhere; the base plain hashes equal the known e39fe7873 values). GUARD (report-only): 7 rows whose released current was combat_engage, damage within 50 ticks in none.
+DISCLOSED: C rose 2 -> 5 (need against need, excluded by ruling Q1, report-only; rows 11-13 are an escalated hunger winner held off by a fatigue project through the ordinary path; a question for the owner's cognition documents, not this ticket). D (8) is the Phase 0 shape, evidence for TCK-20261123 and TCK-20261028. The collapse lines (hunger >= 95, sleep_debt >= 98: 35/38, 41/48, 21/30, 17/26 on the fix arm) are NOT measured against the base: the base arm ran plain only, so no comparison is claimed; they include the never-fed and never-slept cohort. The suspended released projects mostly expire by the 200-tick suspension TTL; the need project stays current a median of 50 ticks. The PR is stacked on rpg-k2-service-blocker (#1015).
+

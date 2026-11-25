@@ -14066,6 +14066,26 @@
   - agent-working/stored_artifacts/TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH.md
+  ticket_id: TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH
+  title: An escalated hunger or fatigue goal that has already won scoring still loses
+    evaluate_project_switch to the lock or retention margin of an ordinary current
+    project
+  tier: standard
+  ticket_type: bug
+  date: '2026-10-29'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (evaluate_project_switch, the project
+    lookup and switch path)
+  - src/ai/goals/escalation.py (escalated_need_wins)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH/investigation.md
+  - agent-working/stored_artifacts/TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH/plan.md
+  - agent-working/stored_artifacts/TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH/plan_v2.md
+  - agent-working/stored_artifacts/TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH/test_plan.md
+  - agent-working/stored_artifacts/TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH/test_plan_v2.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261029-EVENT-EMIT-ORDER-FOLLOWS-PYTHONHASHSEED.md
   ticket_id: TCK-20261029-EVENT-EMIT-ORDER-FOLLOWS-PYTHONHASHSEED
   title: Within one tick, the emit order of progression and equipment events follows
@@ -14137,21 +14157,6 @@
   - agent-working/stored_artifacts/TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED/test_plan.md
   tags:
   - determinism
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH.md
-  ticket_id: TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH
-  title: An escalated hunger or fatigue goal that has already won scoring still loses
-    evaluate_project_switch to the lock or retention margin of an ordinary current
-    project
-  tier: standard
-  ticket_type: bug
-  date: '2026-10-29'
-  related_code_areas:
-  - src/systems/strategic_systems/intelligence.py (evaluate_project_switch, the project
-    lookup and switch path)
-  - src/ai/goals/escalation.py (escalated_need_wins)
-  artifact_files: []
-  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261029-HUNGER-SIDE-WAYS-HAVE-NO-DISTANCE-BOUND.md
   ticket_id: TCK-20261029-HUNGER-SIDE-WAYS-HAVE-NO-DISTANCE-BOUND
