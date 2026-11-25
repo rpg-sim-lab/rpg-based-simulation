@@ -5,6 +5,7 @@ from __future__ import annotations
 import dataclasses
 from dataclasses import dataclass, field
 from typing import Dict, Any, Iterable, Mapping, Optional, List, Protocol, Tuple, TYPE_CHECKING
+from src.core.service_refusals import SERVICE_BLOCKER_PREFIX  # K2 fix B: the id prefix of a blocker filed by the service refusal rule; removed by the same quiet spell as the congestion blocker
 from enum import Enum
 
 if TYPE_CHECKING:
@@ -359,13 +360,13 @@ def merge_inferred_blocker(stored: Optional[BlockerState], inferred: BlockerStat
 
 
 def quiet_blockers(blockers: Mapping[str, BlockerState], projects: Mapping[str, "ProjectState"], tick: int) -> List[str]:
-    """The ids of the congestion blockers to remove at ``tick``: `BLOCKER_QUIET_SPELL_TICKS` of observable quiet, i.e. tick >= max(last_seen_tick, suppression_until_tick, last_project_end_tick) + the spell,
+    """The ids of the congestion and the service-refusal blockers to remove at ``tick``: `BLOCKER_QUIET_SPELL_TICKS` of observable quiet, i.e. tick >= max(last_seen_tick, suppression_until_tick, last_project_end_tick) + the spell,
     and never while a live (ACTIVE or SUSPENDED) resolve_blocker project names it. A congestion blocker with no last-seen tick (a checkpoint from before the field) is not removed here; the caller stamps
     it on first sight."""
     live = {p.objectives[0].target for p in projects.values()
             if p.kind == "resolve_blocker" and p.status in (ProjectStatus.ACTIVE, ProjectStatus.SUSPENDED) and p.objectives}
     return [b.id for b in blockers.values()
-            if b.id == CONGESTION_BLOCKER_ID and b.id not in live and b.last_seen_tick is not None
+            if (b.id == CONGESTION_BLOCKER_ID or b.id.startswith(SERVICE_BLOCKER_PREFIX)) and b.id not in live and b.last_seen_tick is not None
             and tick >= max(b.last_seen_tick, b.suppression_until_tick, b.last_project_end_tick or 0) + BLOCKER_QUIET_SPELL_TICKS]
 
 

@@ -4,8 +4,18 @@
 #
 # access_giveup_limit: how many times a subject may give up reaching one destination (the navigation experience's project_giveups, counted per place and purpose within one project) before that project ends
 # (ProjectEnd.DESTINATION_GIVEN_UP). 4: the fourth failed try of one plan at one place ends it; every earlier retry is already gated by the due rule of its reason. An integer >= 1.
+#
+# service_refusal_limit / service_refusal_window / service_refusal_reasons / service_refusal_severity (TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER, STRAT-191-194): a subject refused
+# the SAME building service (action, building) this many times in a row (each within the window of ticks of the previous one, each with a counted typed reason) files ONE access blocker for that way. 4: the family
+# of access_giveup_limit; 20: two strategic cadences (the observed re-dispatch spacing is about 10 ticks, so four refusals fit in about 40). Counted reasons are ReasonCode names; INSUFFICIENT_GOLD only
+# for now (a transient reason such as NO_BED_FREE is not counted: it already ends the way). The severity is the congestion blocker's (0.5). Integers >= 1 (the limit at most the held-record cap 8), a float in (0, 1).
 - id: "blocker_settings"
   display_name: "Blocker settings"
   description: "Balance values of the blocker lifecycle that live in data"
   schema_version: "blockersettings.v1"
   access_giveup_limit: 4
+  service_refusal_limit: 4
+  service_refusal_window: 20
+  service_refusal_reasons:
+    - "INSUFFICIENT_GOLD"
+  service_refusal_severity: 0.5

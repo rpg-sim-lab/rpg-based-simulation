@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 from src.core.giveup_records import GiveUpRecord, giveup_canonical
+from src.core.service_refusals import ServiceRefusal, service_refusal_canonical
 from src.core.movement_modes import MovementMode
 from src.core.navigation_purpose import TargetPurpose, purpose_canonical
 
@@ -57,6 +58,7 @@ class NavigationComponent:
     target_purpose: Optional[TargetPurpose] = None  # the #996 rework (design section 2.1): what the stored target was chosen for, written by the navigation patch with every NEW target and cleared with it; None = unknown (a target restored from an old checkpoint); omitted from the canonical form while None
     target_gated: bool = False  # the #996 rework (design section 4, the latch): True only for a target whose position passed a destination gate call; every by-value own-tile write that skips the gate stores False; omitted from the canonical form while False
     arrived_this_attempt: bool = False  # the #996 rework (ruling 476631fe, owner #715 7130852946, "arrived this attempt"): True once the body stood within `has_arrived` of THIS stored target since the target last took its current value. SET by movement (`MovementSystem.resolve_move`, measured from the position BEFORE the step) as `arrived_this_attempt_set`; KEPT by the navigation patch while the stored target stays the same value (a same-value re-set by the objective step keeps it); CLEARED by the patch whenever the stored target is cleared or takes another value (the arrived and give-up outcomes drop the target, so they clear it). Read at the give-up moment: an attempt that arrived files nothing. Omitted from the canonical form while False.
+    service_refusals: Tuple[ServiceRefusal, ...] = ()  # K2 fix part B (divergence 2.226+): the typed refusals of a building service (INSUFFICIENT_GOLD), appended and cleared by the service writer, read by `infer_blockers`; omitted from the canonical dict while none is held
 
     def to_canonical_dict(self) -> Dict[str, Any]:
         """The navigation block of the entity's canonical form. `step_ready_tick` (D75) is present only once non-zero, so the form of an
@@ -92,5 +94,5 @@ class NavigationComponent:
             res["wayround_anchor"] = self.wayround_anchor  # F1 (2.213): present only while a count is open
         if self.wayround_last_tick is not None:
             res["wayround_last_tick"] = self.wayround_last_tick
-        res.update({**giveup_canonical(self.giveup_records), **purpose_canonical(self.target_purpose, self.target_gated), **({"arrived_this_attempt": True} if self.arrived_this_attempt else {})})  # F2: the give-up records only while one is held; the #996 rework: the target's purpose and gate flag only while set
+        res.update({**giveup_canonical(self.giveup_records), **purpose_canonical(self.target_purpose, self.target_gated), **({"arrived_this_attempt": True} if self.arrived_this_attempt else {}), **service_refusal_canonical(self.service_refusals)})  # F2: the give-up records only while one is held; the #996 rework: the target's purpose and gate flag only while set
         return res

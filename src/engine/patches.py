@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional, Self, TYPE_CHECKING
 
 from src.core.giveup_records import GIVEUP_RECORDS_CAP, GiveUpDropCounts, anchored_target
+from src.core.service_refusals import SERVICE_REFUSALS_CAP
 from src.core.navigation_experience import with_navigation_experience
 
 if TYPE_CHECKING:
@@ -353,6 +354,12 @@ class NavigationPatch(ComponentPatch):
                 for _ in range(max(0, len(held) - GIVEUP_RECORDS_CAP)):
                     GiveUpDropCounts.note()
                 new_nav = replace(new_nav, giveup_records=held[-GIVEUP_RECORDS_CAP:])
+            # K2 fix B: the typed service refusals. The clear (that (action, building) was delivered) is applied first, then an append of the same update; the oldest past SERVICE_REFUSALS_CAP is dropped.
+            if u_nav.service_refusal_clear is not None:
+                cleared = u_nav.service_refusal_clear
+                new_nav = replace(new_nav, service_refusals=tuple(r for r in new_nav.service_refusals if (r.action, r.building) != cleared))
+            if u_nav.service_refusal_add is not None:
+                new_nav = replace(new_nav, service_refusals=(*new_nav.service_refusals, u_nav.service_refusal_add)[-SERVICE_REFUSALS_CAP:])
         if self.new_position:
             if self.new_position != entity.navigation.position:
                 new_nav = ApplyPath._fast_replace_navigation(new_nav, self.new_position, None)

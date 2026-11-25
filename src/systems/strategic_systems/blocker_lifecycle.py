@@ -5,11 +5,12 @@ import ast
 from dataclasses import replace
 from typing import Any, Dict, Optional, Tuple
 
-from src.content.blocker_settings import access_giveup_limit
+from src.content.blocker_settings import access_giveup_limit, service_refusal_settings
 from src.content.navigation_experience_settings import navigation_experience_settings
 from src.core.giveup_records import HeldTargetAtAnchorCounts, near_anchor
 from src.core.inventory import InventoryService
 from src.core.navigation_experience import NavCause, NavigationExperienceUpdate
+from src.core.service_refusals import consecutive_refusals, service_blocker_id
 from src.core.state import AuthoritativeState, EntityState
 from src.core.strategic import (
     CONGESTION_BLOCKER_ID,
@@ -66,7 +67,8 @@ def infer_blockers(
     last_task: str,
     last_payload: Dict[str, Any],
     navigation_failure: Optional[str] = None,
-    current_project: Optional[ProjectState] = None
+    current_project: Optional[ProjectState] = None,
+    tick: Optional[int] = None,
 ) -> StrategicUpdate:
     """
     Infer blockers based on recent failures.
@@ -99,6 +101,15 @@ def infer_blockers(
              subject="congestion",
              severity=0.5
          ))
+
+    # Phase 5 (K2 fix B, STRAT-191-194): a building service refused the SAME way (action, building) `limit` times in a row for a counted typed reason files ONE access blocker for that way. A streak whose
+    # newest refusal is older than the window has lapsed (the subject stopped being refused), so it is not re-inferred and the blocker expires by the quiet spell.
+    if entity.navigation.service_refusals and tick is not None:
+        settings = service_refusal_settings()
+        for action, building in sorted({(r.action, r.building) for r in entity.navigation.service_refusals}):
+            newest = max(r.tick for r in entity.navigation.service_refusals if (r.action, r.building) == (action, building))
+            if tick - newest <= settings.window and consecutive_refusals(entity.navigation.service_refusals, action, building, settings.window, settings.reasons) >= settings.limit:
+                blockers.append(BlockerState(id=service_blocker_id(action, building), kind="access", subject=str(building), severity=settings.severity))  # type: ignore[arg-type]  # the plain string kind, as every other branch of this function files it
 
     # 2. Material/Resource Failure (Interactions)
     if last_task == "ENTITY_ACT" and last_payload.get("action") == "INTERACT":

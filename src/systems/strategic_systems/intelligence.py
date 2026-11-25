@@ -177,10 +177,11 @@ class StrategicIntelligenceSystem:
         last_task: str,
         last_payload: Dict[str, Any],
         navigation_failure: Optional[str] = None,
-        current_project: Optional[ProjectState] = None
+        current_project: Optional[ProjectState] = None,
+        tick: Optional[int] = None,
     ) -> StrategicUpdate:
         """Infer blockers based on recent failures (Logic IDs STRAT-191..194; body in `blocker_lifecycle.infer_blockers`)."""
-        return infer_blockers(entity, last_task, last_payload, navigation_failure, current_project)
+        return infer_blockers(entity, last_task, last_payload, navigation_failure, current_project, tick)
 
     @staticmethod
     def generate_crafting_blockers(
@@ -377,7 +378,8 @@ class StrategicIntelligenceSystem:
                 entity.task.work_kind,
                 entity.task.payload,
                 navigation_failure=entity.navigation.last_failure_reason,
-                current_project=current_proj
+                current_project=current_proj,
+                tick=state.tick,
             )
             
             strat_up = reinferred_blockers_update(entity, strat_up, inferred_up, state.tick)

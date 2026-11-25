@@ -14,11 +14,13 @@ from typing import Any, Optional
 from src.core.updates import (
     BiologicalUpdate,
     EntityUpdate,
+    NavigationUpdate,
     ResourceTransferIntent,
 )
+from src.core.service_refusals import ServiceRefusal
 from src.engine.lodging import bed_delta, lodge_claim, lodges, refuse_rest
 from src.engine.serves import keeps_coin, serves
-from src.engine.service_admission import admits_at, no_bed_for, service_terms
+from src.engine.service_admission import admits_at, no_bed_for, refusal_reason, service_terms
 from src.engine.service_prices import INN_MEAL_HUNGER
 from src.engine.service_reach import service_building_where, service_tile
 from src.engine.shop_sale import plan_sale
@@ -82,6 +84,25 @@ def service_delta(context: Any, entity: Any, action: str, tick: int) -> Optional
     return None if sale is None else EntityUpdate(entity_id=entity.id, resource_transfers=[sale])
 
 
+def _rest_refusal(context: Any, entity: Any, tick: int) -> Optional[EntityUpdate]:
+    """K2 fix B: the typed record of a REST that a serving building refused for PAYMENT (the same reason EAT carries, `refusal_reason`), or None. It COUNTS only: it sets no failure reason and does not end the REST."""
+    building = service_building(context, entity, "REST")
+    if building is None:
+        return None
+    reason = refusal_reason(entity, "REST")
+    if reason is None:
+        return None
+    return EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(service_refusal_add=ServiceRefusal("REST", building.id, int(tick), reason.value)))
+
+
+def _refusal_clear(context: Any, entity: Any, action: str) -> EntityUpdate:
+    """K2 fix B: the delivery of (action, building) ends the subject's held refusals of that way; an empty update when it holds none (so a subject never refused is not touched)."""
+    building = service_building(context, entity, action)
+    if building is None or not any(r.action == action and r.building == building.id for r in entity.navigation.service_refusals):
+        return EntityUpdate(entity_id=entity.id)
+    return EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(service_refusal_clear=(action, building.id)))
+
+
 def with_service(updates: dict, entity: Any, action: str, tick: int, context: Any) -> dict:
     """The action's updates with the building service for `action` merged into the subject's own update."""
     if context is None or entity.id not in updates or (action == "REST" and "outcome" in entity.task.payload):
@@ -91,5 +112,7 @@ def with_service(updates: dict, entity: Any, action: str, tick: int, context: An
             return {**updates, entity.id: refuse_rest(entity, tick)}  # F3: a REST whose first execution is in reach of a full beds building does not run on that tile (the one 'no bed' predicate)
     delta = service_delta(context, entity, action, tick)
     if delta is None:
-        return updates
-    return {**updates, entity.id: updates[entity.id].merge(delta)}
+        refusal = _rest_refusal(context, entity, tick) if action == "REST" else None   # K2 fix B: a REST refused for PAYMENT is a typed, counted finding about the way (EAT stamps where `_survival_action` types its own refusal)
+        return updates if refusal is None else {**updates, entity.id: updates[entity.id].merge(refusal)}
+    served = delta.merge(_refusal_clear(context, entity, action))
+    return {**updates, entity.id: updates[entity.id].merge(served)}
