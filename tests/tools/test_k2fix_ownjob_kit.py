@@ -390,3 +390,64 @@ def test_the_launcher_prechecks_the_pinned_runner_refuses_a_used_tree_and_dry_ru
     assert any("urban_political s42 2400t" in l for l in lines) and all(f"{kit}/tools/rpg_measure/k2fix_ownjob_spy.py" in l for l in lines)
     used = _launch(kit, tmp_path, TREE_FIX=str(tmp_path / "k2k3_tree2_main_d084b9248"))
     assert used.returncode == 18
+
+
+# ---------------------------------------------------------------- kit v3: payload first, raw target recorded, every end followed, the collapse window
+def _end(prior_entity, project_ended, f=None):
+    spy = new_spy(funcs=f or funcs(covers=False))
+    spy.observe(state(9, [prior_entity]), state(10, [entity(projects=[project_ended])]))
+    return spy
+
+
+def test_an_end_whose_objective_lacks_a_target_still_resolves_through_the_prior_payload_target_id():              # designer control 1
+    objective = [NS(id="o1", target=None, kind=NS(value="reach_location"))]
+    spy = _end(entity(projects=[project(objectives=objective)], action="REST"), project(objectives=objective, ended="WAY_CLOSED"))
+    event = spy.report()["A_i"]["events"][0]
+    assert event["building"] == INN and event["resolved_by"] == "payload" and event["half"] == "purse_half" and spy.report()["A_i"]["other_unresolved"] == 0
+
+
+def test_the_prior_payload_is_tried_first_then_the_exact_tile_and_neither_resolving_is_other_unresolved():
+    both = _end(entity(projects=[project()], action="EAT"), project(ended="WAY_CLOSED"))                           # payload names the inn AND the tile names it: the payload decides
+    assert both.report()["A_i"]["events"][0]["resolved_by"] == "payload"
+    tile_only = _end(entity(projects=[project()], action=None), project(ended="WAY_CLOSED"))                          # the task was cleared: the tile
+    assert tile_only.report()["A_i"]["events"][0]["resolved_by"] == "tile" and tile_only.report()["A_i"]["events"][0]["building"] == INN
+    prior = entity(projects=[project()], action="REST")
+    not_a_building = NS(**{**vars(prior), "task": NS(payload={"action": "REST", "target_id": 999})})                  # a payload target that is not a building of the prior state: not used, the tile is
+    assert _end(not_a_building, project(ended="WAY_CLOSED")).report()["A_i"]["events"][0]["resolved_by"] == "tile"
+    nothing = _end(NS(**{**vars(prior), "task": NS(payload={"action": "REST", "target_id": 999})}), project(objectives=[NS(id="o1", target=[12.0, 12.0])], ended="WAY_CLOSED"))
+    rep = nothing.report()["A_i"]
+    assert rep["other_unresolved"] == 1 and rep["events"][0]["resolved_by"] is None and rep["events"][0]["building"] is None
+
+
+def test_every_end_records_the_raw_target_the_objective_id_and_kind_and_the_prior_payload():
+    objective = [NS(id="o7", target=[12.0, 12.0], kind=NS(value="reach_location"))]
+    spy = _end(entity(projects=[project(objectives=objective, active="o7")], action="REST"), project(objectives=objective, active="o7", ended="WAY_CLOSED"))
+    event = spy.report()["A_i"]["events"][0]
+    assert (event["raw_target"], event["objective_id"], event["objective_kind"], event["prior_payload_action"], event["prior_payload_target_id"], event["project"]) == ([12.0, 12.0], "o7", "reach_location", "REST", INN, "p1")
+    scalar = _end(entity(projects=[project()]), project(objectives=[NS(id="o1", target="7")], ended="WAY_CLOSED")).report()["A_i"]["events"][0]
+    assert scalar["raw_target"] == "7"                                                                                  # a non-position target is recorded as it is
+
+
+def test_every_end_is_followed_for_200_ticks_whatever_half_it_has():
+    for f, half in ((funcs(covers=False), "purse_half"), (funcs(bed_refused=True), "bed_half"), (funcs(covers=True), "other")):
+        spy = _end(entity(projects=[project()], action="REST"), project(ended="WAY_CLOSED"), f)
+        spy.observe(state(10, [entity()]), state(11, [entity(debt=60.0)]))
+        traces = spy.report()["A_ii"]["follow_ups"]
+        assert len(traces) == 1 and traces[0]["half"] == half and "1" in traces[0]["samples"], half
+    unresolved = _end(entity(projects=[project()]), project(objectives=[NS(id="o1", target=[12.0, 12.0])], ended="WAY_CLOSED"))
+    assert unresolved.report()["A_ii"]["follow_ups"][0]["half"] == "other_unresolved"
+
+
+def test_a_subject_reaching_the_collapse_line_keeps_its_last_200_ticks_before_the_first_reach():
+    spy = new_spy()
+    for t in range(1, 301):
+        debt = 98.0 if t == 300 else 40.0 + t * 0.1                                                                    # below the line until tick 300
+        spy.observe(state(t - 1, [entity(debt=debt)]), state(t, [entity(debt=debt, action="REST" if t % 2 else "SLEEP", lodged=INN if t > 250 else None, gold=5)]))
+    window = spy.report()["A_ii"]["collapse_windows"]
+    assert len(window) == 1 and window[0]["tick"] == 300 and window[0]["window_ticks"] == 200
+    assert sorted(window[0]["samples"], key=int) == ["1", "10", "50", "100", "200"] and window[0]["samples"]["1"]["tick"] == 299 and window[0]["samples"]["200"]["tick"] == 100
+    assert window[0]["sleep_action_ticks"] + window[0]["rest_action_ticks"] == 200 and window[0]["lodged_ticks"] == 49 and spy.report()["A_ii"]["subjects_at_sleep_debt_98"] == 1
+    again = new_spy()                                                                                                     # a second reach does not open a second window
+    for t in range(1, 6):
+        again.observe(state(t - 1, [entity(debt=99.0)]), state(t, [entity(debt=99.0)]))
+    assert len(again.report()["A_ii"]["collapse_windows"]) == 1

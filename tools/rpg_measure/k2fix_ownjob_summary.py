@@ -56,7 +56,7 @@ def cell_summary(out: Path, world: str, seed: int, ticks: int) -> Dict[str, Any]
     return {"cell": f"{world}_s{seed}_t{ticks}", "valid": valid, "problems": problems, "main_hash": main_hash, "fix_hash": fix_hash, "hash_equal": main_hash == fix_hash,
             "A_i_purse_half": a_i, "A_i_unresolved": unresolved, "A_i_bed_half_fix": (fix.get("A_i") or {}).get("bed_half"), "A_i_bed_half_main": (main.get("A_i") or {}).get("bed_half"), "B_i": b_i, "B_i_by_action": (fix.get("B_i") or {}).get("by_action"),
             "B_ii_false_fires": fix.get("B_ii_false_fires"), "B_iii_still_looping": fix.get("B_iii_still_looping"), "sleep_debt_98_main": (main.get("A_ii") or {}).get("subjects_at_sleep_debt_98"),
-            "sleep_debt_98_fix": (fix.get("A_ii") or {}).get("subjects_at_sleep_debt_98"), "A_ii_follow_ups": (fix.get("A_ii") or {}).get("follow_ups"), "vi": fix.get("vi"), "flags": flags}
+            "sleep_debt_98_fix": (fix.get("A_ii") or {}).get("subjects_at_sleep_debt_98"), "A_i_resolved_by": (fix.get("A_i") or {}).get("resolved_by"), "A_ii_follow_ups": (fix.get("A_ii") or {}).get("follow_ups"), "A_ii_collapse_windows_main": (main.get("A_ii") or {}).get("collapse_windows"), "A_ii_collapse_windows_fix": (fix.get("A_ii") or {}).get("collapse_windows"), "vi": fix.get("vi"), "flags": flags}
 
 
 def summarize(out: Path) -> Dict[str, Any]:

@@ -8,8 +8,9 @@ COUNTS (per cell, typed state only):
 A(i)    fatigue projects newly ended WAY_CLOSED, split by the half that refused (judged on the PRIOR state): ``purse_half`` (a bed was free, the subject could not pay), ``bed_half`` (finds_no_bed), ``other`` (a resolved
         building, neither half) and ``other_unresolved`` (the active objective's target names no building: A is then NOT MEASURED for the cell). A real fatigue objective's target is a POSITION (trace v8: [40.0, 31.0]); the building is the
         one the tree's own lookup (``SpatialQueryService.get_building_at``) finds at exactly that tile (both coordinates whole numbers, no radius).
-A(ii)   report-only: for each purse-half end, what the subject does in its next 200 ticks (samples at +1, +10, +50, +100, +200: current project kind, sleep_debt, lodged_in, gold, alive, task action; ticks of a SLEEP or REST action),
-        and, on both arms, the subjects that ever reach sleep_debt >= 98 (the collapse line).
+A(ii)   report-only: for EVERY WAY_CLOSED end (not only a purse-half one), what the subject does in its next 200 ticks (samples at +1, +10, +50, +100, +200: current project kind, sleep_debt, lodged_in, gold, alive, task action; ticks of a SLEEP or REST action),
+        and, on both arms, the subjects that ever reach sleep_debt >= 98 (the collapse line), each with its LAST 200 ticks before the first reach
+        (samples at -200, -100, -50, -10, -1: current project kind, task action, lodged_in, gold, sleep_debt; ticks of a SLEEP or REST action, ticks lodged, the project kinds held).
 B(i)    service blockers filed (a ``blocker_service_<action>_<building>`` appearing on a subject), with the first tick, by action.
 B(ii)   FALSE FIRES (must be 0): a blocker filed for a (subject, action, building) that was DELIVERED (a fresh accepted result for the building, or the paid transfer at the building) between the first refusal of its streak and its filing.
 B(iii)  STILL LOOPING (must be 0): the same (subject, action, building) EXECUTED undelivered (the router channel, judged on the next apply) more than 100 ticks after its blocker was filed while the blocker stood. A REST that is HELD
@@ -26,7 +27,7 @@ import logging
 import os
 import sys
 import traceback
-from collections import Counter
+from collections import Counter, deque
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -37,6 +38,7 @@ SERVICE_PREFIX = "blocker_service_"
 STILL_LOOPING_TICKS = 100
 FOLLOW_UP_TICKS = 200
 SAMPLE_OFFSETS = (1, 10, 50, 100, 200)
+BEFORE_OFFSETS = (200, 100, 50, 10, 1)                  # ticks BEFORE the first sleep_debt >= 98 reach
 COLLAPSE_LINE = 98.0
 SOURCE_KINDS = {"EAT": "TOWN_SERVICE", "REST": "TOWN_SERVICE"}
 
@@ -99,6 +101,17 @@ def resolve_building(state: Any, project: Any, funcs: Dict[str, Callable]) -> An
     return funcs["building_at"](state, (int(x), int(y)))
 
 
+def resolve_target(prior: Any, prior_ent: Any, project: Any, funcs: Dict[str, Callable]) -> Tuple[Any, Optional[str]]:
+    """The building a WAY_CLOSED end names and how it was found: FIRST the PRIOR state's task payload ``target_id`` (an id of a building of the prior state: the building the REST or the arrival used), THEN the active
+    objective's exact tile (`resolve_building`; no radius). ``(None, None)`` when neither names a building (a payload target that is not a building does not stop the tile)."""
+    payload = prior_ent.task.payload if isinstance(prior_ent.task.payload, dict) else {}
+    target_id = payload.get("target_id")
+    if isinstance(target_id, int) and not isinstance(target_id, bool) and target_id in prior.buildings:
+        return prior.buildings[target_id], "payload"
+    building = resolve_building(prior, project, funcs)
+    return (building, "tile") if building is not None else (None, None)
+
+
 def classify_way_closed(prior: Any, prior_ent: Any, building: Any, funcs: Dict[str, Callable]) -> str:
     """Which half refused the bed on the PRIOR state: ``other_unresolved`` (no building), ``bed_half`` (the tree's own finds_no_bed), ``purse_half`` (a bed was free, the subject keeps coin and the REST price is not covered), else ``other``."""
     if building is None:
@@ -128,6 +141,8 @@ class OwnJobSpy:
         self.way_closed: List[Dict[str, Any]] = []
         self.traces: List[Dict[str, Any]] = []
         self.sleep98: Dict[int, int] = {}
+        self.recent: Dict[int, "deque[tuple]"] = {}
+        self.collapse_windows: List[Dict[str, Any]] = []
         self.filed: List[Dict[str, Any]] = []
         self.standing: Dict[Tuple[int, str], Dict[str, Any]] = {}
         self.removed: List[Dict[str, Any]] = []
@@ -193,8 +208,8 @@ class OwnJobSpy:
             if prior_ent is None:
                 continue
             alive = bool(ent.combat.alive)
-            if alive and ent.biological.sleep_debt >= COLLAPSE_LINE:
-                self.sleep98.setdefault(eid, tick)
+            if alive:
+                self._track(eid, ent, tick)
             self._way_closed(prior, prior_ent, ent, eid, tick)
             self._refusals(prior_ent, ent, eid, tick)
             self._blockers(prior_ent, ent, eid, tick)
@@ -211,6 +226,25 @@ class OwnJobSpy:
             if not delivered(prior_ent, ent, prior.buildings, state.buildings, action, int(target)) and (tick - 1) - standing["filed"] > STILL_LOOPING_TICKS:
                 self.undelivered_after_filing.append({"subject": eid, "action": action, "building": int(target), "filed": standing["filed"], "execution_tick": tick - 1})
         self._follow_up(state, tick)
+
+    def _track(self, eid: int, ent: Any, tick: int) -> None:
+        """The rolling record of a subject (its last 200 ticks) and, at its first sleep_debt >= 98, the window BEFORE the collapse."""
+        payload = ent.task.payload if isinstance(ent.task.payload, dict) else {}
+        project = ent.strategic.projects.get(ent.strategic.current_project_id or "")
+        action = str(val(payload["action"])) if payload.get("action") is not None else None
+        sample = (tick, ent.biological.sleep_debt, None if project is None else str(val(project.kind)), action, getattr(ent.navigation, "lodged_in", None), ent.inventory.gold)
+        buffer = self.recent.setdefault(eid, deque(maxlen=FOLLOW_UP_TICKS))
+        if ent.biological.sleep_debt >= COLLAPSE_LINE and eid not in self.sleep98:
+            self.sleep98[eid] = tick
+            window = list(buffer)
+            samples = {}
+            for offset in BEFORE_OFFSETS:
+                hit = next((x for x in window if x[0] == tick - offset), None)
+                if hit is not None:
+                    samples[str(offset)] = {"tick": hit[0], "sleep_debt": hit[1], "project_kind": hit[2], "task_action": hit[3], "lodged_in": hit[4], "gold": hit[5]}
+            self.collapse_windows.append({"subject": eid, "tick": tick, "samples": samples, "window_ticks": len(window), "sleep_action_ticks": sum(1 for x in window if x[3] == "SLEEP"),
+                                          "rest_action_ticks": sum(1 for x in window if x[3] == "REST"), "lodged_ticks": sum(1 for x in window if x[4] is not None), "project_kinds": sorted({x[2] for x in window if x[2] is not None})})
+        buffer.append(sample)
 
     def _deliveries(self, prior: Any, prior_ent: Any, state: Any, ent: Any, eid: int, tick: int) -> None:
         """Deliveries this apply, for B(ii): the buildings of a fresh accepted result, and the buildings whose purse rose when the subject paid."""
@@ -234,12 +268,17 @@ class OwnJobSpy:
                 continue
             if str(val(project.kind)).lower() != "fatigue":
                 continue
-            building = resolve_building(prior, project, self.funcs)
+            building, resolved_by = resolve_target(prior, prior_ent, project, self.funcs)
             half = classify_way_closed(prior, prior_ent, building, self.funcs)
-            event = {"subject": eid, "tick": tick, "building": None if building is None else building.id, "half": half, "gold": prior_ent.inventory.gold, "sleep_debt": prior_ent.biological.sleep_debt}
+            objective = active_objective(project)
+            prior_payload = prior_ent.task.payload if isinstance(prior_ent.task.payload, dict) else {}
+            raw_target = getattr(objective, "target", None)
+            event = {"subject": eid, "tick": tick, "building": None if building is None else building.id, "half": half, "resolved_by": resolved_by, "gold": prior_ent.inventory.gold,
+                     "sleep_debt": prior_ent.biological.sleep_debt, "project": pid, "objective_id": getattr(objective, "id", None), "objective_kind": None if objective is None else str(val(getattr(objective, "kind", None))),
+                     "raw_target": list(raw_target) if isinstance(raw_target, (list, tuple)) else raw_target, "prior_payload_action": None if prior_payload.get("action") is None else str(val(prior_payload["action"])),
+                     "prior_payload_target_id": prior_payload.get("target_id")}
             self.way_closed.append(event)
-            if half == "purse_half":
-                self.traces.append({"subject": eid, "start": tick, "building": event["building"], "samples": {}, "sleep_action_ticks": 0, "rest_action_ticks": 0})
+            self.traces.append({"subject": eid, "start": tick, "building": event["building"], "half": half, "samples": {}, "sleep_action_ticks": 0, "rest_action_ticks": 0})   # EVERY end is followed, not only a purse-half one
 
     def _refusals(self, prior_ent: Any, ent: Any, eid: int, tick: int) -> None:
         before = set(getattr(prior_ent.navigation, "service_refusals", ()) or ())
@@ -285,8 +324,8 @@ class OwnJobSpy:
         unreadable = sorted({f["action"] for f in self.filed if f["action"] not in SOURCE_KINDS})          # the router covers EAT and REST only
         still_looping: Any = f"not readable for {', '.join(unreadable)}" if unreadable else len({(u["subject"], u["action"], u["building"]) for u in self.undelivered_after_filing})
         by_action = Counter(f["action"] for f in self.filed)
-        return {"A_i": {"way_closed_total": len(self.way_closed), "purse_half": halves["purse_half"], "bed_half": halves["bed_half"], "other": halves["other"], "other_unresolved": halves["other_unresolved"], "events": self.way_closed},
-                "A_ii": {"follow_ups": self.traces, "subjects_at_sleep_debt_98": len(self.sleep98), "first_tick_by_subject": {str(k): v for k, v in sorted(self.sleep98.items())}},
+        return {"A_i": {"way_closed_total": len(self.way_closed), "purse_half": halves["purse_half"], "bed_half": halves["bed_half"], "other": halves["other"], "other_unresolved": halves["other_unresolved"], "resolved_by": dict(Counter(e["resolved_by"] for e in self.way_closed)), "events": self.way_closed},
+                "A_ii": {"follow_ups": self.traces, "subjects_at_sleep_debt_98": len(self.sleep98), "first_tick_by_subject": {str(k): v for k, v in sorted(self.sleep98.items())}, "collapse_windows": self.collapse_windows},
                 "B_i": {"filed": len(self.filed), "by_action": dict(by_action), "events": self.filed, "first_tick": min((f["tick"] for f in self.filed), default=None)},
                 "B_ii_false_fires": sum(1 for f in self.filed if f["false_fire"]), "B_ii_events": [f for f in self.filed if f["false_fire"]],
                 "B_iii_still_looping": still_looping, "B_iii_events": self.undelivered_after_filing, "B_iii_executions_after_filing": self.executions_after_filing, "B_iii_held_executions_after_filing": self.held_executions_after_filing,
