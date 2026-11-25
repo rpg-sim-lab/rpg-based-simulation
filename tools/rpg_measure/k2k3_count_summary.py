@@ -23,7 +23,8 @@ def load(outs: Any, world: str, seed: int, mode: str) -> Dict[str, Any]:
     for out in ([outs] if isinstance(outs, Path) else outs):
         path = Path(out) / f"{world}_s{seed}_{mode}.json"
         if path.exists():
-            return json.loads(path.read_text(encoding="utf-8"))
+            data: Dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+            return data
     return {}
 
 

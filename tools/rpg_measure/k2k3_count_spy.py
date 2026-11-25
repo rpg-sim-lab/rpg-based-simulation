@@ -197,6 +197,8 @@ class CountSpy:
         action = str(val(payload["action"]))
         if action in self.service_actions and payload.get("target_id") is not None:
             self.router_service_calls += 1
+            if entity is None:   # the same failure the attribute read below raised before: a spy exception (guarded() records it and re-raises), after the call was counted
+                raise AttributeError("'NoneType' object has no attribute 'id'")
             self.router_seen.setdefault(int(tick), []).append((entity.id, action, payload["target_id"]))
 
     # ---- K3 decision side (state tick d)
