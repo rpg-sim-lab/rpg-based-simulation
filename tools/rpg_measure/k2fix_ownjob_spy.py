@@ -5,12 +5,16 @@ ORIGINAL object. ``--mode plain`` runs the build with no wrapper and writes the 
 main the fix-only fields (``service_refusals``) read as absent, so the fix-only counts are 0 by construction there.
 
 COUNTS (per cell, typed state only):
-A(i)    fatigue projects newly ended WAY_CLOSED, split by the half that refused (judged on the PRIOR state): ``purse_half`` (a bed was free, the subject could not pay) or ``bed_half`` (finds_no_bed).
+A(i)    fatigue projects newly ended WAY_CLOSED, split by the half that refused (judged on the PRIOR state): ``purse_half`` (a bed was free, the subject could not pay), ``bed_half`` (finds_no_bed), ``other`` (a resolved
+        building, neither half) and ``other_unresolved`` (the active objective's target names no building: A is then NOT MEASURED for the cell). A real fatigue objective's target is a POSITION (trace v8: [40.0, 31.0]); the building is the
+        one the tree's own lookup (``SpatialQueryService.get_building_at``) finds at exactly that tile (both coordinates whole numbers, no radius).
 A(ii)   report-only: for each purse-half end, what the subject does in its next 200 ticks (samples at +1, +10, +50, +100, +200: current project kind, sleep_debt, lodged_in, gold, alive, task action; ticks of a SLEEP or REST action),
         and, on both arms, the subjects that ever reach sleep_debt >= 98 (the collapse line).
 B(i)    service blockers filed (a ``blocker_service_<action>_<building>`` appearing on a subject), with the first tick, by action.
 B(ii)   FALSE FIRES (must be 0): a blocker filed for a (subject, action, building) that was DELIVERED (a fresh accepted result for the building, or the paid transfer at the building) between the first refusal of its streak and its filing.
-B(iii)  STILL LOOPING (must be 0): the same (subject, action, building) EXECUTED undelivered (the router channel, judged on the next apply) more than 100 ticks after its blocker was filed while the blocker stood.
+B(iii)  STILL LOOPING (must be 0): the same (subject, action, building) EXECUTED undelivered (the router channel, judged on the next apply) more than 100 ticks after its blocker was filed while the blocker stood. A REST that is HELD
+        (post-apply payload action REST, target b, outcome SUCCESS, or lodged_in == b: the bed was paid once) is not an undelivered execution. The router covers EAT and REST only: a filing for any other action makes B(iii)
+        "not readable for <action>", never 0.
 (vi)    report-only: typed refusals appended per action and reason, blockers removed (quiet spell).
 Usage: python k2fix_ownjob_spy.py <world> <seed> <ticks> <out.json> --mode plain|spy [--plain-hash <hex>]
 """
@@ -73,11 +77,32 @@ def delivered(prior_ent: Any, ent: Any, prior_buildings: Any, buildings: Any, ac
     return bool(spent > 0 and (nb.inventory.gold - pb.inventory.gold) >= spent)
 
 
-def classify_way_closed(prior: Any, prior_ent: Any, building_id: Optional[int], funcs: Dict[str, Callable]) -> str:
-    """Which half refused the bed on the PRIOR state: ``bed_half`` (the tree's own finds_no_bed), ``purse_half`` (a bed was free, the subject keeps coin and the REST price is not covered), else ``other``."""
-    building = prior.buildings.get(building_id) if building_id is not None else None
+def active_objective(project: Any) -> Any:
+    """The project's ACTIVE objective (``active_objective_id``), else its first, as the tree's own `project_target_matches` reads it (src/core/strategic.py)."""
+    objectives = getattr(project, "objectives", None) or []
+    return next((o for o in objectives if o.id == getattr(project, "active_objective_id", None)), None) or (objectives[0] if objectives else None)
+
+
+def resolve_building(state: Any, project: Any, funcs: Dict[str, Callable]) -> Any:
+    """The building the project's ACTIVE objective names: its target is a POSITION and the building is the one the tree's own tile lookup finds at exactly that tile (both coordinates whole numbers; no radius). None when it
+    names no building (a missing objective, a target that is not a position, a fractional tile, no building there)."""
+    objective = active_objective(project)
+    target = getattr(objective, "target", None)
+    if not isinstance(target, (list, tuple)) or len(target) != 2:
+        return None
+    try:
+        x, y = float(target[0]), float(target[1])
+    except (TypeError, ValueError):
+        return None
+    if x != int(x) or y != int(y):
+        return None
+    return funcs["building_at"](state, (int(x), int(y)))
+
+
+def classify_way_closed(prior: Any, prior_ent: Any, building: Any, funcs: Dict[str, Callable]) -> str:
+    """Which half refused the bed on the PRIOR state: ``other_unresolved`` (no building), ``bed_half`` (the tree's own finds_no_bed), ``purse_half`` (a bed was free, the subject keeps coin and the REST price is not covered), else ``other``."""
     if building is None:
-        return "other"
+        return "other_unresolved"
     if funcs["finds_no_bed"](prior, prior_ent, building):
         return "bed_half"
     if building.functional and funcs["lodges"](building) and funcs["keeps_coin"](prior_ent) and not funcs["payment_covers"](prior_ent, "REST"):
@@ -85,10 +110,12 @@ def classify_way_closed(prior: Any, prior_ent: Any, building_id: Optional[int], 
     return "other"
 
 
-def target_building(project: Any) -> Optional[int]:
-    objectives = getattr(project, "objectives", None) or []
-    target = objectives[0].target if objectives else None
-    return int(target) if target is not None and str(target).isdigit() else None
+def is_held(ent: Any, action: str, building: int) -> bool:
+    """A REST at ``building`` that is HELD after the bed was paid once (building_services.py:86-88): the post-apply payload is action REST, target ``building`` and ``outcome`` SUCCESS, or the subject is lodged in it."""
+    if action != "REST":
+        return False
+    payload = ent.task.payload if isinstance(ent.task.payload, dict) else {}
+    return (payload.get("action") == "REST" and payload.get("target_id") == building and payload.get("outcome") == "SUCCESS") or getattr(ent.navigation, "lodged_in", None) == building
 
 
 class OwnJobSpy:
@@ -108,6 +135,7 @@ class OwnJobSpy:
         self.refusals_typed: Counter = Counter()
         self.undelivered_after_filing: List[Dict[str, Any]] = []
         self.executions_after_filing = 0
+        self.held_executions_after_filing = 0
         self.spy_exceptions: List[str] = []
         self._patched: List[tuple] = []
 
@@ -176,6 +204,9 @@ class OwnJobSpy:
             standing = self.standing.get((eid, f"{action}_{target}"))
             if ent is None or prior_ent is None or standing is None:
                 continue
+            if is_held(ent, action, int(target)):                                  # a served, held REST repeats its action every tick: not an undelivered execution
+                self.held_executions_after_filing += 1
+                continue
             self.executions_after_filing += 1
             if not delivered(prior_ent, ent, prior.buildings, state.buildings, action, int(target)) and (tick - 1) - standing["filed"] > STILL_LOOPING_TICKS:
                 self.undelivered_after_filing.append({"subject": eid, "action": action, "building": int(target), "filed": standing["filed"], "execution_tick": tick - 1})
@@ -203,12 +234,12 @@ class OwnJobSpy:
                 continue
             if str(val(project.kind)).lower() != "fatigue":
                 continue
-            building = target_building(project)
+            building = resolve_building(prior, project, self.funcs)
             half = classify_way_closed(prior, prior_ent, building, self.funcs)
-            event = {"subject": eid, "tick": tick, "building": building, "half": half, "gold": prior_ent.inventory.gold, "sleep_debt": prior_ent.biological.sleep_debt}
+            event = {"subject": eid, "tick": tick, "building": None if building is None else building.id, "half": half, "gold": prior_ent.inventory.gold, "sleep_debt": prior_ent.biological.sleep_debt}
             self.way_closed.append(event)
             if half == "purse_half":
-                self.traces.append({"subject": eid, "start": tick, "building": building, "samples": {}, "sleep_action_ticks": 0, "rest_action_ticks": 0})
+                self.traces.append({"subject": eid, "start": tick, "building": event["building"], "samples": {}, "sleep_action_ticks": 0, "rest_action_ticks": 0})
 
     def _refusals(self, prior_ent: Any, ent: Any, eid: int, tick: int) -> None:
         before = set(getattr(prior_ent.navigation, "service_refusals", ()) or ())
@@ -251,12 +282,15 @@ class OwnJobSpy:
 
     def report(self) -> Dict[str, Any]:
         halves = Counter(e["half"] for e in self.way_closed)
+        unreadable = sorted({f["action"] for f in self.filed if f["action"] not in SOURCE_KINDS})          # the router covers EAT and REST only
+        still_looping: Any = f"not readable for {', '.join(unreadable)}" if unreadable else len({(u["subject"], u["action"], u["building"]) for u in self.undelivered_after_filing})
         by_action = Counter(f["action"] for f in self.filed)
-        return {"A_i": {"way_closed_total": len(self.way_closed), "purse_half": halves["purse_half"], "bed_half": halves["bed_half"], "other": halves["other"], "events": self.way_closed},
+        return {"A_i": {"way_closed_total": len(self.way_closed), "purse_half": halves["purse_half"], "bed_half": halves["bed_half"], "other": halves["other"], "other_unresolved": halves["other_unresolved"], "events": self.way_closed},
                 "A_ii": {"follow_ups": self.traces, "subjects_at_sleep_debt_98": len(self.sleep98), "first_tick_by_subject": {str(k): v for k, v in sorted(self.sleep98.items())}},
                 "B_i": {"filed": len(self.filed), "by_action": dict(by_action), "events": self.filed, "first_tick": min((f["tick"] for f in self.filed), default=None)},
                 "B_ii_false_fires": sum(1 for f in self.filed if f["false_fire"]), "B_ii_events": [f for f in self.filed if f["false_fire"]],
-                "B_iii_still_looping": len({(u["subject"], u["action"], u["building"]) for u in self.undelivered_after_filing}), "B_iii_events": self.undelivered_after_filing, "B_iii_executions_after_filing": self.executions_after_filing,
+                "B_iii_still_looping": still_looping, "B_iii_events": self.undelivered_after_filing, "B_iii_executions_after_filing": self.executions_after_filing, "B_iii_held_executions_after_filing": self.held_executions_after_filing,
+                "B_iii_not_readable_for": unreadable,
                 "vi": {"typed_refusals": {f"{a}:{r}": n for (a, r), n in sorted(self.refusals_typed.items())}, "blockers_removed": len(self.removed), "removed": self.removed},
                 "reach": {"apply_calls": self.apply_calls, "router_calls": self.router_calls}, "spy_exceptions": self.spy_exceptions}
 
@@ -271,6 +305,11 @@ def read_funcs() -> Tuple[Dict[str, Callable], Optional[int], List[str]]:
             funcs[key] = getattr(__import__(module, fromlist=[name]), name)
         except Exception as exc:
             findings.append(f"tree does not expose {module}.{name}: {type(exc).__name__}")
+    try:
+        from src.engine.spatial_query import SpatialQueryService
+        funcs["building_at"] = SpatialQueryService.get_building_at
+    except Exception as exc:
+        findings.append(f"tree does not expose src.engine.spatial_query.SpatialQueryService.get_building_at: {type(exc).__name__}")
     limit: Optional[int] = None
     try:
         limit = int(__import__("src.content.blocker_settings", fromlist=["service_refusal_settings"]).service_refusal_settings().limit)

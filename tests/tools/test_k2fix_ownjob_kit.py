@@ -30,24 +30,26 @@ spy_mod = load_from(KIT / "k2fix_ownjob_spy.py", "_t_ownjob_spy")
 summary = load_from(KIT / "k2fix_ownjob_summary.py", "_t_ownjob_summary")
 
 INN = 7
+INN_POS = (40, 31)                                                                                    # a real fatigue objective's target is a POSITION (trace v8: [40.0, 31.0]), not a building id
 
 
 def funcs(bed_refused=False, lodges=True, coin=True, covers=True):
-    return {"finds_no_bed": lambda s, e, b: bed_refused, "lodges": lambda b: lodges, "keeps_coin": lambda e: coin, "payment_covers": lambda e, a: covers}
+    return {"finds_no_bed": lambda s, e, b: bed_refused, "lodges": lambda b: lodges, "keeps_coin": lambda e: coin, "payment_covers": lambda e, a: covers,
+            "building_at": lambda st, pos: next((b for b in st.buildings.values() if b.position == pos), None)}
 
 
-def project(pid="p1", kind="fatigue", ended=None, target="7"):
-    return NS(id=pid, kind=NS(value=kind), ended_by=None if ended is None else NS(value=ended), objectives=[NS(target=target)])
+def project(pid="p1", kind="fatigue", ended=None, target=(40.0, 31.0), objectives=None, active="o1"):
+    return NS(id=pid, kind=NS(value=kind), ended_by=None if ended is None else NS(value=ended), objectives=objectives if objectives is not None else [NS(id="o1", target=list(target))], active_objective_id=active)
 
 
-def entity(eid=1, gold=0, debt=50.0, projects=(), blockers=(), refusals=(), results=(), alive=True, lodged=None, action=None, current=None):
+def entity(eid=1, gold=0, debt=50.0, projects=(), blockers=(), refusals=(), results=(), alive=True, lodged=None, action=None, current=None, outcome=None):
     return NS(id=eid, inventory=NS(gold=gold), biological=NS(sleep_debt=debt), combat=NS(alive=alive), identity=NS(latest_intent_results=tuple(results)),
               navigation=NS(service_refusals=tuple(refusals), lodged_in=lodged), strategic=NS(projects={p.id: p for p in projects}, blockers={b: object() for b in blockers}, current_project_id=current),
-              task=NS(payload={} if action is None else {"action": action, "target_id": INN}))
+              task=NS(payload={} if action is None else dict({"action": action, "target_id": INN}, **({} if outcome is None else {"outcome": outcome}))))
 
 
-def building(purse=0, functional=True):
-    return NS(functional=functional, inventory=NS(gold=purse))
+def building(purse=0, functional=True, bid=INN, position=INN_POS):
+    return NS(id=bid, functional=functional, position=position, inventory=NS(gold=purse))
 
 
 def state(tick, entities, buildings=None):
@@ -76,12 +78,50 @@ def new_spy(**kw):
 # ---------------------------------------------------------------- A(i): which half refused
 def test_classify_way_closed_names_the_half_that_refused():
     prior, ent = state(5, [entity()]), entity()
-    assert spy_mod.classify_way_closed(prior, ent, INN, funcs(bed_refused=True)) == "bed_half"
-    assert spy_mod.classify_way_closed(prior, ent, INN, funcs(covers=False)) == "purse_half"
-    assert spy_mod.classify_way_closed(prior, ent, INN, funcs(covers=True)) == "other"           # neither half: a project that ended for another cause is not counted as a refusal
-    assert spy_mod.classify_way_closed(prior, ent, INN, funcs(covers=False, coin=False)) == "other"        # a body without the coin trait is out of the scope
-    assert spy_mod.classify_way_closed(prior, ent, INN, funcs(covers=False, lodges=False)) == "other"      # a bedless building too
-    assert spy_mod.classify_way_closed(prior, ent, 999, funcs(covers=False)) == "other"
+    inn = prior.buildings[INN]
+    assert spy_mod.classify_way_closed(prior, ent, inn, funcs(bed_refused=True)) == "bed_half"
+    assert spy_mod.classify_way_closed(prior, ent, inn, funcs(covers=False)) == "purse_half"
+    assert spy_mod.classify_way_closed(prior, ent, inn, funcs(covers=True)) == "other"           # neither half: a project that ended for another cause is not counted as a refusal
+    assert spy_mod.classify_way_closed(prior, ent, inn, funcs(covers=False, coin=False)) == "other"        # a body without the coin trait is out of the scope
+    assert spy_mod.classify_way_closed(prior, ent, inn, funcs(covers=False, lodges=False)) == "other"      # a bedless building too
+    assert spy_mod.classify_way_closed(prior, ent, None, funcs(covers=False)) == "other_unresolved"
+
+
+def test_a_fatigue_objective_with_a_position_target_at_an_inns_tile_resolves_to_that_inn_and_classifies():   # change 1, control 1
+    prior = state(9, [entity(projects=[project(target=(40.0, 31.0))])])
+    f = funcs(covers=False)
+    assert spy_mod.resolve_building(prior, prior.entities[1].strategic.projects["p1"], f).id == INN
+    spy = new_spy(funcs=f)
+    spy.observe(prior, state(10, [entity(projects=[project(target=(40.0, 31.0), ended="WAY_CLOSED")])]))
+    assert spy.report()["A_i"]["purse_half"] == 1 and spy.report()["A_i"]["other_unresolved"] == 0 and spy.report()["A_i"]["events"][0]["building"] == INN
+    bed = new_spy(funcs=funcs(bed_refused=True))
+    bed.observe(prior, state(10, [entity(projects=[project(ended="WAY_CLOSED")])]))
+    assert bed.report()["A_i"]["bed_half"] == 1
+
+
+def test_a_position_matching_no_building_a_fractional_tile_or_a_scalar_target_is_other_unresolved_and_never_a_half():   # change 1, control 2
+    prior = state(9, [entity(projects=[project()])])
+    for target in ((12.0, 12.0), (40.5, 31.0), (40.0, 31.25)):
+        spy = new_spy(funcs=funcs(covers=False))
+        spy.observe(prior, state(10, [entity(projects=[project(target=target, ended="WAY_CLOSED")])]))
+        rep = spy.report()["A_i"]
+        assert (rep["other_unresolved"], rep["purse_half"], rep["bed_half"]) == (1, 0, 0), target
+    scalar = new_spy(funcs=funcs(covers=False))                                                       # the old isdigit shape: a building id as the target is NOT a position
+    scalar.observe(prior, state(10, [entity(projects=[project(objectives=[NS(id="o1", target="7")], ended="WAY_CLOSED")])]))
+    assert scalar.report()["A_i"]["other_unresolved"] == 1
+    none = new_spy(funcs=funcs(covers=False))
+    none.observe(prior, state(10, [entity(projects=[project(objectives=[], ended="WAY_CLOSED")])]))
+    assert none.report()["A_i"]["other_unresolved"] == 1
+
+
+def test_the_active_objective_is_used_not_index_zero():                                               # change 1, control 3
+    objectives = [NS(id="o0", target=[12.0, 12.0]), NS(id="o1", target=[40.0, 31.0])]
+    prior = state(9, [entity(projects=[project(objectives=objectives, active="o1")])])
+    assert spy_mod.resolve_building(prior, prior.entities[1].strategic.projects["p1"], funcs()).id == INN
+    index_zero = state(9, [entity(projects=[project(objectives=objectives, active="o0")])])
+    assert spy_mod.resolve_building(index_zero, index_zero.entities[1].strategic.projects["p1"], funcs()) is None
+    no_active = state(9, [entity(projects=[project(objectives=[NS(id="oX", target=[40.0, 31.0])], active=None)])])    # no active objective: the first, as the tree reads it
+    assert spy_mod.resolve_building(no_active, no_active.entities[1].strategic.projects["p1"], funcs()).id == INN
 
 
 def test_a_fatigue_project_ended_way_closed_is_counted_by_half_and_other_kinds_and_ends_are_not():
@@ -200,6 +240,40 @@ def test_a_delivered_execution_a_removed_blocker_and_another_way_are_not_still_l
     assert other.report()["B_iii_still_looping"] == 0
 
 
+def test_a_served_held_rest_after_the_filing_is_not_still_looping_even_while_the_blocker_stands():       # change 2
+    for kwargs in ({"outcome": "SUCCESS"}, {"lodged": INN}):
+        spy = new_spy()
+        spy.observe(state(39, [entity(refusals=[refusal(t, "REST") for t in (10, 20, 30)])]), state(40, [entity(refusals=[refusal(t, "REST") for t in (10, 20, 30, 40)], blockers=["blocker_service_REST_7"])]))
+        for tick in range(150, 350):                                                                  # lodged or served and held for 200 ticks, the blocker still standing
+            spy.router_call((entity(), {"action": "REST", "target_id": INN}, tick), {})
+            spy.observe(state(tick, [entity(blockers=["blocker_service_REST_7"], action="REST", **kwargs)]), state(tick + 1, [entity(blockers=["blocker_service_REST_7"], action="REST", **kwargs)]))
+        rep = spy.report()
+        assert rep["B_iii_still_looping"] == 0 and rep["B_iii_held_executions_after_filing"] == 200 and rep["B_iii_executions_after_filing"] == 0, kwargs
+    unheld = new_spy()                                                                                # the same executions with neither marker are undelivered: still looping
+    unheld.observe(state(39, [entity(refusals=[refusal(t, "REST") for t in (10, 20, 30)])]), state(40, [entity(refusals=[refusal(t, "REST") for t in (10, 20, 30, 40)], blockers=["blocker_service_REST_7"])]))
+    unheld.router_call((entity(), {"action": "REST", "target_id": INN}, 200), {})
+    unheld.observe(state(200, [entity(blockers=["blocker_service_REST_7"], action="REST")]), state(201, [entity(blockers=["blocker_service_REST_7"], action="REST")]))
+    assert unheld.report()["B_iii_still_looping"] == 1
+    other_building = state(200, [entity(blockers=["blocker_service_REST_7"], action="REST", outcome="SUCCESS")])    # held marker for ANOTHER target (payload target_id is INN here): checked by is_held
+    assert spy_mod.is_held(other_building.entities[1], "REST", INN) and not spy_mod.is_held(other_building.entities[1], "REST", INN + 1) and not spy_mod.is_held(other_building.entities[1], "EAT", INN)
+
+
+def test_the_still_looping_boundary_is_more_than_100_ticks_after_the_filing():                           # designer mutant m4 (100 -> 99)
+    at_100, at_101 = _filed_spy(40), _filed_spy(40)
+    _execute(at_100, 140)                                                                              # exactly 100 ticks after the filing: allowed
+    _execute(at_101, 141)                                                                              # 101: still looping
+    assert at_100.report()["B_iii_still_looping"] == 0 and at_101.report()["B_iii_still_looping"] == 1
+
+
+def test_a_sell_blocker_makes_b_iii_not_readable_never_zero_and_the_summary_says_not_measured(tmp_path):
+    spy = new_spy()
+    spy.observe(state(39, [entity(refusals=[refusal(t, "SELL") for t in (10, 20, 30)])]), state(40, [entity(refusals=[refusal(t, "SELL") for t in (10, 20, 30, 40)], blockers=["blocker_service_SELL_7"])]))
+    rep = spy.report()
+    assert rep["B_iii_still_looping"] == "not readable for SELL" and rep["B_iii_not_readable_for"] == ["SELL"]
+    _all_cells(tmp_path, fix_spy={"B_i": {"filed": 1, "by_action": {"SELL": 1}}, "B_iii_still_looping": "not readable for SELL", "B_iii_not_readable_for": ["SELL"]})
+    assert any(f.split(": ", 1)[1].startswith("NOT MEASURED: B(iii) is not readable for SELL") for f in summary.summarize(tmp_path)["flags"])
+
+
 def test_the_router_wrapper_is_a_pass_through_and_restores():
     class Router:
         result = []
@@ -256,6 +330,18 @@ def test_neutrality_stops_when_both_counts_are_zero_and_the_hash_differs_but_not
     third = tmp_path / "c"
     _all_cells(third, fix_hash="different", fix_spy={"B_i": {"filed": 1, "by_action": {"EAT": 1}}})
     assert summary.summarize(third)["flags"] == []
+
+
+def test_any_unresolved_way_closed_end_makes_a_not_measured_cell_and_never_a_neutrality_stop(tmp_path):
+    _all_cells(tmp_path, fix_hash="different", fix_spy={"A_i": {"purse_half": 0, "bed_half": 0, "other_unresolved": 3}})
+    flags = summary.summarize(tmp_path)["flags"]
+    assert flags and all(f.split(": ", 1)[1].startswith("NOT MEASURED: A(i)") for f in flags) and not any("STOP" in f for f in flags) and summary.main([str(tmp_path)]) == 2
+    main_side = tmp_path / "m"
+    for world, seed, ticks in summary.CELLS:                                                           # an unresolved end on the MAIN arm also voids the neutrality judgement
+        name = f"{world}_s{seed}_t{ticks}"
+        _doc(main_side, "main", name, "h", {"A_i": {"purse_half": 0, "bed_half": 0, "other_unresolved": 1}})
+        _doc(main_side, "fix", name, "different")
+    assert all("NOT MEASURED: A(i)" in f for f in summary.summarize(main_side)["flags"])
 
 
 def test_false_fires_and_still_looping_are_failures(tmp_path):
