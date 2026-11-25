@@ -7996,6 +7996,19 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261125-A-BODY-THAT-CANNOT-AFFORD-ITS-NEXT-MEAL-STARTS-EARNING-WHEN-ITS-COIN-DROPS-BELOW-A-MEAL-PRICE.md
+  ticket_id: TCK-20261125-A-BODY-THAT-CANNOT-AFFORD-ITS-NEXT-MEAL-STARTS-EARNING-WHEN-ITS-COIN-DROPS-BELOW-A-MEAL-PRICE
+  title: A body that cannot afford its next meal starts earning when its coin drops
+    below a meal's price, not when hunger presses
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-25'
+  related_code_areas:
+  - src/ai/goals/ (the hunger need project's EARN step), src/engine/work_shift.py,
+    src/engine/tactical_objective.py, src/engine/scheduler.py (l.74, the need wake).
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261124-A-WALL-CLOCK-TIMER-IN-THE-REPLAY-STREAM-MAKES-REPLAY-FILES-NON-REPRODUCIBLE.md
   ticket_id: TCK-20261124-A-WALL-CLOCK-TIMER-IN-THE-REPLAY-STREAM-MAKES-REPLAY-FILES-NON-REPRODUCIBLE
   title: A wall-clock timer inside every replay update makes replay files differ byte
@@ -15200,6 +15213,21 @@
   - agent-working/stored_artifacts/TCK-20261023-FOUR-TESTS-FAIL-ONLY-IN-A-WIDE-SCOPED-RUN-ORDER-DEPENDENT/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1.md
+  ticket_id: TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1
+  title: Remove the free meal for every kind (decision 73) as its own measured step
+    against v1, before milestone 1
+  tier: standard
+  ticket_type: feature
+  date: '2026-10-23'
+  related_code_areas:
+  - src/systems (building_services, conservation, inventory); src/ai need_pull
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1/investigation.md
+  - agent-working/stored_artifacts/TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1/plan.md
+  - agent-working/stored_artifacts/TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261023-M1-DONE-CRITERIA-AND-FREEZE-RULE.md
   ticket_id: TCK-20261023-M1-DONE-CRITERIA-AND-FREEZE-RULE
   title: Record the owner-approved milestone 1 done criteria and freeze rule as roadmap
@@ -15320,18 +15348,6 @@
   - agent-working/stored_artifacts/TCK-20261023-V1-CALIBRATION-AND-D76-TABLE-ON-THE-NEW-BASE/investigation.md
   - agent-working/stored_artifacts/TCK-20261023-V1-CALIBRATION-AND-D76-TABLE-ON-THE-NEW-BASE/plan.md
   - agent-working/stored_artifacts/TCK-20261023-V1-CALIBRATION-AND-D76-TABLE-ON-THE-NEW-BASE/test_plan.md
-  tags: []
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1.md
-  ticket_id: TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1
-  title: Remove the free meal for every kind (decision 73) as its own measured step
-    against v1, before milestone 1
-  tier: standard
-  ticket_type: feature
-  date: '2026-10-23'
-  related_code_areas:
-  - src/systems (building_services, conservation, inventory); src/ai need_pull
-  artifact_files: []
   tags: []
 - type: ticket
   path: agent-working/tickets/inprogress/TCK-20261023-PAIRED-ARMS-RUN-OFF-THE-SHARED-HOST.md
