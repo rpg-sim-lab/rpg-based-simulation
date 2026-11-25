@@ -3362,6 +3362,16 @@
   - documentation
   - schema
 - type: doc
+  path: docs/plans/systemic_world/experience_memory_design.md
+  title: 'Navigation experience memory: design v2 (rework of PR #996 under decision
+    56)'
+  status: active
+  layer: strategy
+  authority: P1
+  audience: agent
+  tags: []
+  last_verified: '2026-11-23'
+- type: doc
   path: docs/plans/systemic_world/m1_kernel_spec_items_2_6.md
   title: 'Milestone 1 kernel spec: items 2-6'
   status: active
@@ -7986,6 +7996,19 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261125-A-BODY-THAT-CANNOT-AFFORD-ITS-NEXT-MEAL-STARTS-EARNING-WHEN-ITS-COIN-DROPS-BELOW-A-MEAL-PRICE.md
+  ticket_id: TCK-20261125-A-BODY-THAT-CANNOT-AFFORD-ITS-NEXT-MEAL-STARTS-EARNING-WHEN-ITS-COIN-DROPS-BELOW-A-MEAL-PRICE
+  title: A body that cannot afford its next meal starts earning when its coin drops
+    below a meal's price, not when hunger presses
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-25'
+  related_code_areas:
+  - src/ai/goals/ (the hunger need project's EARN step), src/engine/work_shift.py,
+    src/engine/tactical_objective.py, src/engine/scheduler.py (l.74, the need wake).
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261125-A-COHORT-IN-FRONTIER-NEVER-SLEEPS-FOR-ABOUT-2000-TICKS.md
   ticket_id: TCK-20261125-A-COHORT-IN-FRONTIER-NEVER-SLEEPS-FOR-ABOUT-2000-TICKS
   title: A cohort in frontier_living_world never sleeps for about 2,000 ticks, and
@@ -8011,6 +8034,74 @@
   artifact_files: []
   tags:
   - cognition
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261124-A-WALL-CLOCK-TIMER-IN-THE-REPLAY-STREAM-MAKES-REPLAY-FILES-NON-REPRODUCIBLE.md
+  ticket_id: TCK-20261124-A-WALL-CLOCK-TIMER-IN-THE-REPLAY-STREAM-MAKES-REPLAY-FILES-NON-REPRODUCIBLE
+  title: A wall-clock timer inside every replay update makes replay files differ byte
+    for byte between two runs of the same world and seed
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-24'
+  related_code_areas:
+  - src/domains/cooperation/phase.py
+  - src/core/updates.py (metric_counters)
+  - src/engine/kernel.py (_metrics)
+  - src/engine/replay_manager.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261124-A-WALL-CLOCK-TIMER-IN-THE-REPLAY-STREAM-MAKES-REPLAY-FILES-NON-REPRODUCIBLE/approach_note.md
+  - agent-working/stored_artifacts/TCK-20261124-A-WALL-CLOCK-TIMER-IN-THE-REPLAY-STREAM-MAKES-REPLAY-FILES-NON-REPRODUCIBLE/pr_notes.md
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261124-NAVIGATION-STATE-MOVES-OUT-OF-STATE-PY.md
+  ticket_id: TCK-20261124-NAVIGATION-STATE-MOVES-OUT-OF-STATE-PY
+  title: NavigationComponent moves out of src/core/state.py into its own core module,
+    retiring the one-line size raise
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-24'
+  related_code_areas:
+  - src/core/state.py, codebase/baselines/code_health_exceptions.jsonl
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261124-STATE-DIGEST-PROBE-SKIPS-A-SYNTHESIZED-RECORD-WHOSE-ID-WAS-REUSED.md
+  ticket_id: TCK-20261124-STATE-DIGEST-PROBE-SKIPS-A-SYNTHESIZED-RECORD-WHOSE-ID-WAS-REUSED
+  title: The state-digest probe's visited set holds ids of freed synthesized records,
+    so a new record that reuses an id is skipped and its field paths vanish from one
+    run to the next
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-24'
+  related_code_areas:
+  - probe_state
+  - tests/architecture/test_state_digest_covers_every_field.py
+  - tests/architecture/state_digest_allowlist.yaml (read only)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261124-STATE-DIGEST-PROBE-SKIPS-A-SYNTHESIZED-RECORD-WHOSE-ID-WAS-REUSED/investigation.md
+  - agent-working/stored_artifacts/TCK-20261124-STATE-DIGEST-PROBE-SKIPS-A-SYNTHESIZED-RECORD-WHOSE-ID-WAS-REUSED/plan.md
+  - agent-working/stored_artifacts/TCK-20261124-STATE-DIGEST-PROBE-SKIPS-A-SYNTHESIZED-RECORD-WHOSE-ID-WAS-REUSED/test_plan.md
+  tags:
+  - testing
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK.md
+  ticket_id: TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK
+  title: 'The per-tick replay digest rebuilds and re-sorts the whole canonical state
+    every tick: make it cheaper with byte-identical digests'
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-24'
+  related_code_areas:
+  - src/engine/checkpoint.py (CanonicalStateHasher, CanonicalHashScheduler)
+  - src/engine/kernel.py (_phase_persistence, line ~1113)
+  - src/core/dirty.py, src/core/state.py (to_canonical_dict producers)
+  - tests/unit/engine (hash tests)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK/investigation.md
+  - agent-working/stored_artifacts/TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK/owner_decision_2026-11-24.md
+  - agent-working/stored_artifacts/TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK/plan.md
+  - agent-working/stored_artifacts/TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK/pr_notes.md
+  - agent-working/stored_artifacts/TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK/test_plan.md
+  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261124-A-CROWDED-PLACE-HAS-A-REAL-QUEUE.md
   ticket_id: TCK-20261124-A-CROWDED-PLACE-HAS-A-REAL-QUEUE
@@ -8047,6 +8138,20 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261124-FRONTEND-LINT-IS-RED-ON-MAIN-AND-CI-DOES-NOT-RUN-IT.md
+  ticket_id: TCK-20261124-FRONTEND-LINT-IS-RED-ON-MAIN-AND-CI-DOES-NOT-RUN-IT
+  title: Frontend lint is red on main (17 errors, 4 warnings), and CI's Frontend job
+    does not run it
+  tier: hotfix
+  ticket_type: repair
+  date: '2026-11-24'
+  related_code_areas:
+  - frontend/src/components/GameCanvas.tsx, InspectPanel.tsx, Sidebar.tsx
+  - frontend/src/hooks/useCanvas.ts, useSimulation.ts
+  - .github/workflows/test.yml (Frontend job)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261124-THE-STARVING-AND-SLEEP-NEED-LINES-COME-FROM-DATA.md
   ticket_id: TCK-20261124-THE-STARVING-AND-SLEEP-NEED-LINES-COME-FROM-DATA
   title: The starving line and the sleep line come from a data file, not from code
@@ -8071,6 +8176,78 @@
   - tests/ corpus diversity pins (exact ids recorded by lane A at planning)
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON.md
+  ticket_id: TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON
+  title: 'A subject remembers why a place failed it, for what purpose, and reconsiders
+    it by that reason (the #996 rework: an entity-owned navigation experience memory)'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-23'
+  related_code_areas:
+  - src/core/giveup_records.py, src/strategy/destination_suppression.py
+  - src/engine/movement.py (_oscillation_replan, _find_way_round_loop, _find_sidestep),
+    src/engine/legality.py
+  - src/systems/strategic_systems/blocker_lifecycle.py, intelligence.py, work_queue.py
+  - src/core/state.py (NavigationState, MemoryModel), checkpoint FIELD_RULES
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON/external_review_architecture_v2.md
+  - agent-working/stored_artifacts/TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON/investigation.md
+  - agent-working/stored_artifacts/TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON/plan.md
+  - agent-working/stored_artifacts/TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON/test_plan.md
+  tags: []
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261123-FOUR-CORPUS-GRADE-STABILITY-GUARDS-PASS-AND-FAIL-ON-THE-SAME-SHA-GET-FLAKY-ENTRIES.md
+  ticket_id: TCK-20261123-FOUR-CORPUS-GRADE-STABILITY-GUARDS-PASS-AND-FAIL-ON-THE-SAME-SHA-GET-FLAKY-ENTRIES
+  title: Four corpus grade-stability guards that pass and fail on the same sha in
+    the scheduled slow run are owned as flaky known reds, and the re-anchor pin test
+    accepts only a flaky owner
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-23'
+  related_code_areas:
+  - tools/test_architecture/slow_known_reds.yaml
+  - tests/unit/tools/test_slow_regression_report.py
+  artifact_files: []
+  tags:
+  - testing
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261123-SIMQ-REANCHOR-ONLY-KEY-MODE-FOR-A-PARTIAL-RE-ANCHOR.md
+  ticket_id: TCK-20261123-SIMQ-REANCHOR-ONLY-KEY-MODE-FOR-A-PARTIAL-RE-ANCHOR
+  title: simq_reanchor gets an `--only <key>` partial mode so two grade anchors can
+    be re-pinned from their own two audit-mode runs without a measurement of all 81
+    keys
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-23'
+  related_code_areas:
+  - tools/test_architecture/simq_reanchor.py
+  - tests/unit/tools/test_simq_reanchor.py
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261123-SIMQ-REANCHOR-ONLY-KEY-MODE-FOR-A-PARTIAL-RE-ANCHOR/investigation.md
+  - agent-working/stored_artifacts/TCK-20261123-SIMQ-REANCHOR-ONLY-KEY-MODE-FOR-A-PARTIAL-RE-ANCHOR/plan.md
+  - agent-working/stored_artifacts/TCK-20261123-SIMQ-REANCHOR-ONLY-KEY-MODE-FOR-A-PARTIAL-RE-ANCHOR/test_plan.md
+  tags:
+  - testing
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261123-STATE-DIGEST-PROBE-SET-PERTURBATION-MUST-CHANGE-THE-SET.md
+  ticket_id: TCK-20261123-STATE-DIGEST-PROBE-SET-PERTURBATION-MUST-CHANGE-THE-SET
+  title: The state-digest probe changes a set or frozenset field by a union that can
+    equal the original, so a hashed enum-set field reads as unhashed
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-23'
+  related_code_areas:
+  - tests/architecture/state_digest_probe.py
+  - tests/architecture/test_state_digest_probe_perturb.py
+  - tests/architecture/test_state_digest_covers_every_field.py
+  - tests/architecture/state_digest_allowlist.yaml (read only)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261123-STATE-DIGEST-PROBE-SET-PERTURBATION-MUST-CHANGE-THE-SET/investigation.md
+  - agent-working/stored_artifacts/TCK-20261123-STATE-DIGEST-PROBE-SET-PERTURBATION-MUST-CHANGE-THE-SET/plan.md
+  - agent-working/stored_artifacts/TCK-20261123-STATE-DIGEST-PROBE-SET-PERTURBATION-MUST-CHANGE-THE-SET/test_plan.md
+  tags:
+  - testing
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261123-A-BODY-KEEPS-ITS-FOOD-AND-SELLS-ONLY-FOR-A-PURPOSE-IT-HAS-FOR-THE-COIN.md
   ticket_id: TCK-20261123-A-BODY-KEEPS-ITS-FOOD-AND-SELLS-ONLY-FOR-A-PURPOSE-IT-HAS-FOR-THE-COIN
@@ -8124,6 +8301,19 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261123-A-NEED-PROJECT-ENDED-AT-A-BUILDING-THAT-CANNOT-SERVE-IT-IS-RECORDED-AS-COMPLETED.md
+  ticket_id: TCK-20261123-A-NEED-PROJECT-ENDED-AT-A-BUILDING-THAT-CANNOT-SERVE-IT-IS-RECORDED-AS-COMPLETED
+  title: A need project ended at a building that cannot serve it now is recorded as
+    COMPLETED while the need is still unmet
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-23'
+  related_code_areas:
+  - src/engine/building_arrival.py (_end_project, _hunger_arrival, the fatigue branch),
+    src/engine/work_shift.py (repoint_to_consume)
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261123-A-SECOND-WORKER-STARTS-A-MAINTENANCE-SHIFT-ANOTHER-ALREADY-HOLDS-AND-LOSES-IT-UNPAID.md
   ticket_id: TCK-20261123-A-SECOND-WORKER-STARTS-A-MAINTENANCE-SHIFT-ANOTHER-ALREADY-HOLDS-AND-LOSES-IT-UNPAID
   title: A second worker starts a maintenance shift that another worker already holds,
@@ -8162,6 +8352,21 @@
   - src/ai/goals/ (the fatigue goal); the tactical collapse sleep; the bed admission
   artifact_files: []
   tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261123-RETIRE-THE-HELD-ROW-ENTRIES-THAT-OWN-ONLY-SKIPPED-ANCHOR-BAND-TESTS.md
+  ticket_id: TCK-20261123-RETIRE-THE-HELD-ROW-ENTRIES-THAT-OWN-ONLY-SKIPPED-ANCHOR-BAND-TESTS
+  title: The twelve held-row slow known-red entries for test_grade_regression anchor-band
+    tests own tests that never run in the slow job, so they are retired at their 2026-11-29
+    expiry
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-23'
+  related_code_areas:
+  - tools/test_architecture/slow_known_reds.yaml
+  - tests/unit/tools/test_slow_regression_report.py
+  artifact_files: []
+  tags:
+  - testing
 - type: ticket
   path: agent-working/tickets/done/TCK-20261122-A-FLEEING-SUBJECT-KEEPS-FLEEING-AND-AN-ATTACKED-ONE-WEIGHS-FIGHTING-BACK.md
   ticket_id: TCK-20261122-A-FLEEING-SUBJECT-KEEPS-FLEEING-AND-AN-ATTACKED-ONE-WEIGHS-FIGHTING-BACK
@@ -8362,6 +8567,20 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261122-WHAT-OBSERVABILITY-COSTS-THE-TICK-RECORDING-ON-VS-OFF-ON-MAIN.md
+  ticket_id: TCK-20261122-WHAT-OBSERVABILITY-COSTS-THE-TICK-RECORDING-ON-VS-OFF-ON-MAIN
+  title: 'Measure what the observability stack costs the tick: same code, `SIM_OBS_MODE`
+    OFF against the default, `frontier_living_world`, 5000 ticks, on main'
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-22'
+  related_code_areas:
+  - src/observability/event_recorder.py, src/observability/queue.py, src/engine/kernel.py
+    (read-only)
+  artifact_files: []
+  tags:
+  - performance
+- type: ticket
   path: agent-working/tickets/done/TCK-20261121-MEAT-EATERS-IN-FRONTIER-LIVING-WORLD-ATTACK-PEOPLE-FORTY-TIMES-MORE-AFTER-THE-NIGHT-AND-SLOT-FIXES.md
   ticket_id: TCK-20261121-MEAT-EATERS-IN-FRONTIER-LIVING-WORLD-ATTACK-PEOPLE-FORTY-TIMES-MORE-AFTER-THE-NIGHT-AND-SLOT-FIXES
   title: 'Meat-eaters in frontier_living_world attack people about forty times more
@@ -8440,6 +8659,18 @@
   related_code_areas:
   - src/ai/goals/scorers.py (graze/forage scoring), src/systems/strategic_systems/intelligence.py
   - tools/test_architecture/rpg_gate_known.yaml (the scoped known entry)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261121-MILESTONE-REGISTRY-DESCRIPTIVE-NAMES-AND-LEGACY-IDS.md
+  ticket_id: TCK-20261121-MILESTONE-REGISTRY-DESCRIPTIVE-NAMES-AND-LEGACY-IDS
+  title: Add an append-only milestone registry that maps each descriptive milestone
+    name to its legacy short id, and a lint against a bare `M<n>` in new tickets
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-21'
+  related_code_areas:
+  - registries/, tools/, tests/tools/
   artifact_files: []
   tags: []
 - type: ticket
@@ -8535,6 +8766,19 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261120-COMBAT-ENGAGEMENT-COST-GAP-AT-THE-BIRTHS-FINAL-HEAD.md
+  ticket_id: TCK-20261120-COMBAT-ENGAGEMENT-COST-GAP-AT-THE-BIRTHS-FINAL-HEAD
+  title: 'combat_engagement costs more per entity-tick at the births final head than
+    on main, in frontier_living_world: confirm the cause and decide the fix'
+  tier: standard
+  ticket_type: repair
+  date: '2026-11-20'
+  related_code_areas:
+  - src/domains/combat_engagement/
+  artifact_files: []
+  tags:
+  - performance
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-DEPENDABOT-813-CI-FAST-LANES-EXIT-2-CAUSE.md
   ticket_id: TCK-20261119-DEPENDABOT-813-CI-FAST-LANES-EXIT-2-CAUSE
   title: 'Find the cause of the Migration lanes job "Fast lanes" exit 2 on the closed
@@ -8582,6 +8826,19 @@
   - create-tickets
   - ticket-scoper
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261119-FRONTEND-MAJORS-FROM-THE-CLOSED-DEPENDABOT-811-MOVE-ONE-AT-A-TIME.md
+  ticket_id: TCK-20261119-FRONTEND-MAJORS-FROM-THE-CLOSED-DEPENDABOT-811-MOVE-ONE-AT-A-TIME
+  title: 'Move the frontend majors from the closed Dependabot #811 one at a time,
+    holding TypeScript at 5.9 until typescript-eslint supports 7'
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-19'
+  related_code_areas:
+  - frontend/package.json, frontend/package-lock.json
+  artifact_files: []
+  tags:
+  - security
+- type: ticket
   path: agent-working/tickets/done/TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS.md
   ticket_id: TCK-20261119-OCCUPATION-READS-COMPARED-WITH-A-NON-LIVING-SPECIES-ID-MISS-THE-WORLD-BOSS
   title: 'navigation.py and threat.py compare the occupation with "world_boss", but
@@ -8612,6 +8869,20 @@
   - agent-working/stored_artifacts/TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-AND-FLAGS-DOUBTFUL-PARKED-MARKERS/investigation.md
   - agent-working/stored_artifacts/TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-AND-FLAGS-DOUBTFUL-PARKED-MARKERS/plan.md
   - agent-working/stored_artifacts/TCK-20261119-PROJECT-SYNC-APPLY-SKIPS-ITEMS-WITH-A-MISSING-STATUS-OPTION-AND-FLAGS-DOUBTFUL-PARKED-MARKERS/test_plan.md
+  tags:
+  - delivery
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES.md
+  ticket_id: TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES
+  title: project_sync reads `origin/*` branches as well as checked-out worktrees,
+    so a ticket worked on a branch nobody has checked out shows on either host
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-19'
+  related_code_areas:
+  - tools/sessions/project_sync.py
+  - tests/tools/test_session_project_view.py
+  artifact_files: []
   tags:
   - delivery
 - type: ticket
@@ -8667,6 +8938,18 @@
   - agent-working/stored_artifacts/TCK-20261119-RECORD-SEAT-ACCEPTS-A-SESSION-INSTANCE-OF-A-MULTI-SESSION-ROLE/test_plan.md
   tags:
   - delivery
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261119-RERUN-OF-R1-R4-AND-MIXED-400-PYSPY-ON-CPUS-4-5.md
+  ticket_id: TCK-20261119-RERUN-OF-R1-R4-AND-MIXED-400-PYSPY-ON-CPUS-4-5
+  title: Rerun of R1 and R4 and the py-spy before-profiles, pinned to cpus 4-5, recorded
+    in tick_cost_growth.md
+  tier: hotfix
+  ticket_type: chore
+  date: '2026-11-19'
+  related_code_areas: []
+  artifact_files: []
+  tags:
+  - performance
 - type: ticket
   path: agent-working/tickets/done/TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN.md
   ticket_id: TCK-20261119-RPG-GATE-RERUN-ONLY-NEW-ROWS-AND-A-BASELINE-DIFF-AGAINST-MAIN
@@ -8802,19 +9085,6 @@
   artifact_files: []
   tags: []
 - type: ticket
-  path: agent-working/tickets/todos/TCK-20261119-FRONTEND-MAJORS-FROM-THE-CLOSED-DEPENDABOT-811-MOVE-ONE-AT-A-TIME.md
-  ticket_id: TCK-20261119-FRONTEND-MAJORS-FROM-THE-CLOSED-DEPENDABOT-811-MOVE-ONE-AT-A-TIME
-  title: 'Move the frontend majors from the closed Dependabot #811 one at a time,
-    holding TypeScript at 5.9 until typescript-eslint supports 7'
-  tier: hotfix
-  ticket_type: chore
-  date: '2026-11-19'
-  related_code_areas:
-  - frontend/package.json, frontend/package-lock.json
-  artifact_files: []
-  tags:
-  - security
-- type: ticket
   path: agent-working/tickets/todos/TCK-20261119-LAIR-SPAWNED-COPIES-LOSE-THE-PARENTS-CATALOG-FACTION.md
   ticket_id: TCK-20261119-LAIR-SPAWNED-COPIES-LOSE-THE-PARENTS-CATALOG-FACTION
   title: Lair-spawned copies lose the parent's catalog faction because SPAWN_KIND_CATALOG_FACTION
@@ -8828,20 +9098,6 @@
     (is_wild_creature)
   artifact_files: []
   tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES.md
-  ticket_id: TCK-20261119-PROJECT-SYNC-READS-REMOTE-BRANCHES-NOT-ONLY-CHECKED-OUT-WORKTREES
-  title: project_sync reads `origin/*` branches as well as checked-out worktrees,
-    so a ticket worked on a branch nobody has checked out shows on either host
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-19'
-  related_code_areas:
-  - tools/sessions/project_sync.py
-  - tests/tools/test_session_project_view.py
-  artifact_files: []
-  tags:
-  - delivery
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261119-RECRUIT-CHEST-AND-CRAFTING-COSTS-DEBIT-THE-PAYER-WITH-NO-PAYEE.md
   ticket_id: TCK-20261119-RECRUIT-CHEST-AND-CRAFTING-COSTS-DEBIT-THE-PAYER-WITH-NO-PAYEE
@@ -8983,6 +9239,24 @@
   tags:
   - skills
   - process-improvement
+- type: ticket
+  path: agent-working/tickets/done/TCK-20261118-CPU-STEAL-AND-SWAP-COUNTERS-IN-EVERY-TIMING-RECORD.md
+  ticket_id: TCK-20261118-CPU-STEAL-AND-SWAP-COUNTERS-IN-EVERY-TIMING-RECORD
+  title: Record CPU steal time and the swap counters in every timing record, so host
+    stalls can be told apart from guest contention
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-18'
+  related_code_areas:
+  - tools/perf/quiet_gate.py
+  - _gate_reading
+  - tests/unit/perf, tests/perf (test_quiet_gate.py, test_rerun_baselines.py)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261118-CPU-STEAL-AND-SWAP-COUNTERS-IN-EVERY-TIMING-RECORD/investigation.md
+  - agent-working/stored_artifacts/TCK-20261118-CPU-STEAL-AND-SWAP-COUNTERS-IN-EVERY-TIMING-RECORD/plan.md
+  - agent-working/stored_artifacts/TCK-20261118-CPU-STEAL-AND-SWAP-COUNTERS-IN-EVERY-TIMING-RECORD/test_plan.md
+  tags:
+  - performance
 - type: ticket
   path: agent-working/tickets/done/TCK-20261118-PREFLIGHT-CHECK-B-MIRRORS-THE-RUNS-INTERPRETER-FLAGS.md
   ticket_id: TCK-20261118-PREFLIGHT-CHECK-B-MIRRORS-THE-RUNS-INTERPRETER-FLAGS
@@ -9299,6 +9573,23 @@
   - agent-working/stored_artifacts/TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON.md
+  ticket_id: TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON
+  title: After a way-round give-up, the target choice picks the same target again
+    within 200 ticks; add a typed give-up memory that target choice respects (F2)
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-17'
+  related_code_areas:
+  - src/engine/patches.py (navigation apply), resolve_move, the target-choice path
+    (to be located in the design)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON/external_review_experience_memory.md
+  - agent-working/stored_artifacts/TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON/investigation.md
+  - agent-working/stored_artifacts/TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON/plan.md
+  - agent-working/stored_artifacts/TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF.md
   ticket_id: TCK-20261117-AN-ENTITY-CARRIES-ITS-OCCUPATION-LABEL-AND-ONE-SPECIES-READ-SPECIES-OF
   title: An entity carries its occupation label as its own field, and `species_of`
@@ -9444,19 +9735,6 @@
   date: '2026-11-17'
   related_code_areas:
   - src/core/species.py, src/world/
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON.md
-  ticket_id: TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON
-  title: After a way-round give-up, the target choice picks the same target again
-    within 200 ticks; add a typed give-up memory that target choice respects (F2)
-  tier: standard
-  ticket_type: bug
-  date: '2026-11-17'
-  related_code_areas:
-  - src/engine/patches.py (navigation apply), resolve_move, the target-choice path
-    (to be located in the design)
   artifact_files: []
   tags: []
 - type: ticket
@@ -15035,6 +15313,21 @@
   - agent-working/stored_artifacts/TCK-20261023-FOUR-TESTS-FAIL-ONLY-IN-A-WIDE-SCOPED-RUN-ORDER-DEPENDENT/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1.md
+  ticket_id: TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1
+  title: Remove the free meal for every kind (decision 73) as its own measured step
+    against v1, before milestone 1
+  tier: standard
+  ticket_type: feature
+  date: '2026-10-23'
+  related_code_areas:
+  - src/systems (building_services, conservation, inventory); src/ai need_pull
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1/investigation.md
+  - agent-working/stored_artifacts/TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1/plan.md
+  - agent-working/stored_artifacts/TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261023-M1-DONE-CRITERIA-AND-FREEZE-RULE.md
   ticket_id: TCK-20261023-M1-DONE-CRITERIA-AND-FREEZE-RULE
   title: Record the owner-approved milestone 1 done criteria and freeze rule as roadmap
@@ -15182,18 +15475,6 @@
   date: '2026-10-23'
   related_code_areas:
   - the lead-certainty enum (src/ai or src/cognition; locate at work time)
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1.md
-  ticket_id: TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1
-  title: Remove the free meal for every kind (decision 73) as its own measured step
-    against v1, before milestone 1
-  tier: standard
-  ticket_type: feature
-  date: '2026-10-23'
-  related_code_areas:
-  - src/systems (building_services, conservation, inventory); src/ai need_pull
   artifact_files: []
   tags: []
 - type: ticket
