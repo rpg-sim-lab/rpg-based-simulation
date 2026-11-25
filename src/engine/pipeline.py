@@ -21,6 +21,7 @@ from src.engine.town_resolution import TownResolutionSystem
 from src.engine.world_dynamics import WorldDynamicsSystem
 from src.engine.shop import ShopSystem
 from src.engine.lodging import grant_beds, place_leavers
+from src.engine.service_admission import service_terms
 from src.engine.evolution import EvolutionSystem
 from src.systems.strategic import StrategicIntelligenceSystem
 from src.systems.lifecycle import LifecycleSystem
@@ -370,7 +371,7 @@ class AuthoritativeApplyPipeline:
         from src.engine.pipeline_phases.paid_information import PaidInformationTransactionSystem
         update = run_phase("paid_information", update, lambda u: PaidInformationTransactionSystem.enforce(state, u))
 
-        update = run_phase("resource_transactions", update, lambda u: AuthoritativeApplyPipeline._resolve_resource_transactions(state, grant_beds(state, u)))  # F3: a bed is granted before its service is delivered
+        update = run_phase("resource_transactions", update, lambda u: AuthoritativeApplyPipeline._resolve_resource_transactions(state, grant_beds(state, u, terms=service_terms("REST"))))  # F3: a bed is granted before its service is delivered
         # Refresh dirty set to capture reward_upd set by resource_transactions (XP rewards)
         dirty_builder.mark_from_update(state, update)
         update = update.replace(dirty_set=dirty_builder.build())

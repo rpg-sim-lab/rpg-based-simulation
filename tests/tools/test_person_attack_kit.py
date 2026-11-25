@@ -408,8 +408,10 @@ def test_the_summary_carries_the_measurement_labels_and_the_pinned_period_quote_
     assert any("BASE's agents never used it" in label for label in out["measurement_labels"])
     doc = (ROOT / "docs" / "world_rules" / "life-body" / "survival-needs.md").read_text(encoding="utf-8").splitlines()
     flat = lambda lines: " ".join(" ".join(lines).replace("> ", " ").split())  # noqa: E731
-    assert summary.PERIODS_QUOTE in flat(doc[1041:1044])
-    assert summary.MISSING_LAW_QUOTE in flat(doc[1044:1047])
+    periods_at = next(i for i, line in enumerate(doc) if line.startswith("- **Amendment, the periods"))  # anchored on the bullet starts, not on fixed line numbers
+    missing_at = next(i for i in range(periods_at, len(doc)) if doc[i].startswith("- **Repository evidence: MISSING"))  # the bullet after the periods one, so an earlier bullet of this kind is never picked
+    assert summary.PERIODS_QUOTE in flat(doc[periods_at:periods_at + 3])
+    assert summary.MISSING_LAW_QUOTE in flat(doc[missing_at:missing_at + 3])
     stated = {species for species, period in summary.PERIODS.items() if period == summary.DIURNAL}
     assert stated == {"human", "elf", "dwarf", "orc", "lizardfolk", "small_plant_eater", "dragonkin"}
 

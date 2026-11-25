@@ -61,6 +61,7 @@ src/ (route_search; the cognition, faction and social event producers)
 - Runs are short (200t-1000t on corpus worlds), but each still takes its turn on the host.
 
 ## Implementation Notes
+- 2026-11-23 (OWNER, #715 7097550602, Q2 = h2): #995 (TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1, the free-meal removal) moves the HELD row hero_guild_routing s42 1000t COGNITION from 2.1021 to 2.6891 (measured at e293a8c71, grade_rows.py ef35c736, audit_mode, deterministic; main 878403208 gives 2.0896, IN). The row stays HELD at its value and owned here until 2026-11-29. This ticket's re-date or resolution MUST account for that move as a named, explained cause, separate from the suspected #645 routing regression this row is held for. Evidence: /mnt/data2/rpg-wt/freemeal-logs/gr_base_878403208.out and gr_fix_e293a8c71.out.
 
 ## Test Summary
 

@@ -45,7 +45,17 @@ _ENDS_HELD_INTERACT_REASONS = frozenset({
 # Failure reasons that end a held REST: no bed was free at its first execution (F3, divergence 2.155); the rest does not run there and the subject re-decides.
 _ENDS_HELD_REST_REASONS = frozenset({ReasonCode.NO_BED_FREE.value})
 
-_ENDS_HELD_REASONS_BY_ACTION = {"ATTACK": _ENDS_HELD_ATTACK_REASONS, "INTERACT": _ENDS_HELD_INTERACT_REASONS, "REST": _ENDS_HELD_REST_REASONS}
+# Failure reasons that end a held EAT (decision 73, divergence 2.218): retrying the same held EAT cannot succeed without a new decision. SOURCE_MISSING: nothing carried and no payable inn meal, or the carcass it
+# aimed at is gone. SOURCE_DEPLETED: the carcass is there but yields no meal. INSUFFICIENT_GOLD: a serving inn refused the payment. Before D73 a plain EAT could not fail (the core free meal always succeeded), so a
+# held EAT needed no entry; a carcass eater whose carcass vanished was already held (pre-existing). NOT here: PAYEE_MISSING, INVENTORY_FULL and the other resolver reasons (an EAT that produces a transfer is
+# already a SUCCESS in this phase, which ends its task; its refusal comes later, as an intent result), and TARGET_LOCKED (an in-tick reservation, transient: the next tick may succeed).
+_ENDS_HELD_EAT_REASONS = frozenset({
+    ReasonCode.SOURCE_MISSING.value,
+    ReasonCode.SOURCE_DEPLETED.value,
+    ReasonCode.INSUFFICIENT_GOLD.value,
+})
+
+_ENDS_HELD_REASONS_BY_ACTION = {"ATTACK": _ENDS_HELD_ATTACK_REASONS, "INTERACT": _ENDS_HELD_INTERACT_REASONS, "REST": _ENDS_HELD_REST_REASONS, "EAT": _ENDS_HELD_EAT_REASONS}
 
 
 def _survival_action_ends(action: str, is_survival: bool, outcome: str, actor_update: Optional[EntityUpdate], held: tuple) -> bool:

@@ -29,7 +29,7 @@ def _consumers():
 
 
 def _hero(gold=0, hunger=0.75 * HUNGER_LINE, items=()):
-    hero = V2EntityBuilder(1).kind("hero").location(0.0, 0.0).build()
+    hero = V2EntityBuilder(1).kind("human").location(0.0, 0.0).build()  # a coin-keeping kind: D43, 2.224 (a funded hero must be admitted to the inn meal)
     hero = replace(hero, biological=replace(hero.biological, hunger=hunger))
     return replace(hero, inventory=replace(hero.inventory, gold=gold, items=list(items)))
 
@@ -90,9 +90,12 @@ def test_a_subject_with_no_inn_and_a_food_node_forages_too():
     assert score.need_access is NeedAccess.NO_WAY_WITHIN_REACH and score.opening_step is OpeningStepKind.FORAGE
 
 
-def test_with_free_meals_on_a_subject_with_an_inn_within_reach_goes_to_the_inn_not_the_node_whatever_it_holds():
-    score = EatScorer().score(_hero(gold=0), _state([_node(10, (3.0, 0.0))]))
-    assert score.need_access is NeedAccess.WAY_WITHIN_REACH and score.target_pos == (5.0, 0.0) and score.opening_step is None
+def test_a_subject_that_can_pay_goes_to_the_inn_not_the_node_and_one_that_cannot_takes_the_opening_step():  # [TAG C REMOVED LAW] was: ..._whatever_it_holds (free meals stand)
+    """Decision 73: an inn in reach is a way only for a subject that holds the price; without it the pull goes to the step that opens a way (forage)."""
+    paying = EatScorer().score(_hero(gold=5), _state([_node(10, (3.0, 0.0))]))
+    assert paying.need_access is NeedAccess.WAY_WITHIN_REACH and paying.target_pos == (5.0, 0.0) and paying.opening_step is None
+    broke = EatScorer().score(_hero(gold=0), _state([_node(10, (3.0, 0.0))]))
+    assert broke.need_access is NeedAccess.NO_WAY_WITHIN_REACH and broke.opening_step is OpeningStepKind.FORAGE
 
 
 def test_no_step_the_subject_can_take_is_a_typed_state_and_keeps_the_raw_hunger():

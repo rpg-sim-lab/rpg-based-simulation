@@ -29,7 +29,7 @@ def _consumers():
 
 
 def _hero(gold=50, **bio):
-    hero = V2EntityBuilder(1).kind("hero").location(0.0, 0.0).build()
+    hero = V2EntityBuilder(1).kind("human").location(0.0, 0.0).build()  # a coin-keeping kind: D43, 2.224 (a funded hero must be admitted to the inn meal)
     hero = replace(hero, biological=replace(hero.biological, **bio))
     return replace(hero, inventory=replace(hero.inventory, gold=gold))
 
@@ -69,11 +69,14 @@ def test_without_an_inn_there_is_no_way_to_point_at_so_no_escalation_and_no_targ
     assert score.need_access is NeedAccess.NO_WAY_WITHIN_REACH
 
 
-def test_with_free_meals_on_an_inn_within_reach_is_a_way_to_eat_for_a_subject_that_cannot_pay_too():
-    """The affordability gate is parked with the free-meal removal (branch d27-free-meal-removal)."""
+def test_an_inn_within_reach_is_a_way_to_eat_only_for_a_subject_that_can_pay():  # [TAG C REMOVED LAW] was: ..._for_a_subject_that_cannot_pay_too (free meals stand)
+    """Decision 73: nothing is free, so an inn in reach is NOT a way to eat for a subject that cannot pay (the one admission rule, `service_admission.admits`); a subject holding the price still gets it."""
+    from src.engine.service_prices import EAT_PRICE_GOLD
     hunger = 0.75 * HUNGER_LINE
     broke = EatScorer().score(_hero(gold=0, hunger=hunger), _state((5.0, 0.0)))
-    assert broke.target_pos == (5.0, 0.0) and broke.utility > BLOCKER_CEILING and broke.need_access is NeedAccess.WAY_WITHIN_REACH
+    assert broke.target_pos is None and broke.need_access is NeedAccess.NO_WAY_WITHIN_REACH
+    paying = EatScorer().score(_hero(gold=EAT_PRICE_GOLD, hunger=hunger), _state((5.0, 0.0)))
+    assert paying.target_pos == (5.0, 0.0) and paying.utility > BLOCKER_CEILING and paying.need_access is NeedAccess.WAY_WITHIN_REACH
 
 
 def _with_hostile(hero, at, hp=100):

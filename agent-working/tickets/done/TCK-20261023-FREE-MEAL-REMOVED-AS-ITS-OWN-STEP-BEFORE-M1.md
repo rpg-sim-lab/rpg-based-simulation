@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: simulation
 authority: P1
 audience: agent
 ticket_id: TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1
-phase: open
+phase: done
 date: 2026-10-23
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 Remove the free meal for every kind (decision 73) as its own measured step against v1, before milestone 1
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -49,13 +49,18 @@ TCK-20261019-RECORD-BASELINE-V1 (v1 recorded 341f700d0).
 docs/plans/systemic_world/roadmap.md §12.3, §12.5; docs/plans/systemic_world/v1_disclosure.md; owner_decision_memo.md.
 
 ## Related Stored Artifacts
+agent-working/stored_artifacts/TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1/ (investigation, plan, test_plan; moved from staging at close 2026-11-25; the test_plan carries a Proof Plan written at close)
+agent-working/stored_artifacts/TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL/ (probes, earlier evidence)
 
 ## Related Code Areas
 src/systems (building_services, conservation, inventory); src/ai need_pull
 
 ## Assumptions / Open Questions
+Owner rulings already made: memo row 73 (paid meal gives 60, price 5 gold, rest keeps its effects at 10 gold, payment atomic, no clamp), row 89 (order and v1.1), row 92 (v3 base). Open points for rpg-planner are listed in plan.md section 'Questions'.
 
 ## Implementation Notes
+Known, non-blocking (rpg-planner review 2026-10-28): `_survival_action` calls `service_delta` twice per EAT (inn_serves, then with_service); an inn EAT rejected at apply burns readiness -100 and gets no meal. SleepScorer not gated on gold: follow-up filed by rpg-planner.
+- written at close (2026-11-21): ticket carried from the todos/ copy (the 2026-11-19 notes, kept verbatim) into inprogress/ with the 2026-10-28 own-step lines (Related Stored Artifacts, Assumptions, the known non-blocking note) merged in; phase and Status flipped to inprogress. The proven work is the rpg-free-meal-atomic chain; the old own-step branch is not the landing branch.
 - 2026-11-19 SEQUENCING RULING (rpg-planner): the inn-meal last_meal_tick stamp is OUT of #781 (TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1). The field is in the state digest, and #781's W read must attribute the world change to D73 alone. TCK-20261109-AN-INN-MEAL-DOES-NOT-STAMP-LAST-MEAL-TICK lands AFTER #781, on #781's rewritten inn writer, and both cite TCK-20261007-EAT-BESIDE-THE-INN-FEEDS-A-SUBJECT-THAT-CANNOT-PAY-FREE-MEAL. Note: #781 removes the eat_update free meal, one of the three writers that stamp today.
 - 2026-11-19 (rpg-planner, lead-planner-u24): OVERLAP with the P0 coin fix, TCK-20261118-A-SERVICE-PAYMENT-WITH-NO-PAYEE-DESTROYS-COIN.
   - The coin fix keeps SERVICE_PAYMENT_LAW = CLAMP. It adds one price helper and makes debit = credit = paid; no payee means debit 0, counted. It rewrites the same _service_result / pricing code as #781 (conservation.py, lodging.py, building_services.py).
@@ -143,7 +148,23 @@ src/systems (building_services, conservation, inventory); src/ai need_pull
   - Follow-up note (designer): an affordable EAT at an inn with no payee under ATOMIC shows SOURCE_MISSING on the task, not PAYEE_MISSING. The kit's no_payee_refusals FINDING (> 0, expected 0) catches it. If it ever fires, typing it PAYEE_MISSING goes into the follow-up.
 
 ## Test Summary
+(written at close, 2026-11-25; evidence labels: executed = I ran it, read = a peer's recorded read I cite.)
+- New tests (all in the branch): tests/unit/engine/test_free_meal_removed.py, test_admission_includes_keeps_coin.py, test_hunger_arrival_at_a_shop.py, test_shift_takeable_on_a_worker_packet.py; tests/unit/actions/test_held_eat_failure_ends_task.py; tests/unit/ai/test_seek_work_step.py and test_need_project_repoints_from_earn_to_consume.py (14 tests, incl. mutants); tests/integration/scenarios/test_a_broke_hungry_worker_that_earned_goes_to_the_meal_not_a_second_shift.py (the case (c) kernel scene) and test_a_non_coin_body_is_never_sent_to_an_inn_it_is_refused_at.py.
+- Post-merge gap at the S7 merge 5c82b65a9 (executed, lock env ci_env_c4cd853): unit/strategic, ai, tactical, engine, movement, world, actions plus integration/scenarios and observability, not slow: 3516 passed, 9 skipped, 2 xfailed; test_event_extractor_characterization.py 12 passed (no kernel pin moved); test_generate_registry.py + the mechanism completeness test 85 passed; mypy_gate rc 0; code health check rc 0.
+- CI on PR #995 at head be85a25a1 (read, rpg-designer's gh pr checks): 27 pass, 4 skipping, 0 fail.
+- W re-measure w995e (executed, hunger kit v3.5, driver w995e_run.sh ff9c1f53, base main 0a4fbfd55 vs fix be85a25a1, 3 cells s42, 24,000 t; read W995E_READ 5db098d5): validity PASS, V1 PASS (fix-arm unbacked drops 0/0/0), P1 PASS x3, P2 PASS in crowded_frontier and frontier_living_world, P2 FAIL in urban_political (10 of 20 base free-meal users, 14 of 15 episodes end in a paid meal, 0 starvation deaths). Guard (ii) is not claimed and the corpus re-pins stay withheld.
+- Purse readout (executed, info only, purse kit v1 spy 2ec31df8): total coin 18650 at every sample in both arms; building purses end at 1640 (base) vs 2454 (fix).
+- Trace v8 (executed, kit v8 spy 709fccbb, plain twin = SEALED_FIX 2f3456a1, KNOWN_EATS control ok; read TRACE_V8_READ f254b4e8): the urban P2 crossings are the hunger project's earn step held (a shift begun at hunger 60.5-72.8 whose wage lands after the line), carried by TCK-20261125-A-BODY-THAT-CANNOT-AFFORD-ITS-NEXT-MEAL-STARTS-EARNING-WHEN-ITS-COIN-DROPS-BELOW-A-MEAL-PRICE (held, owner direction #715 7151855673).
+- Owner decision: #715 7151845769, "Merge, fix next" and "MIXED as written": merge with the urban P2 fail recorded.
+
+- Known gap: TCK-20261123-A-NEED-PROJECT-ENDED-AT-A-BUILDING-THAT-CANNOT-SERVE-IT-IS-RECORDED-AS-COMPLETED: a need project ended at a building that cannot serve it (the shop path of divergence 2.223, and `_end_project` at a work building with no affordable meal and no startable shift) is still recorded as COMPLETED while the subject is still hungry; #995 re-points the work-building case with a meal in reach (case c) and leaves the shop path to that ticket.
 
 ## Files Changed
+(written at close, 2026-11-25) `git diff --stat origin/main...HEAD` at be85a25a1 (before this close commit; the counts below are by top directory: src 21, tests 35, docs 8, agent-working 15): 79 files, +2918/-215.
+- src/ (21 files): engine (work_shift, building_arrival, building_services, service_admission, service_prices, economy, lodging, pipeline, tactical_objective, action_router, core_actions, pipeline_phases/actions), ai/goals (live_record_route, opening_steps, ways, base), core (enums, strategic, conservation, update_models/resources), systems/strategic_systems/intelligence.
+- tests/ (35 files): the new tests listed in Test Summary plus updated ones in tests/unit/{engine,strategic,ai,tactical,world,actions}, tests/integration/{scenarios,observability}, tests/mechanic_scenarios, tests/tools/test_person_attack_kit.py, tests/simulation_quality/rpg_gate/kernel_positives.yaml.
+- docs/: guidelines/intentional_divergences.md (2.218, 2.222-2.224 incl. the Measured lines), mechanics/03 and 04, parity_ledger (strategic_cognition STRAT-290..292, town_resource), core/update_intents.md, world_rules/life-body/survival-needs.md, REGISTRY.yaml.
+- agent-working/: this ticket (todos -> inprogress -> done), its staging -> stored artifacts, and tickets filed/carried: TCK-20261123-A-NEED-PROJECT-ENDED-AT-A-BUILDING-THAT-CANNOT-SERVE-IT-IS-RECORDED-AS-COMPLETED and 5 others from the planner's brief, and the held TCK-20261125-A-BODY-THAT-CANNOT-AFFORD-ITS-NEXT-MEAL-STARTS-EARNING-WHEN-ITS-COIN-DROPS-BELOW-A-MEAL-PRICE.
 
 ## Completion Summary
+(written at close, 2026-11-25) The free meal is removed for every kind as its own step (decision 73: SERVICE_PAYMENT_LAW = ATOMIC; divergences 2.218, 2.222-2.224; parity STRAT-290/291/292). A body with nothing to pay is no longer fed; the inn meal and bed are one paid transfer; the shared admission rule includes the coin trait; a need project re-points from its earn step to the meal once the coin is in hand (case (c)). The own-step measurement (W re-measure w995e) passes validity, V1 and P1 and fails P2 in urban_political only; the owner accepted the merge with that fail recorded (#715 7151845769), so guard (ii) is not claimed and the 3 corpus re-pins are withheld (TCK-20261124-THE-THREE-WITHHELD-995-CORPUS-RE-PINS). The trace's cause (an earn shift held past the starving line) is carried by the held follow-up TCK-20261125-A-BODY-THAT-CANNOT-AFFORD-ITS-NEXT-MEAL-STARTS-EARNING-WHEN-ITS-COIN-DROPS-BELOW-A-MEAL-PRICE, which nobody starts without the owner. Reads: W995E_READ 5db098d5, TRACE_V8_READ f254b4e8. Known gap: the Test Summary line above (TCK-20261123-A-NEED-PROJECT-ENDED-...). TCK-20261029-SHARED-ADMISSION-IGNORES-KEEPS-COIN-... is NOT closed by this ticket; it stays open with its remaining ACs.

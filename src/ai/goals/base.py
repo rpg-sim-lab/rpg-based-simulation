@@ -24,6 +24,7 @@ class OpeningStepKind(str, Enum):
     HUNT = "hunt"
     EARN_THEN_BUY = "earn_then_buy"
     ASK = "ask"
+    SEEK_WORK = "seek_work"  # decision 73 (SURV-06): the last step; a subject that keeps coin and has no other step goes to the town centre, where paid work or a buyer may open earn_then_buy
 
 
 @dataclass(frozen=True)

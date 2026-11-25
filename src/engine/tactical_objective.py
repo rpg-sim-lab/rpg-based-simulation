@@ -14,11 +14,18 @@ from typing import TYPE_CHECKING, Callable, List, Optional, Sequence, Tuple
 from src.core.arrival import has_arrived
 from src.core.movement_modes import MovementMode
 from src.core.navigation_purpose import TargetPurpose, purpose_of
-from src.core.strategic import ObjectiveKind
+from src.core.strategic import (
+    SEEK_WORK_TARGET_ID,
+    ObjectiveKind,
+    ProjectEnd,
+    ProjectStatus,
+    end_record,
+)
 from src.core.updates import (
     EntityUpdate,
     InteractionUpdate,
     NavigationUpdate,
+    StrategicUpdate,
     TaskUpdate,
 )
 from src.domains.adventure.resolver import ObjectiveIntentResolver
@@ -74,6 +81,11 @@ def _reach_location_step(state: "AuthoritativeState", entity: "EntityState", pro
         )
     if building_id is not None:
         return building_arrival_update(state, entity, project, building_id)
+    if obj.target == SEEK_WORK_TARGET_ID and str(getattr(project.kind, "value", project.kind)).lower() == "hunger":
+        # Arrived at the SEEK_WORK target, the town centre (decision 73, divergence 2.218): the step's guard closes it here, and the project ends with the typed way-closed end, as a fatigue project
+        # that finds no bed does (`building_arrival`); the next tick re-decides, so `earn_then_buy` can open here if there is work or a buyer.
+        return EntityUpdate(entity_id=entity.id, strategic=StrategicUpdate(projects_add_or_update=[end_record(project, ProjectStatus.ABANDONED, ProjectEnd.WAY_CLOSED, state.tick)],
+                                                                          current_project_id_set="", current_objective_id_set=""))
     # Arrived at a carcass the hunger goal pointed at (decision 44): eat where it lies.
     return eat_at_hunger_corpse(entity, state, project, obj) or EntityUpdate(entity_id=entity.id)
 

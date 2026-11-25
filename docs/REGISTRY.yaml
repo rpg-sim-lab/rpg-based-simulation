@@ -7996,6 +7996,19 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261125-A-BODY-THAT-CANNOT-AFFORD-ITS-NEXT-MEAL-STARTS-EARNING-WHEN-ITS-COIN-DROPS-BELOW-A-MEAL-PRICE.md
+  ticket_id: TCK-20261125-A-BODY-THAT-CANNOT-AFFORD-ITS-NEXT-MEAL-STARTS-EARNING-WHEN-ITS-COIN-DROPS-BELOW-A-MEAL-PRICE
+  title: A body that cannot afford its next meal starts earning when its coin drops
+    below a meal's price, not when hunger presses
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-25'
+  related_code_areas:
+  - src/ai/goals/ (the hunger need project's EARN step), src/engine/work_shift.py,
+    src/engine/tactical_objective.py, src/engine/scheduler.py (l.74, the need wake).
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261124-A-WALL-CLOCK-TIMER-IN-THE-REPLAY-STREAM-MAKES-REPLAY-FILES-NON-REPRODUCIBLE.md
   ticket_id: TCK-20261124-A-WALL-CLOCK-TIMER-IN-THE-REPLAY-STREAM-MAKES-REPLAY-FILES-NON-REPRODUCIBLE
   title: A wall-clock timer inside every replay update makes replay files differ byte
@@ -8150,6 +8163,19 @@
   tags:
   - testing
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261123-A-BODY-KEEPS-ITS-FOOD-AND-SELLS-ONLY-FOR-A-PURPOSE-IT-HAS-FOR-THE-COIN.md
+  ticket_id: TCK-20261123-A-BODY-KEEPS-ITS-FOOD-AND-SELLS-ONLY-FOR-A-PURPOSE-IT-HAS-FOR-THE-COIN
+  title: A body keeps its food for eating and sells food only when it has a purpose
+    for the coin
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-23'
+  related_code_areas:
+  - src/engine/shop_sale.py; src/ai/goals/opening_steps.py (SELL / EARN_THEN_BUY);
+    src/engine/shop.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261123-A-BROKE-BODY-CAN-EARN-BY-TAKING-A-QUEST.md
   ticket_id: TCK-20261123-A-BROKE-BODY-CAN-EARN-BY-TAKING-A-QUEST
   title: A broke body that can take quests earns money by taking one at a guild or
@@ -8161,6 +8187,69 @@
   - src/ai/goals/ways.py, src/ai/goals/opening_steps.py, src/ai/goals/scorers.py,
     src/quests/,
   - src/engine/quests.py, src/engine/service_admission.py (keeps_coin)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261123-A-KILL-LEAVES-TYPED-LOOT-OF-FOOD-AND-RESOURCES-ON-THE-CORPSE.md
+  ticket_id: TCK-20261123-A-KILL-LEAVES-TYPED-LOOT-OF-FOOD-AND-RESOURCES-ON-THE-CORPSE
+  title: A kill's corpse carries resources from body properties beside its meat, and
+    a quest-evidence category is defined for the quest ticket
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-23'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261123-A-NEED-PROJECT-ENDED-AT-A-BUILDING-THAT-CANNOT-SERVE-IT-IS-RECORDED-AS-COMPLETED.md
+  ticket_id: TCK-20261123-A-NEED-PROJECT-ENDED-AT-A-BUILDING-THAT-CANNOT-SERVE-IT-IS-RECORDED-AS-COMPLETED
+  title: A need project ended at a building that cannot serve it now is recorded as
+    COMPLETED while the need is still unmet
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-23'
+  related_code_areas:
+  - src/engine/building_arrival.py (_end_project, _hunger_arrival, the fatigue branch),
+    src/engine/work_shift.py (repoint_to_consume)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261123-A-SECOND-WORKER-STARTS-A-MAINTENANCE-SHIFT-ANOTHER-ALREADY-HOLDS-AND-LOSES-IT-UNPAID.md
+  ticket_id: TCK-20261123-A-SECOND-WORKER-STARTS-A-MAINTENANCE-SHIFT-ANOTHER-ALREADY-HOLDS-AND-LOSES-IT-UNPAID
+  title: A second worker starts a maintenance shift that another worker already holds,
+    and loses it unpaid when the other finishes first
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-23'
+  related_code_areas:
+  - src/engine/work_shift.py (shift_startable, can_pay_shift, work_update:146-147);
+    src/engine/serves.py; src/core/state.py (BuildingState); the apply step
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261123-AN-ENTITY-ITINERARY-IS-READ-FROM-A-RUNS-REPLAY-CHUNKS-EVENTS-AND-DEATH-LEDGER.md
+  ticket_id: TCK-20261123-AN-ENTITY-ITINERARY-IS-READ-FROM-A-RUNS-REPLAY-CHUNKS-EVENTS-AND-DEATH-LEDGER
+  title: An entity's itinerary (its key moments) and its full route (every tick) are
+    read from a finished run's replay chunks, events and death ledger
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-23'
+  related_code_areas:
+  - src/observability/reporting/ (history_query.py, run_report.py, run_determinism.py);
+    src/cli/entry.py; src/core/updates.py; src/engine/kernel.py; src/worldbuilding/compiler.py;
+    the replay manager
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261123-AN-EXHAUSTED-BODY-WITH-NO-BED-SLEEPS-ONLY-BY-COLLAPSE.md
+  ticket_id: TCK-20261123-AN-EXHAUSTED-BODY-WITH-NO-BED-SLEEPS-ONLY-BY-COLLAPSE
+  title: An exhausted body with no bed way never chooses to sleep; it sleeps only
+    by collapsing
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-23'
+  related_code_areas:
+  - src/ai/goals/ (the fatigue goal); the tactical collapse sleep; the bed admission
   artifact_files: []
   tags: []
 - type: ticket
@@ -15124,6 +15213,21 @@
   - agent-working/stored_artifacts/TCK-20261023-FOUR-TESTS-FAIL-ONLY-IN-A-WIDE-SCOPED-RUN-ORDER-DEPENDENT/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1.md
+  ticket_id: TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1
+  title: Remove the free meal for every kind (decision 73) as its own measured step
+    against v1, before milestone 1
+  tier: standard
+  ticket_type: feature
+  date: '2026-10-23'
+  related_code_areas:
+  - src/systems (building_services, conservation, inventory); src/ai need_pull
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1/investigation.md
+  - agent-working/stored_artifacts/TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1/plan.md
+  - agent-working/stored_artifacts/TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261023-M1-DONE-CRITERIA-AND-FREEZE-RULE.md
   ticket_id: TCK-20261023-M1-DONE-CRITERIA-AND-FREEZE-RULE
   title: Record the owner-approved milestone 1 done criteria and freeze rule as roadmap
@@ -15271,18 +15375,6 @@
   date: '2026-10-23'
   related_code_areas:
   - the lead-certainty enum (src/ai or src/cognition; locate at work time)
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1.md
-  ticket_id: TCK-20261023-FREE-MEAL-REMOVED-AS-ITS-OWN-STEP-BEFORE-M1
-  title: Remove the free meal for every kind (decision 73) as its own measured step
-    against v1, before milestone 1
-  tier: standard
-  ticket_type: feature
-  date: '2026-10-23'
-  related_code_areas:
-  - src/systems (building_services, conservation, inventory); src/ai need_pull
   artifact_files: []
   tags: []
 - type: ticket

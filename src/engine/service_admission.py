@@ -4,23 +4,25 @@ A way is open to a subject iff the service would actually deliver it to that sub
 and every "open" test (``ways_in_reach``, ``EatScorer``, ``FatigueScorer``, and through them the starvation record) ask :func:`admits`, so what the
 service delivers and what the pull judges open cannot diverge. The payment law has exactly one definition, :data:`SERVICE_PAYMENT_LAW`:
 
-* ``CLAMP`` (main today): the price is charged as far as the subject's purse reaches and the meal or bed is delivered anyway, so a broke subject is
+* ``CLAMP`` (before D73): the price is charged as far as the subject's purse reaches and the meal or bed is delivered anyway, so a broke subject is
   fed and bedded. Payment never closes a service.
-* ``ATOMIC`` (the free-meal removal, D73 / N1): the full price or nothing; a subject holding less than the price is not served.
+* ``ATOMIC`` (main since D73 / N1, the free-meal removal): the full price or nothing; a subject holding less than the price is not served, and a service with no payee is refused (`PAYEE_MISSING`).
 
 Under either law the debit equals what the payee receives (`conservation.service_price`, `_service_result`: the payer is debited exactly what the building or treasury is credited). Flipping the law is a change to the one constant; no consumer is edited. The prices are read from ``service_prices`` only.
 
-``keeps_coin`` is NOT yet part of admission (designer ruling 2026-10-29, option A): ``service_building`` also requires the subject to keep coin
-(``serves.keeps_coin``), and ``admits`` does not, as adding it would change what the scorers answer on main. The gap is pinned by a test and tracked in
-TCK-20261029-SHARED-ADMISSION-IGNORES-KEEPS-COIN-SO-A-NON-COIN-SUBJECT-IS-SENT-TO-A-SERVICE-THAT-REFUSES-IT.
+Who is admitted at all is the same rule the building service reads: ``serves.keeps_coin`` (owner decision 43, money and trade are people-only; divergence 2.224). A body without the
+``keeps_coin_and_trades`` trait is admitted to no inn meal or bed, whatever it holds, so the pull never sends it to a service that would refuse it
+(TCK-20261029-SHARED-ADMISSION-IGNORES-KEEPS-COIN-SO-A-NON-COIN-SUBJECT-IS-SENT-TO-A-SERVICE-THAT-REFUSES-IT).
 """
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
+from src.core.enums import ReasonCode
 from src.engine.appraisal import can_use_inn_meal
 from src.engine.lodging import has_free_bed
+from src.engine.serves import keeps_coin
 from src.engine.service_prices import EAT_PRICE_GOLD, REST_PRICE_GOLD
 
 
@@ -31,7 +33,7 @@ class PaymentLaw(str, Enum):
     ATOMIC = "ATOMIC"
 
 
-SERVICE_PAYMENT_LAW = PaymentLaw.CLAMP  # the one definition of how the inn is paid
+SERVICE_PAYMENT_LAW = PaymentLaw.ATOMIC  # D73 (decision 44/73): the free meal is removed; was CLAMP. the one definition of how the inn is paid
 
 _PRICES = {"EAT": EAT_PRICE_GOLD, "REST": REST_PRICE_GOLD}
 
@@ -43,10 +45,37 @@ def payment_covers(entity: Any, action: str, law: Optional[PaymentLaw] = None) -
     return int(entity.inventory.gold) >= _PRICES[action]
 
 
+def price_fields(action: str, law: Optional[PaymentLaw] = None) -> Dict[str, int]:
+    """Where the law puts the price on the paid transfer. ATOMIC: ``gold_cost`` = the price and ``gold_delta`` 0, so the resolver's own affordability test (`gold < gold_cost`) refuses a subject that cannot
+    pay in full. CLAMP: ``gold_delta`` = -price and ``gold_cost`` 0, charged as far as the purse reaches (`conservation.service_price`, `_service_result`). Both service builders (the inn meal, the bed)
+    read it, so the price field follows the law constant and the constant cannot disagree with what the resolver does."""
+    price = _PRICES[action]
+    return {"gold_cost": price, "gold_delta": 0} if (law or SERVICE_PAYMENT_LAW) is PaymentLaw.ATOMIC else {"gold_cost": 0, "gold_delta": -price}
+
+
+def service_terms(action: str, law: Optional[PaymentLaw] = None) -> Dict[str, Any]:
+    """The law's whole answer for a service transfer's payment terms: the price fields (:func:`price_fields`) and :func:`payee_required`. One dict a builder spreads into the intent (`**service_terms("EAT")`)."""
+    return {**price_fields(action, law), "requires_payee": payee_required(law)}
+
+
+def payee_required(law: Optional[PaymentLaw] = None) -> bool:
+    """True when the payment law refuses a service that names no payee (ATOMIC: the full price to somebody, or nothing). The service builders put it on the paid transfer
+    (``ResourceTransferIntent.requires_payee``); under CLAMP it is False and a no-payee service keeps the debit-0-and-count behaviour."""
+    return (law or SERVICE_PAYMENT_LAW) is PaymentLaw.ATOMIC
+
+
+def refusal_reason(entity: Any, action: str, law: Optional[PaymentLaw] = None) -> Optional[ReasonCode]:
+    """The typed reason a serving inn's ``action`` is refused to ``entity`` for PAYMENT, or None (a diet refusal is not typed here: an inn whose meal the body cannot eat is
+    no food source at all). Built on the same :func:`payment_covers` predicate :func:`admits_at` reads, so the bool and the reason cannot diverge."""
+    return None if payment_covers(entity, action, law) else ReasonCode.INSUFFICIENT_GOLD
+
+
 def admits_at(entity: Any, building: Any, action: str, state: Any = None, law: Optional[PaymentLaw] = None) -> bool:
-    """True when ``action`` ("EAT" or "REST") at ``building`` would be delivered to ``entity`` now: by diet, by the payment law and, for a REST at a building that
+    """True when ``action`` ("EAT" or "REST") at ``building`` would be delivered to ``entity`` now: by the coin trait (2.224), by diet, by the payment law and, for a REST at a building that
     lodges (content ``beds`` > 0), by a free bed (F3, divergence 2.155). ONE source of truth: :func:`admits` is this with no building. Without a ``building`` or a
     ``state`` there is no bed to count and the answer is the diet and payment answer, so a building with no beds (0 or absent) gives main's answer."""
+    if not keeps_coin(entity):  # decision 43 (2.224): money and trade are people-only; the one test the building service reads (`serves.keeps_coin`)
+        return False
     if action == "EAT" and not can_use_inn_meal(entity):  # decision 44: a diet without prepared food has no inn meal
         return False
     if not payment_covers(entity, action, law):

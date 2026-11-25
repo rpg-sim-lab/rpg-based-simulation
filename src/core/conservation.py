@@ -63,6 +63,7 @@ class TransactionResult:
     source_debit: Optional[SourceDebit] = None
     treasury_update: Optional[TreasuryTransfer] = None
     owed: Optional[Any] = None  # an OwedRecord: the coin a short treasury could not pay now and owes instead
+    readiness_update: Optional[float] = None  # a paid service's readiness: applied only when the transfer is accepted
     reason: ReasonCode = ReasonCode.UNKNOWN
     payee_missing: Optional[bool] = None  # True only when a priced service had no payee (no building source, no treasury named): nothing was debited; observability counts it (not durable)
 
@@ -253,8 +254,9 @@ def _shop_sell_result(state: Any, intent: ResourceTransferIntent, target_invento
 
 
 def service_price(intent: ResourceTransferIntent) -> int:
-    """What a priced service costs: its ``gold_cost`` plus the coin its ``gold_delta`` takes. A bed and an inn meal price through a negative ``gold_delta``, a repair or a fee through ``gold_cost``.
-    The ONE definition: the affordability check and the flows both read it, so the debit and the credit cannot disagree."""
+    """What a priced service costs: its ``gold_cost`` plus the coin its ``gold_delta`` takes. A repair or a fee prices through ``gold_cost``; a bed and an inn meal price through ``gold_cost`` under
+    the ATOMIC payment law (refused when the purse is short) and through a negative ``gold_delta`` under CLAMP (charged as far as the purse reaches): `service_admission.price_fields` puts the price where the
+    law says. The ONE definition: the affordability check and the flows both read it, so the debit and the credit cannot disagree."""
     return max(0, intent.gold_cost - intent.gold_delta)
 
 
@@ -301,6 +303,8 @@ def _service_result(state: Any, intent: ResourceTransferIntent, target_inventory
     price = service_price(intent)
     holder = intent.treasury_faction
     no_payee = is_no_payee(state, intent)
+    if no_payee and intent.requires_payee:
+        return TransactionResult(accepted=False, reason=ReasonCode.PAYEE_MISSING)  # ATOMIC: the full price to somebody, or no service (no debit, no relief)
     paid = 0 if no_payee else min(target_inventory.gold, price)  # no payee: nothing is debited
     credit = _service_credit(state, intent, paid)
     to_treasury = credit is None and holder is not None and paid > 0
@@ -311,7 +315,8 @@ def _service_result(state: Any, intent: ResourceTransferIntent, target_inventory
         inventory_update=InventoryUpdate(items_add=intent.items_add, gold_delta=-paid),
         payee_missing=True if (no_payee and price > 0) else None,
         identity_update=intent.identity_upd, biological_update=intent.biological_upd, attributes_update=intent.attributes_upd,
-        combat_update=intent.combat_upd, strategic_update=intent.strategic_upd, equipment_update=intent.equipment_upd, reward_update=intent.reward_upd)
+        combat_update=intent.combat_upd, strategic_update=intent.strategic_upd, equipment_update=intent.equipment_upd, reward_update=intent.reward_upd,
+        readiness_update=intent.readiness_delta or None)
 
 
 class ResourceTransactionResolver:

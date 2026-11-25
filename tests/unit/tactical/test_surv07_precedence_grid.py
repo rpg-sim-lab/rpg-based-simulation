@@ -12,6 +12,7 @@ from dataclasses import replace
 
 import pytest
 
+from src.engine.service_prices import EAT_PRICE_GOLD
 from src.core.builder import V2EntityBuilder
 from src.core.enums import Faction
 from src.core.movement_modes import MovementMode
@@ -37,10 +38,10 @@ def test_the_fixture_values_sit_on_the_right_side_of_the_onset():
 # ---- site 1: tactical.py presence skip (`if not hostiles:` gates the hunger arrival) -------------------------------------------------------------------------
 
 def _hungry_hero(hunger, hostile_at=None, hostile_task=None, hero_at=(39.0, 31.0)):
-    hero = (V2EntityBuilder(1).kind("HERO").location(*hero_at).identity(faction=Faction.HERO_GUILD)
+    hero = (V2EntityBuilder(1).kind("human").location(*hero_at).identity(faction=Faction.HERO_GUILD)
             .combat(hp=85, max_hp=85, atk=10, def_stat=5, alive=True, readiness=100.0)
             .navigation(movement_mode=MovementMode.WANDER, target=INN).lifecycle(active=True).build())
-    hero = replace(hero, biological=replace(hero.biological, hunger=hunger, sleep_debt=0.0))
+    hero = replace(hero, biological=replace(hero.biological, hunger=hunger, sleep_debt=0.0), inventory=replace(hero.inventory, gold=EAT_PRICE_GOLD))  # [TAG A FUND] holds the meal's price: these rows are about SURV-07 precedence, not payment (decision 73) (a coin-keeping kind: D43, 2.224)
     objective = ObjectiveState(id="hunger_20003", kind=ObjectiveKind.REACH_LOCATION, target="20003", status=ObjectiveStatus.ACTIVE)
     project = ProjectState(id="proj_hunger_1", kind="hunger", status=ProjectStatus.ACTIVE, objectives=[objective], active_objective_id=objective.id)
     hero = replace(hero, strategic=replace(hero.strategic, projects={project.id: project}, current_project_id=project.id, current_objective_id=objective.id))

@@ -1391,7 +1391,7 @@ class StrategicIntelligenceSystem:
             
         if best_candidate:
             # TCK-20261027-CAPACITY-GATE-FIRST-RECORD-OF-KIND-IS-DEAD-SO-LIVE-SIBLING-NEVER-RESUMED: a goal continues, resumes or contests the LIVE record of its kind (live_record_route), never the first stored one.
-            route = route_live_record(entity, best_candidate, StrategicIntelligenceSystem.resume_project)
+            route = route_live_record(entity, best_candidate, StrategicIntelligenceSystem.resume_project, state)
             if route.update is not None:
                 return replace(route.update, boredom_delta=boredom_upd, leads_add_or_update=memory_upd.leads_add_or_update, leads_remove=memory_upd.leads_remove)
 

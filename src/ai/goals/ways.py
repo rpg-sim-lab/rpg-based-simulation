@@ -24,8 +24,7 @@ from src.core.items import food_hunger_recovery
 from src.core.state import AuthoritativeState, BuildingState, EntityState
 from src.engine.appraisal import can_eat_item
 from src.engine.service_admission import admits
-from src.engine.spatial_query import SpatialQueryService
-from src.engine.way_in_range import way_in_range
+from src.engine.work_shift import inn_in_reach as _inn_in_reach
 
 
 class WayKind(str, Enum):
@@ -41,11 +40,8 @@ class WayKind(str, Enum):
 
 
 def inn_in_reach(entity: EntityState, state: AuthoritativeState) -> Optional[BuildingState]:
-    """The nearest inn inside the subject's range, or None (a range-bound subject's ways are inside its range, owner decision D57)."""
-    inn = SpatialQueryService.nearest_building(state, entity.navigation.position, "inn")
-    if inn is not None and not way_in_range(entity, inn.position):
-        return None
-    return inn
+    """The nearest inn inside the subject's range, or None (a range-bound subject's ways are inside its range, owner decision D57). One definition with the arrival's "a meal in reach": `work_shift.inn_in_reach`."""
+    return _inn_in_reach(state, entity)
 
 
 def ways_in_reach(entity: EntityState, state: AuthoritativeState) -> Tuple[WayKind, ...]:

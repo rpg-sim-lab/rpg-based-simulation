@@ -11,17 +11,25 @@ meal (5) and a coin.
 """
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any, Dict, Optional
 
+from src.core.strategic import ObjectiveKind, ObjectiveState, ObjectiveStatus
 from src.core.treasury import can_pay
-from src.core.updates import EntityUpdate, InteractionUpdate, ResourceTransferIntent
+from src.core.updates import (
+    EntityUpdate,
+    InteractionUpdate,
+    ResourceTransferIntent,
+    StrategicUpdate,
+)
 from src.engine.biological_needs import need_rates
 from src.engine.building_services import maintenance_open, offers_work, service_building
 from src.engine.need_pull import TICKS_PER_TILE, step_travel_tiles
 from src.engine.place_tax import building_holder, tax_on
 from src.engine.serves import serves
-from src.engine.spatial_query import SpatialQueryService
+from src.engine.service_admission import admits
 from src.engine.starvation import STARVING_LINE, hp_loss_period
+from src.engine.way_in_range import way_in_range
 from src.engine.work_wake import held_work_is_threatened
 
 SHIFT_TICKS = 200
@@ -38,9 +46,54 @@ def _can_pay_shift(state: Any, building: Any) -> bool:
     return holder is not None and can_pay(state.global_resources, holder, WAGE_GOLD - building.inventory.gold)
 
 
+def nearest_inn(state: Any, pos: Any) -> Optional[Any]:
+    """The inn nearest to ``pos``, or None. The ONE selection of "the inn": the wage's meal (`meal_position_after`) and "an inn in reach" (`inn_in_reach`, read by the way set, the hunger scorer and the arrival)."""
+    # A direct scan of ``state.buildings``, not `SpatialQueryService.nearest_building`: this is read from a tactical ENTITY_BRAIN worker (`building_arrival` -> `shift_takeable`) on a WorkerPacket,
+    # which carries ``buildings`` but not the `world_indexes` the spatial query reads (an undeclared state read stops the run: docs/engine/contracts/bounded_concurrency_contract.md section 4).
+    # The same answer as the index: Manhattan distance, the first strictly smaller wins, in ``state.buildings`` order (the order the index is built in).
+    inn, best = None, float("inf")
+    for building in state.buildings.values():
+        if building.kind != "inn":
+            continue
+        dist = abs(building.position[0] - pos[0]) + abs(building.position[1] - pos[1])
+        if dist < best:
+            inn, best = building, dist
+    return inn
+
+
+def inn_in_reach(state: Any, entity: Any) -> Optional[Any]:
+    """The nearest inn when it lies inside the subject's range (owner decision D57), else None: a farther inn in range does not stand in for a nearer one out of it."""
+    inn = nearest_inn(state, entity.navigation.position)
+    return inn if inn is not None and way_in_range(entity, inn.position) else None
+
+
+def meal_in_reach(state: Any, entity: Any) -> bool:
+    """True when the subject could buy a meal in reach now: the INN_MEAL way's own test (`ways.ways_in_reach`): the nearest inn is inside its range (`inn_in_reach`, one definition,
+    read from ``state.buildings`` because a worker packet has no world index) and the one admission rule `admits(EAT)` holds (the coin trait, the diet, the full price). The ONE predicate for
+    the arrival (`building_arrival`: a visit ends instead of starting a shift) and the re-point of a need project from its earn step to the meal (`live_record_route`)."""
+    return admits(entity, "EAT") and inn_in_reach(state, entity) is not None
+
+
+def repoint_to_consume(project: Any, kind: str, target_id: str, target_pos: Any, target_entity_id: Any = None) -> StrategicUpdate:
+    """The ONE re-point of a need project from its earn step to the way that meets the need (#995 case (c)): the SAME project (same id, no new project, no switch check), its active objective
+    RESOLVED (the coin is in hand: the earn step's purpose is met) and a new ACTIVE REACH_LOCATION objective at the consume target. Called from the strategic route
+    (`live_record_route.repoint_earn_to_consume`) and from the arrival (`building_arrival._hunger_arrival`), so the two cannot differ."""
+    fresh = ObjectiveState(id=f"{kind}_{target_id}", kind=ObjectiveKind.REACH_LOCATION, target=target_id, target_position=target_pos, target_entity_id=target_entity_id, status=ObjectiveStatus.ACTIVE)
+    objectives = [replace(o, status=ObjectiveStatus.RESOLVED) if o.id == project.active_objective_id else o for o in project.objectives if o.id != fresh.id] + [fresh]
+    return StrategicUpdate(projects_add_or_update=[replace(project, objectives=objectives, active_objective_id=fresh.id)], current_objective_id_set=fresh.id)
+
+
+def shift_held(entity: Any, state: Any) -> bool:
+    """True while a shift is HELD in progress: the task is the WORK action carrying its start tick and fewer than SHIFT_TICKS ticks have passed since (the wage is paid on the last one). A task whose
+    action is still WORK after the shift ended is not a held shift."""
+    payload = entity.task.payload if isinstance(entity.task.payload, dict) else {}
+    start = payload.get(SHIFT_START)
+    return payload.get("action") == "WORK" and start is not None and int(state.tick) - int(start) + 1 < SHIFT_TICKS
+
+
 def meal_position_after(state: Any, work_pos: Any) -> Optional[tuple]:
     """Where the wage is spent: the inn nearest to the place of work, or None when there is none."""
-    inn = SpatialQueryService.nearest_building(state, work_pos, "inn")
+    inn = nearest_inn(state, work_pos)
     return None if inn is None else (inn.position[0], inn.position[1])
 
 
@@ -60,6 +113,13 @@ def shift_takeable(entity: Any, state: Any, work_pos: Any) -> bool:
     if entity.combat.hp - ticks_past_line / hp_loss_period(entity.combat.max_hp) <= 0:
         return False
     return not held_work_is_threatened(entity, state)
+
+
+def shift_startable(state: Any, entity: Any, building: Any) -> bool:
+    """True when `entity` can start a paid shift at `building` now: it offers a shift, can pay one wage, serves the subject (owner decision 43) and the subject can finish the shift
+    before the starvation line with no threat present (:func:`shift_takeable`). The ONE predicate for the open earn step (`work_in_reach`), the arrival action
+    (`building_arrival`) and the held shift's own checks; no occupancy test, a tile in reach is a separate matter."""
+    return offers_work(building) and _can_pay_shift(state, building) and serves(state, entity, building) and shift_takeable(entity, state, building.position)
 
 
 def nearest_work(state: Any, entity: Any) -> Optional[Any]:
