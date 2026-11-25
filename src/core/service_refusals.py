@@ -27,6 +27,7 @@ class ServiceRefusal:
     reason: str
 
     def to_canonical(self) -> Dict[str, Any]:
+        """The canonical-dict form of this refusal: every field."""
         return {"action": self.action, "building": int(self.building), "tick": int(self.tick), "reason": self.reason}
 
 

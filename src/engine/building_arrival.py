@@ -12,8 +12,7 @@ from typing import TYPE_CHECKING, Any, Optional, cast
 from src.core.strategic import ObjectiveStatus, ProjectEnd, ProjectStatus, end_record
 from src.core.updates import EntityUpdate, StrategicUpdate, TaskUpdate
 from src.engine.building_services import SERVICE_KINDS, offers_work
-from src.engine.service_admission import no_bed_for
-from src.engine.service_admission import admits
+from src.engine.service_admission import admits, no_bed_for
 from src.engine.shop_sale import plan_sale
 from src.engine.work_shift import (
     SHIFT_START,

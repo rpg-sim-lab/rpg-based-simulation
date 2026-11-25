@@ -12,7 +12,7 @@ from dataclasses import replace
 
 import pytest
 
-from src.engine.service_prices import EAT_PRICE_GOLD
+from src.engine.service_prices import EAT_PRICE_GOLD, REST_PRICE_GOLD
 from src.core.builder import V2EntityBuilder
 from src.core.enums import Faction
 from src.core.movement_modes import MovementMode
@@ -149,7 +149,7 @@ def _sleepy_arrival(beds, hostile_at, hostile_task=None):
     hero = (V2EntityBuilder(1).kind("human").properties({"species_id": "human"}).location(39.0, 31.0).identity(faction=Faction.HERO_GUILD)   # a person: it keeps coin, so a bed can be delivered
             .combat(hp=85, max_hp=85, atk=10, def_stat=5, alive=True, readiness=100.0)
             .navigation(movement_mode=MovementMode.WANDER, target=INN).lifecycle(active=True).build())
-    hero = replace(hero, biological=replace(hero.biological, hunger=0.0, sleep_debt=PRESSING_DEBT))
+    hero = replace(hero, biological=replace(hero.biological, hunger=0.0, sleep_debt=PRESSING_DEBT), inventory=replace(hero.inventory, gold=REST_PRICE_GOLD))  # [TAG A FUND] holds the bed's price: these rows are about SURV-07 precedence, not payment; a keeps_coin hero without it correctly ends the arrival WAY_CLOSED (TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER, divergence 2.227)
     objective = ObjectiveState(id="fatigue_20003", kind=ObjectiveKind.REACH_LOCATION, target="20003", status=ObjectiveStatus.ACTIVE)
     project = ProjectState(id="proj_fatigue_1", kind="fatigue", status=ProjectStatus.ACTIVE, objectives=[objective], active_objective_id=objective.id)
     hero = replace(hero, strategic=replace(hero.strategic, projects={project.id: project}, current_project_id=project.id, current_objective_id=objective.id))

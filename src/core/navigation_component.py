@@ -8,9 +8,9 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 from src.core.giveup_records import GiveUpRecord, giveup_canonical
-from src.core.service_refusals import ServiceRefusal, service_refusal_canonical
 from src.core.movement_modes import MovementMode
 from src.core.navigation_purpose import TargetPurpose, purpose_canonical
+from src.core.service_refusals import ServiceRefusal, service_refusal_canonical
 
 
 @dataclass(frozen=True, slots=True)

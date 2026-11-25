@@ -20,7 +20,7 @@ from src.core.updates import EntityUpdate, NavigationUpdate, StateUpdate
 from src.engine.apply import ApplyPath
 from src.engine.building_services import with_service
 from src.engine.checkpoint import CanonicalStateHasher
-from src.systems.strategic_systems.blocker_lifecycle import infer_blockers
+from src.systems.strategic_systems.blocker_lifecycle import infer_blockers, service_refusal_blockers
 from tests.unit.engine.lodging_kernel import INN_ID, REACH, hero, kernel
 
 SETTINGS = service_refusal_settings()
@@ -37,7 +37,8 @@ def holder(*records):
 
 
 def filed(entity, tick):
-    return {b.id: b for b in infer_blockers(entity, "ENTITY_ACT", {}, tick=tick).blockers_add_or_update}
+    inferred = infer_blockers(entity, "ENTITY_ACT", {})
+    return {b.id: b for b in service_refusal_blockers(entity, inferred, tick).blockers_add_or_update}
 
 
 # ---------------------------------------------------------------- the data

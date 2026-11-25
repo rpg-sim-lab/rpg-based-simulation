@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Optional, Any, Dict, List, Literal, Tuple
 from pydantic import BaseModel, Field, ConfigDict, field_validator
+from src.core.enums import ReasonCode
 
 
 class CatalogBaseDefinition(BaseModel):
@@ -426,7 +427,6 @@ class BlockerSettingsDefinition(CatalogBaseDefinition):
     @field_validator("service_refusal_reasons")
     @classmethod
     def _reasons_are_reason_codes(cls, value: List[str]) -> List[str]:
-        from src.core.enums import ReasonCode
         unknown = [name for name in value if name not in {r.value for r in ReasonCode}]
         if unknown:
             raise ValueError(f"service_refusal_reasons names no ReasonCode: {unknown}")

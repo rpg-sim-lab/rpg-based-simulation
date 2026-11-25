@@ -76,7 +76,7 @@ from src.core.strategic import (
     CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, restart_clear_window, suspend_record, expire_suspended, end_record, typed_completion, ProjectEnd, blocker_timeout_suppression, with_live_current_score, ended_blocker_stamps
 )
 from src.engine.spatial_query import SpatialQueryService
-from src.systems.strategic_systems.blocker_lifecycle import consume_giveup_records, generate_crafting_blockers, infer_blockers, reinferred_blockers_update, resolve_blockers
+from src.systems.strategic_systems.blocker_lifecycle import consume_giveup_records, generate_crafting_blockers, infer_blockers, reinferred_blockers_update, resolve_blockers, service_refusal_blockers
 from src.core.lodging_rules import is_lodged_stayer
 from src.content_semantics.faction import are_entities_hostile
 from src.content_semantics.relation import RelationContext
@@ -177,11 +177,10 @@ class StrategicIntelligenceSystem:
         last_task: str,
         last_payload: Dict[str, Any],
         navigation_failure: Optional[str] = None,
-        current_project: Optional[ProjectState] = None,
-        tick: Optional[int] = None,
+        current_project: Optional[ProjectState] = None
     ) -> StrategicUpdate:
         """Infer blockers based on recent failures (Logic IDs STRAT-191..194; body in `blocker_lifecycle.infer_blockers`)."""
-        return infer_blockers(entity, last_task, last_payload, navigation_failure, current_project, tick)
+        return infer_blockers(entity, last_task, last_payload, navigation_failure, current_project)
 
     @staticmethod
     def generate_crafting_blockers(
@@ -378,9 +377,9 @@ class StrategicIntelligenceSystem:
                 entity.task.work_kind,
                 entity.task.payload,
                 navigation_failure=entity.navigation.last_failure_reason,
-                current_project=current_proj,
-                tick=state.tick,
+                current_project=current_proj
             )
+            inferred_up = service_refusal_blockers(entity, inferred_up, state.tick)  # K2 fix B: the refusal rule, merged after the ordinary inference (its own function)
             
             strat_up = reinferred_blockers_update(entity, strat_up, inferred_up, state.tick)
             strat_up, ent_upd = consume_giveup_records(entity, strat_up, ent_upd, state.tick)  # F2 (divergence 2.220), the #996 rework: file the give-up records as navigation experiences, end the project at the give-up limit, clear the records

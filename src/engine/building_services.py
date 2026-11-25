@@ -11,16 +11,21 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+from src.core.service_refusals import ServiceRefusal
 from src.core.updates import (
     BiologicalUpdate,
     EntityUpdate,
     NavigationUpdate,
     ResourceTransferIntent,
 )
-from src.core.service_refusals import ServiceRefusal
 from src.engine.lodging import bed_delta, lodge_claim, lodges, refuse_rest
 from src.engine.serves import keeps_coin, serves
-from src.engine.service_admission import admits_at, no_bed_for, refusal_reason, service_terms
+from src.engine.service_admission import (
+    admits_at,
+    no_bed_for,
+    refusal_reason,
+    service_terms,
+)
 from src.engine.service_prices import INN_MEAL_HUNGER
 from src.engine.service_reach import service_building_where, service_tile
 from src.engine.shop_sale import plan_sale

@@ -21,11 +21,11 @@ if TYPE_CHECKING:
     from src.engine.policy import GovernorPolicy
 from src.core.dirty import DirtySet
 from src.core.giveup_records import GiveUpRecord
-from src.core.service_refusals import ServiceRefusal
 from src.core.group_update_merge import merge_group_fields
 from src.core.movement_modes import MovementMode
 from src.core.navigation_experience import NavigationExperienceUpdate
 from src.core.navigation_purpose import TargetPurpose
+from src.core.service_refusals import ServiceRefusal
 from src.core.spawn_source import SpawnSource
 from src.core.state import ItemInstance, ItemStack, LifeStage  # noqa: F401  (ItemStack re-exported: tests import it from here)
 from src.core.update_models.body import (  # noqa: F401  (re-exported)

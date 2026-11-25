@@ -300,6 +300,16 @@ class NavigationPatch(ComponentPatch):
     def is_noop(self) -> bool:
         return (self.navigation is None or self.navigation.is_noop()) and self.new_position is None and not self.moved_this_tick
 
+    @staticmethod
+    def _apply_service_refusals(new_nav: Any, u_nav: Any, replace: Any) -> Any:
+        """K2 fix B: the typed service refusals. The clear (that (action, building) was delivered) is applied first, then an append of the same update; the oldest past SERVICE_REFUSALS_CAP is dropped."""
+        if u_nav.service_refusal_clear is not None:
+            cleared = u_nav.service_refusal_clear
+            new_nav = replace(new_nav, service_refusals=tuple(r for r in new_nav.service_refusals if (r.action, r.building) != cleared))
+        if u_nav.service_refusal_add is not None:
+            new_nav = replace(new_nav, service_refusals=(*new_nav.service_refusals, u_nav.service_refusal_add)[-SERVICE_REFUSALS_CAP:])
+        return new_nav
+
     def merge(self, other: NavigationPatch) -> NavigationPatch:
         if not other or other.is_noop():
             return self
@@ -354,12 +364,7 @@ class NavigationPatch(ComponentPatch):
                 for _ in range(max(0, len(held) - GIVEUP_RECORDS_CAP)):
                     GiveUpDropCounts.note()
                 new_nav = replace(new_nav, giveup_records=held[-GIVEUP_RECORDS_CAP:])
-            # K2 fix B: the typed service refusals. The clear (that (action, building) was delivered) is applied first, then an append of the same update; the oldest past SERVICE_REFUSALS_CAP is dropped.
-            if u_nav.service_refusal_clear is not None:
-                cleared = u_nav.service_refusal_clear
-                new_nav = replace(new_nav, service_refusals=tuple(r for r in new_nav.service_refusals if (r.action, r.building) != cleared))
-            if u_nav.service_refusal_add is not None:
-                new_nav = replace(new_nav, service_refusals=(*new_nav.service_refusals, u_nav.service_refusal_add)[-SERVICE_REFUSALS_CAP:])
+            new_nav = NavigationPatch._apply_service_refusals(new_nav, u_nav, replace)  # K2 fix B (the same statements, extracted; `replace` is this method's own)
         if self.new_position:
             if self.new_position != entity.navigation.position:
                 new_nav = ApplyPath._fast_replace_navigation(new_nav, self.new_position, None)

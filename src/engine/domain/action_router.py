@@ -4,6 +4,7 @@ from dataclasses import replace
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from src.core.enums import ReasonCode
+from src.core.service_refusals import ServiceRefusal
 from src.core.updates import EntityUpdate, NavigationUpdate
 from src.engine.appraisal import can_use_inn_meal
 from src.engine.building_services import service_building, with_service
@@ -12,7 +13,6 @@ from src.engine.domain.combat_actions import CombatActions
 from src.engine.domain.core_actions import CoreActions, eat_at_corpse_update
 from src.engine.domain.skill_actions import SkillActions
 from src.engine.legality import LegalityServiceV2
-from src.core.service_refusals import ServiceRefusal
 from src.engine.service_admission import refusal_reason
 from src.engine.work_shift import work_update
 

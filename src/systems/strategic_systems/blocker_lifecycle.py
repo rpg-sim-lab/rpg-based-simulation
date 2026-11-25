@@ -68,8 +68,7 @@ def infer_blockers(
     last_task: str,
     last_payload: Dict[str, Any],
     navigation_failure: Optional[str] = None,
-    current_project: Optional[ProjectState] = None,
-    tick: Optional[int] = None,
+    current_project: Optional[ProjectState] = None
 ) -> StrategicUpdate:
     """
     Infer blockers based on recent failures.
@@ -102,15 +101,6 @@ def infer_blockers(
              subject="congestion",
              severity=0.5
          ))
-
-    # Phase 5 (K2 fix B, STRAT-191-194): a building service refused the SAME way (action, building) `limit` times in a row for a counted typed reason files ONE access blocker for that way. A streak whose
-    # newest refusal is older than the window has lapsed (the subject stopped being refused), so it is not re-inferred and the blocker expires by the quiet spell.
-    if entity.navigation.service_refusals and tick is not None:
-        settings = service_refusal_settings()
-        for action, building in sorted({(r.action, r.building) for r in entity.navigation.service_refusals}):
-            newest = max(r.tick for r in entity.navigation.service_refusals if (r.action, r.building) == (action, building))
-            if tick - newest <= settings.window and consecutive_refusals(entity.navigation.service_refusals, action, building, settings.window, settings.reasons) >= settings.limit:
-                blockers.append(BlockerState(id=service_blocker_id(action, building), kind=BlockerKind.ACCESS, subject=str(building), severity=settings.severity))
 
     # 2. Material/Resource Failure (Interactions)
     if last_task == "ENTITY_ACT" and last_payload.get("action") == "INTERACT":
@@ -167,6 +157,22 @@ def infer_blockers(
         unique_blockers[b.id] = b
 
     return StrategicUpdate(blockers_add_or_update=list(unique_blockers.values()))
+
+
+def service_refusal_blockers(entity: EntityState, inferred: StrategicUpdate, tick: int) -> StrategicUpdate:
+    """K2 fix B (STRAT-191-194): ``inferred`` plus the blocker for every building service refused the SAME way (action, building) `limit` times in a row for a counted typed reason (the settings are data). A streak whose
+    newest refusal is older than the window has lapsed (the subject stopped being refused), so it is not re-inferred and the blocker expires by the quiet spell. ``inferred`` itself when none is filed."""
+    if not entity.navigation.service_refusals:
+        return inferred
+    settings = service_refusal_settings()
+    filed = []
+    for action, building in sorted({(r.action, r.building) for r in entity.navigation.service_refusals}):
+        newest = max(r.tick for r in entity.navigation.service_refusals if (r.action, r.building) == (action, building))
+        if tick - newest <= settings.window and consecutive_refusals(entity.navigation.service_refusals, action, building, settings.window, settings.reasons) >= settings.limit:
+            filed.append(BlockerState(id=service_blocker_id(action, building), kind=BlockerKind.ACCESS, subject=str(building), severity=settings.severity))
+    if not filed:
+        return inferred
+    return replace(inferred, blockers_add_or_update=[*inferred.blockers_add_or_update, *filed])
 
 
 def generate_crafting_blockers(
