@@ -14048,6 +14048,24 @@
   - agent-working/stored_artifacts/TCK-20261029-A-PRICED-WAY-IS-OPEN-ONLY-TO-A-SUBJECT-THAT-CAN-PAY/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER.md
+  ticket_id: TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER
+  title: A dispatch that fails the same way more than 1100 times (EAT at a non-serving
+    building, SOURCE_MISSING) never becomes a blocker, so the subject loops in place
+    until it dies
+  tier: standard
+  ticket_type: bug
+  date: '2026-10-29'
+  related_code_areas:
+  - src/systems/strategic_systems/intelligence.py (infer_blockers)
+  - src/engine/domain/action_router.py (_hold_in_place)
+  - src/core/strategic.py (BlockerState)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER/investigation.md
+  - agent-working/stored_artifacts/TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER/plan.md
+  - agent-working/stored_artifacts/TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261029-EVENT-EMIT-ORDER-FOLLOWS-PYTHONHASHSEED.md
   ticket_id: TCK-20261029-EVENT-EMIT-ORDER-FOLLOWS-PYTHONHASHSEED
   title: Within one tick, the emit order of progression and equipment events follows
@@ -14119,21 +14137,6 @@
   - agent-working/stored_artifacts/TCK-20261029-STATE-SET-ORDER-FOLLOWS-PYTHONHASHSEED/test_plan.md
   tags:
   - determinism
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER.md
-  ticket_id: TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER
-  title: A dispatch that fails the same way more than 1100 times (EAT at a non-serving
-    building, SOURCE_MISSING) never becomes a blocker, so the subject loops in place
-    until it dies
-  tier: standard
-  ticket_type: bug
-  date: '2026-10-29'
-  related_code_areas:
-  - src/systems/strategic_systems/intelligence.py (infer_blockers)
-  - src/engine/domain/action_router.py (_hold_in_place)
-  - src/core/strategic.py (BlockerState)
-  artifact_files: []
-  tags: []
 - type: ticket
   path: agent-working/tickets/todos/TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH.md
   ticket_id: TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH
