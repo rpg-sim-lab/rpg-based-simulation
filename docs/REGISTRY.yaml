@@ -12235,6 +12235,18 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/inprogress/TCK-20261109-M1-EACH-MONSTER-KIND-DECLARES-WHY-IT-FIGHTS.md
+  ticket_id: TCK-20261109-M1-EACH-MONSTER-KIND-DECLARES-WHY-IT-FIGHTS
+  title: Each monster kind declares why it fights, replacing faction hostility for
+    monsters (decision 62)
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/domains/combat_engagement/, hostility predicates, content
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/inprogress/TCK-20261109-M1-HONEST-PERCEPTION-DEFAULTS.md
   ticket_id: TCK-20261109-M1-HONEST-PERCEPTION-DEFAULTS
   title: Each kind perceives by its own senses, and signals follow the body
@@ -12316,18 +12328,6 @@
   date: '2026-11-09'
   related_code_areas:
   - content schemas, src/strategy/ (appraisal)
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261109-M1-EACH-MONSTER-KIND-DECLARES-WHY-IT-FIGHTS.md
-  ticket_id: TCK-20261109-M1-EACH-MONSTER-KIND-DECLARES-WHY-IT-FIGHTS
-  title: Each monster kind declares why it fights, replacing faction hostility for
-    monsters (decision 62)
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-09'
-  related_code_areas:
-  - src/domains/combat_engagement/, hostility predicates, content
   artifact_files: []
   tags: []
 - type: ticket
