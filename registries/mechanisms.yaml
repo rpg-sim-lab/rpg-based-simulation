@@ -1620,7 +1620,7 @@ mechanisms:
         claim, not an accident of staging.
   - id: goal_hierarchy
     layer: entity
-    summary: "Creatures pursue goals in layers, from a standing direction down to projects, objectives and single actions. A creature that runs from danger keeps to its retreat until the threat has been gone for a while."
+    summary: "Creatures pursue goals in layers, from a standing direction down to projects, objectives and single actions. A creature that runs from danger keeps to its retreat until the threat has been gone for a while. A creature's live projects all end when it dies; the records are kept."
     systems: [cognition]
     depends_on: [belief_cycle]
     state: done
@@ -1641,6 +1641,8 @@ mechanisms:
       - src/ai/goals/live_record_route.py::supersede_on_win
       - src/core/strategic.py::note_threat_state
       - src/core/strategic.py::restart_clear_window
+      - src/core/strategic.py::end_live_on_death
+      - src/systems/lifecycle_systems/lifecycle.py::LifecycleSystem::_end_projects_on_death
     verified:
       instrument: scenario
       verdict: observed
