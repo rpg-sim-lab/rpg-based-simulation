@@ -65,12 +65,27 @@ def service_dispatch(entity: Any, service_actions: frozenset, buildings: Any) ->
     return str(val(action)), target
 
 
+def fresh_results(prior_ent: Any, ent: Any) -> List[Any]:
+    """Amendment 4, A6: the intent results that belong to THIS apply. patches.py:246 keeps the previous ``latest_intent_results`` tuple when an update carries none, so a result is fresh only when its transaction_id is NOT among the
+    prior state's results for the entity (a result with no transaction_id is fresh only when an equal result is not in the prior tuple)."""
+    now = list(getattr(ent.identity, "latest_intent_results", ()) or ())
+    before = list(getattr(prior_ent.identity, "latest_intent_results", ()) or ()) if prior_ent is not None else []
+    prior_ids = {getattr(r, "transaction_id", None) for r in before if getattr(r, "transaction_id", None) is not None}
+    out = []
+    for r in now:
+        tid = getattr(r, "transaction_id", None)
+        if (tid is not None and tid in prior_ids) or (tid is None and r in before):
+            continue
+        out.append(r)
+    return out
+
+
 def delivered_pairs(prior_ent: Any, ent: Any, pairs: List[Tuple[str, int]], prior_buildings: Any = None, buildings: Any = None) -> Tuple[List[Tuple[str, int]], Dict[Tuple[str, int], List[Any]], Dict[str, int]]:
     """Which of the subject's pending (action, building) pairs the apply of this tick delivered (Amendment 1, A1): an accepted result of the action's source kind for b, OR the paid transfer at b
     (EAT/REST/REPAIR/BUY: the subject's gold falls by D > 0 and b's purse rises by at least D in the same apply; SELL: the subject's gold rises by D > 0 and b's purse falls by at least D, or the item the subject lost
     is gained by b's inventory). A need drop with no payment (hunger lowered for EAT, sleep_debt lowered for REST) is its own channel, ``need_drop_unpaid``, and NEVER delivers.
     Returns (delivered pairs, refusal reasons per undelivered pair, channel counts)."""
-    results = list(getattr(ent.identity, "latest_intent_results", ()) or ())
+    results = fresh_results(prior_ent, ent)        # A6: this apply's results only
     delivered: List[Tuple[str, int]] = []
     reasons: Dict[Tuple[str, int], List[Any]] = {}
     channels: Counter = Counter()
@@ -129,6 +144,7 @@ class CountSpy:
         self.visibility = logic.DispatchVisibility({a: SOURCE_KINDS[a] for a in sorted(service_actions) if a in SOURCE_KINDS}, service_kinds or {})
         self.router_seen: Dict[int, List[Tuple[int, str, Any]]] = {}      # router current_tick -> [(subject, action, target_id)], read on the apply that executes it
         self.router_calls = 0
+        self.stale_results_ignored = 0          # A6: results carried over from the prior state, not counted
         self.router_service_calls = 0
         self.visibility_unattributed: Counter = Counter()
         self.same_kind, self.need_is_pressing, self.present_threat_to, self.acting_threat_to, self.live_statuses = same_kind, need_is_pressing, present_threat_to, acting_threat_to, live_statuses
@@ -285,13 +301,17 @@ class CountSpy:
             for pair in sorted(union):
                 self.visibility.note_dispatch(pair[0], router=pair in router_pairs, task=pair in task_prev)
             if alive:
-                for r in getattr(ent.identity, "latest_intent_results", ()) or ():
+                fresh = fresh_results(prior_ent, ent)
+                self.stale_results_ignored += len(getattr(ent.identity, "latest_intent_results", ()) or ()) - len(fresh)
+                for r in fresh:
                     if r.accepted and r.source_kind in ("TOWN_SERVICE", "SHOP_SELL", "SHOP_BUY") and r.source_id in buildings:
                         self.visibility.note_accepted(r.source_kind, r.source_id, kinds.get(r.source_id), union)
             delivered, reasons, channels = delivered_pairs(prior_ent, ent, sorted(union), prior.buildings, buildings) if alive and union else ([], {}, {})
             nav = getattr(ent, "navigation", None)
             lodged_in = getattr(nav, "lodged_in", None)
-            evidence = [pair for pair in sorted(union) if pair[0] == "REST" and lodged_in is not None and lodged_in == pair[1]] if alive else []     # A4: the granted bed (REST: lodged_in == b) is a delivery seen
+            payload_now = ent.task.payload if isinstance(ent.task.payload, dict) else {}
+            held_marker = payload_now.get("action") == "REST" and payload_now.get("outcome") == "SUCCESS"      # A7: the tree's own held marker (building_services.py:87)
+            evidence = [pair for pair in sorted(union) if pair[0] == "REST" and ((lodged_in is not None and lodged_in == pair[1]) or (held_marker and payload_now.get("target_id") == pair[1]))] if alive else []     # A4/A7: the granted bed is a delivery seen
             contexts = {pair: run_context(ent, pair) for pair in sorted(union)} if alive and union else {}
             for name, n in channels.items():
                 self.channel_counts[name] += n
@@ -344,7 +364,7 @@ class CountSpy:
                 "reach": {"apply_calls": self.apply_calls, "goal_calls": self.goal_calls, "goal_selections_with_winner": self.goal_selections_seen, "escalated_need_wins": self.escalated_wins,
                           "service_dispatches_seen": self.service_dispatch_seen, "router_calls": self.router_calls, "router_service_calls": self.router_service_calls},
                 "service_actions_read": sorted(self.service_actions), "action_census_with_building_target": dict(self.action_census), "delivered_channel_counts": {**dict(self.channel_counts), "held_repeat": sum(self.k2.held_repeats.values())},
-                "refusal_reasons_seen": dict(self.reasons_seen), "visibility_unattributed": dict(self.visibility_unattributed), "spy_exceptions": self.spy_exceptions, "probe_errors": self.probe_errors}
+                "refusal_reasons_seen": dict(self.reasons_seen), "stale_results_ignored": self.stale_results_ignored, "visibility_unattributed": dict(self.visibility_unattributed), "spy_exceptions": self.spy_exceptions, "probe_errors": self.probe_errors}
 
 
 def read_tree_facts() -> Dict[str, Any]:

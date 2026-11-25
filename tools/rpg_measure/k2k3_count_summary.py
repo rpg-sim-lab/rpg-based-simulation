@@ -100,7 +100,7 @@ def neg_summary(out: Path) -> Dict[str, Any]:
     defects = [r for r in listed if r["action"] == "REST" and any(c and c.get("lodged_in") == r["building"] for c in (r["first_context"], r["last_context"]))]
     return {"mode": "negative_control", "cell": "urban_political_s42_2400t", "valid": not problems, "problems": problems, "runs_over_10": listed, "kit_defect_rest_runs": defects,
             "verdict": "VOID" if problems else ("STOP: a REST run whose subject was lodged at its building (kit defect; to the designer)" if defects else "NO DEFECT FOUND (listed for the designer's read)"),
-            "held_repeats": (spy.get("k2") or {}).get("held_repeats"), "rule_source": load_logic().RULE_SOURCE}
+            "held_repeats": (spy.get("k2") or {}).get("held_repeats"), "held_rest_not_resting": (spy.get("k2") or {}).get("held_rest_not_resting"), "stale_results_ignored": spy.get("stale_results_ignored"), "dispatch_visibility": spy.get("dispatch_visibility"), "rule_source": load_logic().RULE_SOURCE}
 
 
 def main(argv: List[str]) -> int:
@@ -108,7 +108,7 @@ def main(argv: List[str]) -> int:
         out = Path(argv[1])
         doc = neg_summary(out)
         (out / "k2k3_neg_summary.json").write_text(json.dumps(doc, sort_keys=True, indent=1, default=str), encoding="utf-8")
-        print(f"negative control {doc['cell']}: valid={doc['valid']} runs>10={len(doc['runs_over_10'])} kit_defect_rest_runs={len(doc['kit_defect_rest_runs'])} held_repeats={doc['held_repeats']} problems={doc['problems']}")
+        print(f"negative control {doc['cell']}: valid={doc['valid']} runs>10={len(doc['runs_over_10'])} kit_defect_rest_runs={len(doc['kit_defect_rest_runs'])} held_repeats={doc['held_repeats']} held_rest_not_resting={len(doc['held_rest_not_resting'] or [])} stale_results_ignored={doc['stale_results_ignored']} problems={doc['problems']}")
         print(f"verdict: {doc['verdict']}")
         return 0 if doc["valid"] and not doc["kit_defect_rest_runs"] else 2
     outs = [Path(a) for a in argv]                      # stage-1 dir first, then the stage-2 dir when it exists; the summary is written into the LAST one

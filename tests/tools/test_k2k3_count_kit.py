@@ -156,8 +156,8 @@ def test_k3_excluded_does_not_break_an_episode_and_win_does():
 
 
 # ---------------------------------------------------------------- spy against fake states
-def fake_entity(eid, hunger=0.0, sleep=0.0, gold=10, action=None, target=None, results=(), alive=True, project=None, projects=None, lodged=None):
-    task = NS(work_kind="ENTITY_ACT", payload={} if action is None else {"action": action, "target_id": target})
+def fake_entity(eid, hunger=0.0, sleep=0.0, gold=10, action=None, target=None, results=(), alive=True, project=None, projects=None, lodged=None, outcome=None):
+    task = NS(work_kind="ENTITY_ACT", payload={} if action is None else dict({"action": action, "target_id": target}, **({} if outcome is None else {"outcome": outcome})))
     return NS(id=eid, task=task, biological=NS(hunger=hunger, sleep_debt=sleep), inventory=NS(gold=gold, items=()), identity=NS(latest_intent_results=tuple(results)),
               combat=NS(alive=alive), navigation=NS(lodged_in=lodged), strategic=NS(current_project_id=project, projects=projects or {}, blockers={}))
 
@@ -591,6 +591,10 @@ def test_the_held_actions_are_rest_only_and_sell_and_repair_executions_are_dispa
         assert t.summary()["k2_count"] == 1 and t.summary()["held_repeats"] == {}
 
 
+def test_the_rule_text_names_amendment_4_and_every_earlier_amendment():
+    assert "Amendment 4 e0abe455" in logic.RULE_SOURCE and "Amendment 3 62534b6f" in logic.RULE_SOURCE and "Amendment 1 e6cc644c" in logic.RULE_SOURCE
+
+
 def test_the_rule_text_names_amendment_3():
     assert "Amendment 3 62534b6fc372e025" in logic.RULE_SOURCE
 
@@ -665,3 +669,71 @@ def test_the_launcher_dry_run_names_the_layout_paths_for_every_stage(tmp_path):
         assert done.returncode == 0, done.stdout + done.stderr
         lines = [line for line in done.stdout.splitlines() if line.startswith("CELL ")]
         assert len(lines) == cells and all(f"{kit}/tools/rpg_measure/k2k3_count_spy.py" in line and f" {ticks} " in line for line in lines)
+
+
+# ---- Amendment 4: A6 fresh results only, A7 the tree's REST held marker, A8 held_rest_not_resting (controls l-o)
+def accepted(tid, b=7):
+    return NS(transaction_id=tid, source_kind="TOWN_SERVICE", source_id=b, accepted=True, reason=None)
+
+
+def test_one_accepted_result_carried_unchanged_for_50_ticks_counts_once_and_delivers_no_later_dispatch():          # control (l)
+    spy = make_spy()
+    r1 = (accepted("t1"),)
+    spy_run(spy, 160, lambda t: fake_state(t, [fake_entity(1, hunger=60.0, action="EAT", target=7, results=r1 if t >= 3 else ())]))      # the tuple stays in latest_intent_results every tick, as patches.py:246 keeps it
+    spy.finish(161)
+    rep = spy.report()
+    assert rep["dispatch_visibility"]["EAT"]["accepted_results"] == 1 and rep["delivered_channel_counts"]["accepted_result"] == 1 and rep["stale_results_ignored"] >= 150
+    assert rep["k2"]["k2_count"] == 1 and rep["k2"]["long_runs"][0]["first_failed"] >= 3                           # the stale result did not deliver the later undelivered EAT executions
+
+
+def test_a_rest_with_the_trees_outcome_success_marker_is_held_from_that_tick_with_no_run():                       # control (m)
+    spy = make_spy()
+    spy_run(spy, 160, lambda t: fake_state(t, [fake_entity(1, sleep=80.0, action="REST", target=7, outcome="SUCCESS")]))
+    spy.finish(161)
+    rep = spy.report()
+    assert rep["k2"]["runs_all"] == 0 and rep["k2"]["held_repeats"]["REST"] >= 150
+    other = make_spy()                                                                                      # the marker names another building: no evidence for b
+    spy_run(other, 160, lambda t: fake_state(t, [fake_entity(1, sleep=80.0, action="REST", target=7)]))
+    other.finish(161)
+    assert other.report()["k2"]["k2_count"] == 1                                                            # no marker and no lodging: still a failing REST run
+
+
+def test_a_held_rest_for_150_ticks_with_flat_sleep_debt_is_listed_and_a_resting_one_is_not():                     # control (n)
+    flat = make_spy()
+    spy_run(flat, 160, lambda t: fake_state(t, [fake_entity(1, sleep=80.0, action="REST", target=7, outcome="SUCCESS")]))
+    flat.finish(161)
+    listed = flat.report()["k2"]["held_rest_not_resting"]
+    assert len(listed) == 1 and listed[0]["subject"] == 1 and listed[0]["building"] == 7 and listed[0]["held_ticks"] > 100
+    assert listed[0]["sleep_debt_first"] == listed[0]["sleep_debt_last"] == 80.0 and listed[0]["payload_first"]["outcome"] == "SUCCESS"
+    assert flat.report()["k2"]["k2_count"] == 0                                                            # report-only: it is not a K2 count
+    resting = make_spy()
+    spy_run(resting, 160, lambda t: fake_state(t, [fake_entity(1, sleep=80.0 - 0.2 * t, action="REST", target=7, outcome="SUCCESS")]))
+    resting.finish(161)
+    assert resting.report()["k2"]["held_rest_not_resting"] == []
+    short = make_spy()                                                                                      # held for 50 ticks only: below the 100-tick floor
+    spy_run(short, 50, lambda t: fake_state(t, [fake_entity(1, sleep=80.0, action="REST", target=7, outcome="SUCCESS")]))
+    short.finish(51)
+    assert short.report()["k2"]["held_rest_not_resting"] == []
+
+
+def test_a_fresh_result_with_a_new_transaction_id_after_a_stale_one_counts():                                   # control (o)
+    spy = make_spy()
+    r1, r2 = (accepted("t1"),), (accepted("t2"),)
+    spy_run(spy, 100, lambda t: fake_state(t, [fake_entity(1, hunger=60.0, action="EAT", target=7, results=() if t < 3 else (r1 if t < 60 else r2))]))
+    spy.finish(101)
+    rep = spy.report()
+    assert rep["dispatch_visibility"]["EAT"]["accepted_results"] == 2 and rep["delivered_channel_counts"]["accepted_result"] == 2
+
+
+def test_fresh_results_helper_treats_a_missing_transaction_id_by_equality_not_as_always_fresh():
+    r = NS(source_kind="TOWN_SERVICE", source_id=7, accepted=True, reason=None)
+    assert spy_mod.fresh_results(fake_entity(1), fake_entity(1, results=[r])) == [r]
+    assert spy_mod.fresh_results(fake_entity(1, results=[r]), fake_entity(1, results=[r])) == []
+    assert spy_mod.fresh_results(fake_entity(1, results=[accepted("t1")]), fake_entity(1, results=[accepted("t1"), accepted("t2")]))[0].transaction_id == "t2"
+
+
+def test_the_negative_control_summary_carries_the_a8_channel_and_the_stale_count(tmp_path):
+    summary = load("k2k3_count_summary")
+    _neg_cell(tmp_path, [_run("EAT", None)])
+    doc = summary.neg_summary(tmp_path)
+    assert "held_rest_not_resting" in doc and "stale_results_ignored" in doc and "dispatch_visibility" in doc

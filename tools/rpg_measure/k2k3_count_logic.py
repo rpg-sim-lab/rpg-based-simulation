@@ -7,6 +7,8 @@ K2 (a service dispatch that keeps failing): ``K2Tracker.step`` is fed once per t
   failed at t+1  = the apply of tick t+1 delivered no service for (subject, action, b); ``delivered`` is decided by the spy (accepted result for b, or the service's own state change).
   run            = maximal sequence of failed dispatches of one (subject, action, b), consecutive failed ticks at most K = NEED_WAKE_CADENCE apart; it ends at a delivered service
                    for that triple, at death/removal, or at a gap of more than K with no dispatch of that triple. Length = last failed - first failed + 1. One K2 count = a run of length > 100.
+AMENDMENT 4 (rpg-designer-k2k3-neg-read-and-amendment4.md, e0abe4551dd7cca5...): A6 only a result FRESH in this apply counts (patches.py:246 keeps the previous latest_intent_results tuple when an update has none, so a stale accepted result must not deliver a later dispatch
+or inflate the visibility counts); A7 a REST is also held when its payload is action REST, target b, ``outcome`` == "SUCCESS" (the tree's own held marker, building_services.py:87); A8 the report-only channel ``held_rest_not_resting`` (a REST held for more than 100 t whose sleep_debt falls by less than 1.0 in total) decides nothing.
 AMENDMENT 3 (rpg-designer-k2k3-kit-v3-review.md, 62534b6fc372e025...): A5 held_repeat applies to REST ONLY (``HELD_ACTIONS``): only the bed is paid once (building_services.py:86-88). EAT, SELL and REPAIR are fresh on every execution, so every
 execution is a dispatch judged by A1 on its own tick; holding EAT would mask the K2 loop itself.
 AMENDMENT 2 (rpg-designer-k2k3-kit-v2-review.md, 125c8a23f1192d51...): A4 a HELD service repeat is not a dispatch (REST only, see A5). A K2 dispatch is an execution of (action, b) NOT already delivered in the current attempt; the attempt starts when the subject takes (action, b) and ends when
@@ -30,7 +32,10 @@ SPEC_SHA = "992b7ce37e1a7325a9afab517cd87ce65221627ea2ddd2be4377962940cd5855"
 AMENDMENT_1_SHA_PREFIX = "e6cc644c87cff1818180"          # rpg-designer-k2k3-kit-v1-review.md (the full sha256 is in the review's own record)
 AMENDMENT_2_SHA_PREFIX = "125c8a23f1192d51"              # rpg-designer-k2k3-kit-v2-review.md
 AMENDMENT_3_SHA_PREFIX = "62534b6fc372e025"              # rpg-designer-k2k3-kit-v3-review.md
-RULE_SOURCE = f"992b7ce3 + Amendment 1 {AMENDMENT_1_SHA_PREFIX} + Amendment 2 {AMENDMENT_2_SHA_PREFIX} + Amendment 3 {AMENDMENT_3_SHA_PREFIX}"
+AMENDMENT_4_SHA_PREFIX = "e0abe4551dd7cca5"              # rpg-designer-k2k3-neg-read-and-amendment4.md
+RULE_SOURCE = f"992b7ce3 + Amendment 1 {AMENDMENT_1_SHA_PREFIX} + Amendment 2 {AMENDMENT_2_SHA_PREFIX} + Amendment 3 {AMENDMENT_3_SHA_PREFIX} + Amendment 4 {AMENDMENT_4_SHA_PREFIX}"
+HELD_REST_MIN_TICKS = 100                                  # A8: a REST held for MORE than this many ticks ...
+HELD_REST_MIN_FALL = 1.0                                   # ... whose sleep_debt falls by LESS than this in total is listed (report-only)
 HELD_ACTIONS = frozenset({"REST"})                         # A5: only the bed is paid once and heals once; every other service execution is a fresh attempt at service
 K3_S42_CELLS = 3
 K3_CLOSE_CELLS = 7                                         # A3: the three s42 cells plus frontier_living_world s43-46
@@ -46,7 +51,8 @@ class K2Tracker:
         self.pending: Dict[int, Set[Tuple[str, int]]] = {}      # subject -> the dispatches (action, building) of the previous tick (post-apply task and router channel)
         self.open: Dict[Tuple[int, str, int], Dict[str, Any]] = {}   # (subject, action, building) -> the run being built
         self.closed: List[Dict[str, Any]] = []
-        self.attempts: Dict[Tuple[int, str, int], Dict[str, Any]] = {}   # (subject, action, building) -> {"delivered": bool, "last": the last dispatch tick} (A4)
+        self.attempts: Dict[Tuple[int, str, int], Dict[str, Any]] = {}   # (subject, action, building) -> {"delivered": bool, "last": the last dispatch tick, "held": n, ...} (A4)
+        self.attempt_log: List[Tuple[Tuple[int, str, int], Dict[str, Any]]] = []   # attempts replaced by a newer one (A8 reads the held ones)
         self.held_repeats: Counter = Counter()                            # per action: executions after a delivery in the same attempt
         self.dispatch_ticks = 0
         self.dispatch_subjects: set = set()
@@ -101,13 +107,19 @@ class K2Tracker:
             key = (subject, prev[0], prev[1])
             attempt = self.attempts.get(key)
             if attempt is None or attempt["last"] != tick - 2:           # the pair was not executed on the tick before: a NEW attempt
-                attempt = {"delivered": False, "last": tick - 1}
+                if attempt is not None:
+                    self.attempt_log.append((key, attempt))
+                attempt = {"delivered": False, "last": tick - 1, "held": 0, "held_first_tick": None, "held_first_ctx": None, "held_last_ctx": None, "held_last_tick": None}
                 self.attempts[key] = attempt
             if prev in delivered or (prev in evidence and not attempt["delivered"]):     # the grant (lodged_in == b) is the delivery ONCE per attempt; on later ticks it is the held state itself
                 attempt["delivered"] = True
                 self._delivered(key, tick)
             elif attempt["delivered"] and prev[0] in HELD_ACTIONS:                                  # A5: REST only; an undelivered EAT/SELL/REPAIR execution is a dispatch that FAILS (a K2 run) even after a delivery
                 self.held_repeats[prev[0]] += 1
+                attempt["held"] += 1
+                if attempt["held_first_tick"] is None:
+                    attempt["held_first_tick"], attempt["held_first_ctx"] = tick - 1, contexts.get(prev)
+                attempt["held_last_tick"], attempt["held_last_ctx"] = tick - 1, contexts.get(prev)
             else:
                 self._failed(key, tick - 1, reasons.get(prev, ["absent"]), building_kinds.get(prev[1]), contexts.get(prev))
             attempt["last"] = tick - 1
@@ -123,6 +135,20 @@ class K2Tracker:
         for key in list(self.open):
             self._close(key, "open_at_end")
 
+    def held_rest_not_resting(self) -> List[Dict[str, Any]]:
+        """A8 (report-only, decides nothing): every REST attempt held for more than ``HELD_REST_MIN_TICKS`` ticks whose sleep_debt fell by less than ``HELD_REST_MIN_FALL`` in total."""
+        listed: List[Dict[str, Any]] = []
+        for key, attempt in self.attempt_log + list(self.attempts.items()):
+            if key[1] != "REST" or attempt["held"] <= HELD_REST_MIN_TICKS:
+                continue
+            first, last = attempt["held_first_ctx"] or {}, attempt["held_last_ctx"] or {}
+            if first.get("sleep_debt") is None or last.get("sleep_debt") is None or first["sleep_debt"] - last["sleep_debt"] >= HELD_REST_MIN_FALL:
+                continue
+            listed.append({"subject": key[0], "building": key[2], "held_ticks": attempt["held"], "first_held_tick": attempt["held_first_tick"], "last_held_tick": attempt["held_last_tick"],
+                           "sleep_debt_first": first["sleep_debt"], "sleep_debt_last": last["sleep_debt"], "lodged_in_first": first.get("lodged_in"), "lodged_in_last": last.get("lodged_in"),
+                           "payload_first": first.get("payload"), "payload_last": last.get("payload")})
+        return sorted(listed, key=lambda r: (r["first_held_tick"] if r["first_held_tick"] is not None else -1, r["subject"], r["building"]))
+
     def summary(self, blockers_for=None) -> Dict[str, Any]:
         runs = sorted(self.closed, key=lambda r: (r["first_failed"], r["subject"], r["action"], r["building"]))
         out_runs = []
@@ -132,7 +158,7 @@ class K2Tracker:
             out_runs.append(row)
         long_runs = [r for r in out_runs if r["length"] > K2_LONG]
         return {"k": self.k, "runs": out_runs, "runs_all": len(out_runs), "runs_over_10": sum(1 for r in out_runs if r["length"] > K2_MID), "runs_over_100": len(long_runs),
-                "k2_count": len(long_runs), "long_runs": long_runs, "held_repeats": dict(self.held_repeats), "dispatch_ticks": self.dispatch_ticks, "subjects_with_dispatch": len(self.dispatch_subjects),
+                "k2_count": len(long_runs), "long_runs": long_runs, "held_repeats": dict(self.held_repeats), "held_rest_not_resting": self.held_rest_not_resting(), "dispatch_ticks": self.dispatch_ticks, "subjects_with_dispatch": len(self.dispatch_subjects),
                 "alive_subject_ticks": self.alive_subject_ticks}
 
 
