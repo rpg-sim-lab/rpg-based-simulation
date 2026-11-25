@@ -190,7 +190,15 @@ def test_parent_bond_updates_for_birth_apply_through_authoritative_path():
 def test_birth_commits_through_authoritative_apply_path(monkeypatch):
     """The full StateUpdate produced by BirthService.process_births() -- new child entity plus both
     parents' cooldown and reciprocal SocialBond updates -- must survive a full
-    ApplyPath.apply_generation() round-trip in a single tick (birth chance forced to 1)."""
+    ApplyPath.apply_generation() round-trip (birth chance forced to 1).
+
+    Under the births rules a pair of people first CONCEIVES (the mate gate `bond` needs reciprocal sentiment at the FRIEND line) and the
+    child is born at the pregnancy's due tick, so this runs the two real steps (stale since TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND
+    febf43bb9 retargeted it before the gestation split and the mate gate landed)."""
+    import dataclasses
+
+    from src.core.state import SocialBond
+    from src.systems.social_systems.relationships import RelationshipService
     from src.systems.world_systems.generator import EntityGenerator
     from src.world import births
 
@@ -205,40 +213,52 @@ def test_birth_commits_through_authoritative_apply_path(monkeypatch):
 
     monkeypatch.setattr(births, "get_catalog", lambda: _CertainCatalog())
 
-    parent_a = EntityState(
-        id=101, kind="human",
-        navigation=NavigationComponent(position=(10.0, 10.0)),
-        combat=CombatComponent(hp=100, max_hp=100, alive=True),
-        identity=IdentityComponent(role="CITIZEN", life_stage=LifeStage.ADULT),
-        lifecycle=LifecycleComponent(age_ticks=5000, max_age_ticks=20000, active=True),
-    )
-    parent_b = EntityState(
-        id=102, kind="human",
-        navigation=NavigationComponent(position=(10.5, 10.5)),
-        combat=CombatComponent(hp=100, max_hp=100, alive=True),
-        identity=IdentityComponent(role="CITIZEN", life_stage=LifeStage.ADULT),
-        lifecycle=LifecycleComponent(age_ticks=5000, max_age_ticks=20000, active=True),
-    )
-    state = AuthoritativeState(tick=100, seed=42, world_time=1000, entities={101: parent_a, 102: parent_b})
+    line = RelationshipService.FRIEND_SENTIMENT_THRESHOLD
 
+    def _person(entity_id, position, partner_id):
+        return EntityState(
+            id=entity_id, kind="human",
+            navigation=NavigationComponent(position=position),
+            combat=CombatComponent(hp=100, max_hp=100, alive=True),
+            identity=IdentityComponent(role="CITIZEN", life_stage=LifeStage.ADULT),
+            lifecycle=LifecycleComponent(age_ticks=5000, max_age_ticks=20000, active=True),
+            social=dataclasses.replace(EntityState(id=entity_id).social, bonds={partner_id: SocialBond(target_id=partner_id, sentiment=line)}),
+        )
+
+    parent_a, parent_b = _person(101, (10.0, 10.0), 102), _person(102, (10.5, 10.5), 101)
+    state = AuthoritativeState(tick=100, seed=42, world_time=1000, entities={101: parent_a, 102: parent_b})
     generator = EntityGenerator(seed=42)
-    update = births.BirthService.process_births(state, generator)
+
+    # step 1: the conception (a pregnancy on the lower id, the father's interval starts now)
+    conception = births.BirthService.process_births(state, generator)
+    assert not conception.entities_add
+    conceived = ApplyPath.apply_generation(state, conception, next_tick=101, cadence=SystemCadence())
+    pregnancy = conceived.entities[101].lifecycle.pregnancy
+    assert pregnancy is not None and pregnancy.father_entity_id == 102 and pregnancy.due_tick == 100 + 2400
+
+    # step 2: the check at the due tick bears the child, and it must survive the apply path
+    due = pregnancy.due_tick
+    at_term = AuthoritativeState(tick=due, seed=42, world_time=1000 + due, entities=conceived.entities, next_entity_id=conceived.next_entity_id)
+    generator = EntityGenerator(seed=42)
+    generator._last_id = at_term.next_entity_id - 1
+    update = births.BirthService.process_births(at_term, generator)
 
     assert len(update.entities_add) == 1
     child = update.entities_add[0]
 
-    new_state = ApplyPath.apply_generation(state, update, next_tick=101, cadence=SystemCadence())
+    new_state = ApplyPath.apply_generation(at_term, update, next_tick=due + 1, cadence=SystemCadence())
 
     result_child = new_state.entities[child.id]
     assert result_child.kind == "human"
     assert result_child.lifecycle.parent_a_entity_id == 101
     assert result_child.lifecycle.parent_b_entity_id == 102
-    assert result_child.lifecycle.birth_tick == 100
+    assert result_child.lifecycle.birth_tick == due
     assert result_child.identity.life_stage == LifeStage.CHILD
+    assert new_state.entities[101].lifecycle.pregnancy is None
 
-    expiry = 100 + 12000
-    assert new_state.entities[101].lifecycle.reproduction_cooldowns[102] == expiry
-    assert new_state.entities[102].lifecycle.reproduction_cooldowns[101] == expiry
+    # the father's interval started at conception, the mother's at the birth
+    assert new_state.entities[102].lifecycle.reproduction_cooldowns[101] == 100 + 12000
+    assert new_state.entities[101].lifecycle.reproduction_cooldowns[102] == due + 12000
 
     for parent_id in (101, 102):
         bond = new_state.entities[parent_id].social.bonds[child.id]
