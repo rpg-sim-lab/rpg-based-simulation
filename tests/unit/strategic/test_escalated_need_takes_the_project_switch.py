@@ -56,8 +56,8 @@ def test_a_present_threat_leaves_the_ordinary_decision():
     entity = subject(project("tr", "town_return", 90.0, lock=60))
     candidate = project("h", GoalKind.HUNGER, 70.0)
     assert switch(entity, candidate, with_hostile(entity)) is None                    # the ordinary path refuses; the threat withholds the bypass
-    assert intel._escalated_need_takes_switch(entity, candidate, entity.strategic.projects["tr"], with_hostile(entity)) is False
-    assert intel._escalated_need_takes_switch(entity, candidate, entity.strategic.projects["tr"], with_hostile(entity, adjacent=False)) is True
+    assert intel.escalated_need_takes_switch(entity, candidate, entity.strategic.projects["tr"], with_hostile(entity)) is False
+    assert intel.escalated_need_takes_switch(entity, candidate, entity.strategic.projects["tr"], with_hostile(entity, adjacent=False)) is True
 
 
 def test_a_non_escalated_hunger_winner_keeps_the_ordinary_lock_and_margin():
@@ -68,7 +68,7 @@ def test_a_non_escalated_hunger_winner_keeps_the_ordinary_lock_and_margin():
 @pytest.mark.parametrize("current_kind, candidate_kind, hunger, sleep", [(GoalKind.FATIGUE, GoalKind.HUNGER, 80.0, 0.0), (GoalKind.HUNGER, GoalKind.FATIGUE, 0.0, 90.0), (GoalKind.HUNGER, GoalKind.HUNGER, 80.0, 0.0), (GoalKind.FATIGUE, GoalKind.HUNGER, 40.0, 0.0)])
 def test_need_against_need_stays_with_the_ordinary_path_by_kind_identity(current_kind, candidate_kind, hunger, sleep):
     entity = subject(project("cur", current_kind, 90.0, lock=60), hunger=hunger, sleep_debt=sleep)
-    assert intel._escalated_need_takes_switch(entity, project("c", candidate_kind, 70.0), entity.strategic.projects["cur"], _state(entity, tick=50)) is False
+    assert intel.escalated_need_takes_switch(entity, project("c", candidate_kind, 70.0), entity.strategic.projects["cur"], _state(entity, tick=50)) is False
     assert switch(entity, project("c", candidate_kind, 70.0)) is None
 
 
@@ -94,8 +94,8 @@ def test_a_taken_case_the_ordinary_path_also_allows_gives_the_same_update_as_the
     entity = subject(project("tr", "town_return", 20.0), resistance=0.0)                                         # unlocked, low score: both allow
     candidate = project("h", GoalKind.HUNGER, 70.0)
     taken = switch(entity, candidate)
-    monkeypatch.setattr(intel, "_escalated_need_takes_switch", lambda *a: False)
-    assert intel._ordinary_switch_allows(entity, candidate, entity.strategic.projects["tr"], 50, _state(entity, tick=50)) is True
+    monkeypatch.setattr(intel, "escalated_need_takes_switch", lambda *a: False)
+    assert intel.ordinary_switch_allows(entity, candidate, entity.strategic.projects["tr"], 50, _state(entity, tick=50)) is True
     assert switch(entity, candidate) == taken
 
 
@@ -132,7 +132,7 @@ def oracle(entity, candidate, tick, state):
                                                                     (50.0, 95.0, 60, ProjectStatus.SUSPENDED), (2.0, 85.0, 60, ProjectStatus.ACTIVE)])
 @pytest.mark.parametrize("resistance", [0.0, 0.5, 1.0])
 def test_with_the_rule_off_the_helpers_give_the_pre_refactor_decision(monkeypatch, current_kind, candidate_kind, cur_score, cand_score, lock, status, resistance):
-    monkeypatch.setattr(intel, "_escalated_need_takes_switch", lambda *a: False)
+    monkeypatch.setattr(intel, "escalated_need_takes_switch", lambda *a: False)
     entity = subject(project("cur", current_kind, cur_score, lock=lock, status=status), resistance=resistance)
     candidate = project("cand", candidate_kind, cand_score)
     state = _state(entity, tick=50)

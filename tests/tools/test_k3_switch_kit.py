@@ -45,7 +45,7 @@ def state(tick, entities=()):
 class Sis:
     @staticmethod
     def evaluate_project_switch(entity, candidate, current_tick, state=None):
-        return intel._escalated_need_takes_switch(entity, candidate, entity.strategic.projects[entity.strategic.current_project_id], state) and "update"
+        return intel.escalated_need_takes_switch(entity, candidate, entity.strategic.projects[entity.strategic.current_project_id], state) and "update"
 
 
 class Apply:
@@ -60,8 +60,8 @@ intel = NS()
 @pytest.fixture
 def rig(monkeypatch):
     holder = NS(rule=True, ordinary=False, threat=False, acting=False, ordinary_calls=[])
-    intel._escalated_need_takes_switch = lambda e, c, cur, s: holder.rule
-    intel._ordinary_switch_allows = lambda e, c, cur, t, s: (holder.ordinary_calls.append((e.id, t)) or holder.ordinary)
+    intel.escalated_need_takes_switch = lambda e, c, cur, s: holder.rule
+    intel.ordinary_switch_allows = lambda e, c, cur, t, s: (holder.ordinary_calls.append((e.id, t)) or holder.ordinary)
     import src.ai.goals.present_threat as pt
     monkeypatch.setattr(pt, "present_threat_to", lambda e, s: holder.threat)
     monkeypatch.setattr(pt, "acting_threat_to", lambda e, s: holder.acting)

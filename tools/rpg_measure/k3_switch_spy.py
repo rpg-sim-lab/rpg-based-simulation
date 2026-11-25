@@ -2,7 +2,7 @@
 
 ONE cell per process (cwd = the frozen FIX tree, PYTHONPATH = that tree, recording OFF). Hash-neutral pass-throughs that return the ORIGINAL objects:
  - ``StrategicIntelligenceSystem.evaluate_project_switch`` (only to learn ``current_tick``, which the rule helper does not receive);
- - the module function ``intelligence._escalated_need_takes_switch`` (the RULE): every call that returns True is a TAKEN; at that moment the spy calls ``intelligence._ordinary_switch_allows`` READ-ONLY on the same arguments
+ - the module function ``intelligence.escalated_need_takes_switch`` (the RULE): every call that returns True is a TAKEN; at that moment the spy calls ``intelligence.ordinary_switch_allows`` READ-ONLY on the same arguments
    (a pure function) and records FIRES = rule True AND ordinary False, with the need, the current project's kind, id, score and lock, and ``present_threat_to`` (must be False at every TAKEN) and ``acting_threat_to``;
  - ``ApplyPath.apply_generation`` (to follow each TAKEN: ticks the need project stays current, the suspended project's fate, the subject's hp for 50 ticks, hunger >= 95 and sleep_debt >= 98 subjects).
 ``--mode plain`` runs with no wrapper and writes the final hash. A cell is VOID unless spy final_hash == plain final_hash.
@@ -59,8 +59,8 @@ class SwitchSpy:
     def install(self) -> "SwitchSpy":
         spy, intel = self, self.intel
         orig_switch = self.sis.__dict__["evaluate_project_switch"].__func__
-        orig_rule = intel._escalated_need_takes_switch
-        orig_ordinary = intel._ordinary_switch_allows
+        orig_rule = intel.escalated_need_takes_switch
+        orig_ordinary = intel.ordinary_switch_allows
         orig_apply = self.apply_path.__dict__["apply_generation"].__func__
 
         def evaluate_project_switch(entity, candidate, current_tick, state=None):
@@ -80,9 +80,9 @@ class SwitchSpy:
             spy.guarded(spy.observe, new_state)
             return new_state
 
-        self._patched += [(self.sis, "evaluate_project_switch", orig_switch, True), (intel, "_escalated_need_takes_switch", orig_rule, False), (self.apply_path, "apply_generation", orig_apply, True)]
+        self._patched += [(self.sis, "evaluate_project_switch", orig_switch, True), (intel, "escalated_need_takes_switch", orig_rule, False), (self.apply_path, "apply_generation", orig_apply, True)]
         self.sis.evaluate_project_switch = staticmethod(evaluate_project_switch)
-        intel._escalated_need_takes_switch = rule
+        intel.escalated_need_takes_switch = rule
         self.apply_path.apply_generation = staticmethod(apply_generation)
         return self
 
@@ -182,7 +182,7 @@ def main(argv: List[str]) -> int:
         from src.engine.apply import ApplyPath
         from src.systems.strategic_systems import intelligence as intel
 
-        for name in ("_escalated_need_takes_switch", "_ordinary_switch_allows"):
+        for name in ("escalated_need_takes_switch", "ordinary_switch_allows"):
             if not callable(getattr(intel, name, None)):
                 findings.append(f"tree does not expose intelligence.{name}")
         if findings:
