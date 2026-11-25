@@ -587,7 +587,7 @@ only social reads in births (Q18 is lifted for them alone); role, kind and occup
 read. **Current play:** nothing in play issues PROPOSE_MARRIAGE (07, Contract Kinds, Current
 play), so the marriage arm is never reached and the sentiment arm decides. This reverses the
 2026-08-29 decoupling of Marriage (idea 33) from Reproduction (idea 32); see
-`docs/guidelines/intentional_divergences.md` 2.215.
+`docs/guidelines/intentional_divergences.md` 2.225.
 
 **Closes the population-pressure feedback loop:** on a successful pairing, this path also nudges
 the birth region's `young`-bracket count by `+1` via `WorldUpdate.population_young_births_delta` —

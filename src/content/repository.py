@@ -503,7 +503,7 @@ class CatalogRepository:
             record_counts=record_counts,
             missing_required_files=missing_required_files,
             missing_optional_files=missing_optional_files,
-            ignored_files=ignored_files,
+            ignored_files=sorted(ignored_files),
             duplicate_ids=duplicate_ids,
             schema_errors=schema_errors,
             fingerprint=self.fingerprint

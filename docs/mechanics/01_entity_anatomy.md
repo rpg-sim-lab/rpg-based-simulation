@@ -210,7 +210,7 @@ species' declared mate gate (05, Births Law): for a species whose reproduction p
 `mate_gate: bond`, an ACCEPTED `MarriageState` between the two, or both directed
 `SocialBond.sentiment` values at or above the profile's `min_mutual_sentiment`, passes the gate.
 This reverses the 2026-08-29 decoupling of Reproduction (idea 32) from Marriage (idea 33);
-see `docs/guidelines/intentional_divergences.md` 2.215.
+see `docs/guidelines/intentional_divergences.md` 2.225.
 
 ### Genetic Inheritance (Combination)
 
