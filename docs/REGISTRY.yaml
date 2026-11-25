@@ -8022,6 +8022,19 @@
   tags:
   - cognition
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261125-THE-STALEMATE-WANDER-FAMILY-LEFT-AFTER-996-COUNTS-TEST-AND-PAIRED-RUN.md
+  ticket_id: TCK-20261125-THE-STALEMATE-WANDER-FAMILY-LEFT-AFTER-996-COUNTS-TEST-AND-PAIRED-RUN
+  title: 'What F1 left unmeasured after #996: the stalemate/wander counts table, a
+    test for the s44 p1 shape, and an F1 paired run.'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-25'
+  related_code_areas:
+  - 'src/engine movement and nav (the oscillation replan ladder from #996)'
+  artifact_files: []
+  tags:
+  - cognition
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261125-TWO-INFER-BLOCKERS-BRANCHES-COMPARE-LOWERCASE-REASON-CODES-WITH-UPPERCASE-STRINGS.md
   ticket_id: TCK-20261125-TWO-INFER-BLOCKERS-BRANCHES-COMPARE-LOWERCASE-REASON-CODES-WITH-UPPERCASE-STRINGS
   title: 'Two infer_blockers branches can never fire: lowercase ReasonCode values
@@ -12206,6 +12219,20 @@
   - testing
   - regression
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD.md
+  ticket_id: TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD
+  title: '`kind` always means species, and occupation is a separate field'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/core/ (entity identity), content schemas
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD/investigation.md
+  - agent-working/stored_artifacts/TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD/plan.md
+  - agent-working/stored_artifacts/TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE.md
   ticket_id: TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE
   title: 'Milestone 1''s name-check probe: no role, kind or faction name switch left
@@ -12343,17 +12370,6 @@
   date: '2026-11-09'
   related_code_areas:
   - src/strategy/ and perception code, content schemas
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD.md
-  ticket_id: TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD
-  title: '`kind` always means species, and occupation is a separate field'
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-09'
-  related_code_areas:
-  - src/core/ (entity identity), content schemas
   artifact_files: []
   tags: []
 - type: ticket
@@ -14031,6 +14047,23 @@
   - ai
   - process-improvement
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK.md
+  ticket_id: TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK
+  title: The stalemate breaker replaces a project's move with a one-tile wander every
+    tick on a move that reports no failure ("LEGAL", path length 0), so the subject
+    oscillates between two tiles and never reaches its target
+  tier: standard
+  ticket_type: bug
+  date: '2026-10-30'
+  related_code_areas:
+  - the stalemate breaker and its stall/oscillation counters, navigation last_failure_reason,
+    the tactical move path
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK/investigation.md
+  - agent-working/stored_artifacts/TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK/plan.md
+  - agent-working/stored_artifacts/TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261030-WORLD-GENERATOR-RESOURCE-TYPE-PICK-FOLLOWS-PYTHONHASHSEED.md
   ticket_id: TCK-20261030-WORLD-GENERATOR-RESOURCE-TYPE-PICK-FOLLOWS-PYTHONHASHSEED
   title: The intent-driven world generator picks each node's resource type with the
@@ -14079,20 +14112,6 @@
   related_code_areas:
   - src/ai/goals/scorers.py (SleepScorer, EatScorer), src/engine/need_wake.py, the
     scheduler's hunger wake, src/engine/starvation.py, src/engine/sleep_debt.py
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK.md
-  ticket_id: TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK
-  title: The stalemate breaker replaces a project's move with a one-tile wander every
-    tick on a move that reports no failure ("LEGAL", path length 0), so the subject
-    oscillates between two tiles and never reaches its target
-  tier: standard
-  ticket_type: bug
-  date: '2026-10-30'
-  related_code_areas:
-  - the stalemate breaker and its stall/oscillation counters, navigation last_failure_reason,
-    the tactical move path
   artifact_files: []
   tags: []
 - type: ticket

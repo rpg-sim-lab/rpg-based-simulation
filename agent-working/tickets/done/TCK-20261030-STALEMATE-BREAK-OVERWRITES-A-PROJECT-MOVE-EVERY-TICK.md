@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: engine
 authority: P1
 audience: agent
 ticket_id: TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK
-phase: open
+phase: done
 date: 2026-10-30
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 The stalemate breaker replaces a project's move with a one-tile wander every tick on a move that reports no failure ("LEGAL", path length 0), so the subject oscillates between two tiles and never reaches its target
 
 ## Status
-OPEN
+DONE
 
 ## Tier
 standard
@@ -79,6 +79,16 @@ Designer framing: this is a third "repeated failure, never learned" shape, after
 - 2026-10-30 designer (N14 ruling): this ticket is the STALEMATE/WANDER nav FAMILY. Add as evidence the 100 of 155 urban s46 stalls aimed at an entity or position (mostly resolve_blocker), with counts split by target type. Named sub-finding: the movement rungs consider only the subject's own neighbours, so they never route to a door tile 2+ steps away (p4, fatigue, t1267: a free tile for 65 ticks, failure LEGAL). Sequenced after N14 F1 and the A' re-measure, before #781. Lane B counts (main): trigger A STALEMATE_BREAK 12 runs; trigger B (door) belongs to TCK-20261021.
 - 2026-11-25 (rpg-planner, via #996): CODE LANDED via #996: 08b9dcae8, 6d2c6bc35, 46ac46e40, dcacec7ba (the oscillation replan rung ladder, give-up after two no-progress way-rounds anchored to the pursuit, the jitter and fingerprint fixes, the checkpoint round trip; divergence 2.213). EXECUTED regression tests: tests/unit/movement/test_osc_replan_ladder.py (4 tests named in #996's gap). REMAINING for close (no new runs under the scope freeze, #715 7132422805): (1) the counts table (main vs D73-shape, 3 worlds x s42-46 x 5000t) was never recorded; (2) no test is named for the s44 p1 shape (a project move replaced by a wander every tick while the nav reports no failure); (3) no F1-specific paired run S9 (the post-fix kits at 41532db40/241051864/0d0141804 ran this code but measured #996's freeze).
 
+- 2026-11-25 (rpg-planner): CLOSED on the code that landed in #996, per the owner ruling #715 7157496515 Q2 ('F1's started part closes or is moved out explicitly') and rpg-designer's classification (#715 7157686023, recorded as 7157730160). Disclosure: it is closed as LANDED CODE, not as a measured cure. #996's own lifecycle read left the lifecycle world NOT GONE on seed 42 (the owner accepted the 10-seed spread). MOVED OUT to the cognition-rework backlog as ONE follow-up ticket, TCK-20261125-THE-STALEMATE-WANDER-FAMILY-LEFT-AFTER-996-COUNTS-TEST-AND-PAIRED-RUN: (1) the counts table, (2) a test for the s44 p1 shape, (3) the F1 paired run.
+
+## Durable state, lifecycle and clocks
+- None new in this close. The landed code's state (the nav give-up records and their checkpoint round trip) is documented with #996 and divergence 2.213.
+
 ## Test Summary
+- The regression tests landed with #996: tests/unit/movement/test_osc_replan_ladder.py (EXECUTED in #996's gap and CI). No new test in this close.
+
 ## Files Changed
+- Code: in #996 (08b9dcae8, 6d2c6bc35, 46ac46e40, dcacec7ba). This close changes only this ticket and the new follow-up ticket.
+
 ## Completion Summary
+- Closed as landed code, not as a measured cure (see Implementation Notes, 2026-11-25). The unmeasured remainder is moved out explicitly to TCK-20261125-THE-STALEMATE-WANDER-FAMILY-LEFT-AFTER-996-COUNTS-TEST-AND-PAIRED-RUN (cognition-rework backlog), as roadmap §12.5 done #4 requires.

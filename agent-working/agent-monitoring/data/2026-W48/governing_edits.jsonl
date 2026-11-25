@@ -1,3 +1,5 @@
 {"ts":"2026-11-24T06:38:44.422867Z","event":"governing_edit_attempt","seat":"rpg-planner","path":".github/workflows/test.yml","basis":"mention","attempt":true}
 {"ts":"2026-11-24T18:41:07.819090Z","event":"governing_edit_attempt","seat":"rpg-planner","path":".github/workflows/test.yml","basis":"mention","attempt":true}
 {"ts":"2026-11-24T19:40:53.967547Z","event":"governing_edit_attempt","seat":"rpg-planner","path":".github/workflows/rpg-gate-report.yml","basis":"mention","attempt":true}
+{"ts":"2026-11-25T15:36:31.423153Z","event":"governing_edit_attempt","seat":"rpg-planner","path":".github/workflows/test.yml","basis":"mention","attempt":true}
+{"ts":"2026-11-25T15:36:39.364785Z","event":"governing_edit_attempt","seat":"rpg-planner","path":".github/workflows/test.yml","basis":"mention","attempt":true}
