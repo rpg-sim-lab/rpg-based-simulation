@@ -7986,6 +7986,32 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261125-A-COHORT-IN-FRONTIER-NEVER-SLEEPS-FOR-ABOUT-2000-TICKS.md
+  ticket_id: TCK-20261125-A-COHORT-IN-FRONTIER-NEVER-SLEEPS-FOR-ABOUT-2000-TICKS
+  title: A cohort in frontier_living_world never sleeps for about 2,000 ticks, and
+    what refused bodies do after the K2 fix's WAY_CLOSED is unread.
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-25'
+  related_code_areas:
+  - src/ai/goals/scorers.py (SleepScorer), src/systems/strategic_systems/intelligence.py
+  artifact_files: []
+  tags:
+  - cognition
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261125-TWO-INFER-BLOCKERS-BRANCHES-COMPARE-LOWERCASE-REASON-CODES-WITH-UPPERCASE-STRINGS.md
+  ticket_id: TCK-20261125-TWO-INFER-BLOCKERS-BRANCHES-COMPARE-LOWERCASE-REASON-CODES-WITH-UPPERCASE-STRINGS
+  title: 'Two infer_blockers branches can never fire: lowercase ReasonCode values
+    are compared with uppercase strings.'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-25'
+  related_code_areas:
+  - infer_blockers (src/systems/strategic_systems/), src/core ReasonCode
+  artifact_files: []
+  tags:
+  - cognition
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261124-A-CROWDED-PLACE-HAS-A-REAL-QUEUE.md
   ticket_id: TCK-20261124-A-CROWDED-PLACE-HAS-A-REAL-QUEUE
   title: 'A crowded place keeps a real queue: order and places in line, not only a
