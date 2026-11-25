@@ -65,23 +65,33 @@ def test_the_tactical_arrival_at_a_shop_sells_first_and_ends_the_visit_when_noth
     assert ends.strategic.current_project_id_set == "" and ends.task is None
 
 
+@pytest.mark.parametrize("law", ["ATOMIC", "CLAMP"])
 @pytest.mark.parametrize("kind,action", [("inn", "EAT"), ("inn", "REST"), ("home", "REST")])
 @pytest.mark.parametrize("gold", [50, 3, 0])
-def test_every_building_service_payment_is_credited_to_the_building_that_served_it(kind, action, gold):
-    """EXCH-02: the payer's debit equals the building's credit for every TOWN_SERVICE a building serves (what was actually paid when the
-    subject holds less than the price: the charge is clamped at what it holds); no coin vanishes."""
+def test_every_building_service_payment_is_credited_to_the_building_that_served_it(monkeypatch, law, kind, action, gold):
+    """[TAG B RESHAPE] EXCH-02: the payer's debit equals the building's credit for every TOWN_SERVICE a building serves; no coin vanishes. Per payment law (the price field follows the law,
+    `service_admission.price_fields`): CLAMP charges what the subject holds (the debit equals the credit); ATOMIC serves a subject holding the full price and issues NO service transfer to one that cannot pay."""
     from dataclasses import replace
 
-    from src.core.conservation import ResourceTransactionResolver
+    from src.core.conservation import ResourceTransactionResolver, service_price
+    from src.engine import service_admission
+    from src.engine.service_prices import EAT_PRICE_GOLD, REST_PRICE_GOLD
+    monkeypatch.setattr(service_admission, "SERVICE_PAYMENT_LAW", service_admission.PaymentLaw[law])
+    price = {"EAT": EAT_PRICE_GOLD, "REST": REST_PRICE_GOLD}[action]
     state, ent, shop = _world([])
     building = replace(shop, kind=kind)
     state = replace(state, buildings={10: building})
     ent = replace(ent, inventory=replace(ent.inventory, gold=gold))
     update = ActionRouter.execute_action(ent, {"action": action, "target_id": 10}, state.tick, None, state)[1]
-    (charge,) = [t for t in update.resource_transfers if t.source_kind == "TOWN_SERVICE"]
+    charges = [t for t in update.resource_transfers if t.source_kind == "TOWN_SERVICE"]
+    if law == "ATOMIC" and gold < price:
+        assert charges == []  # [TAG A, new ATOMIC gold-0 case for class 3] a subject that cannot pay in full is issued no service at all
+        return
+    (charge,) = charges
+    assert service_price(charge) == price
     result = ResourceTransactionResolver.resolve(state, ent, charge, reservations={})
     assert result.accepted
-    paid = min(gold, -charge.gold_delta)  # the inventory clamp at 0 means a broke subject pays only what it holds
+    paid = min(gold, price)  # CLAMP: a broke subject pays only what it holds; ATOMIC: gold >= price here, so paid == price
     if paid == 0:
         assert result.building_update is None  # nothing was paid, nothing to credit
         return
@@ -116,9 +126,9 @@ def test_a_repair_at_the_blacksmith_in_reach_is_credited_to_that_blacksmith(gold
 
 
 @pytest.mark.parametrize("gold", [0, 3, 50])
-def test_a_hungry_subject_at_the_inn_eats_whatever_it_holds_while_free_meals_stand(gold):
-    """Owner decision 44: free meals stay on, so the arrival dispatch at an inn is a meal for every subject, broke ones included (an earlier
-    cut dispatched a shift of work to a broke subject, which fed no one: wildlife ever-ate fell from 2.6 to 0.4 per run)."""
+def test_a_hungry_subject_at_the_inn_is_dispatched_to_eat_only_if_it_can_pay(gold):  # [TAG C REMOVED LAW] was: ..._eats_whatever_it_holds_while_free_meals_stand
+    """Decision 73: nothing is free, so the arrival dispatch at an inn is a meal only for a subject holding the price (5); a broke subject is not dispatched to eat (the project ends or
+    the shift branch decides). History: under free meals an earlier cut dispatched a shift of work to a broke subject, which fed no one (wildlife ever-ate fell from 2.6 to 0.4 per run)."""
     from dataclasses import replace
 
     from src.core.strategic import ObjectiveKind, ObjectiveState, ObjectiveStatus, ProjectState, ProjectStatus
@@ -128,4 +138,8 @@ def test_a_hungry_subject_at_the_inn_eats_whatever_it_holds_while_free_meals_sta
     state = replace(state, buildings={10: inn})
     ent = replace(ent, biological=replace(ent.biological, hunger=70.0))
     project = _hunger_project(10)
-    assert building_arrival_update(state, ent, project, 10).task.payload_set["action"] == "EAT"
+    task = building_arrival_update(state, ent, project, 10).task
+    if gold >= 5:
+        assert task.payload_set["action"] == "EAT"
+    else:
+        assert task is None or task.payload_set.get("action") != "EAT"

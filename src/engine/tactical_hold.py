@@ -5,15 +5,21 @@ Pure builders of ``EntityUpdate``; they read the acting entity and the decision'
 """
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from src.core.hold_mode import hold_reset_kwargs
 from src.core.movement_modes import MovementMode
+from src.core.navigation_purpose import TargetPurpose, purpose_of, stored_purpose
 from src.core.updates import EntityUpdate, NavigationUpdate, TaskUpdate
 from src.engine.hostility import is_engaged
 from src.engine.legality import LegalityServiceV2
 from src.engine.rpg_depth import LeashService
 from src.engine.tactical_destinations import retreat_destination
+from src.strategy.destination_suppression import (
+    propose_target,  # F2 v2.2 D2: the one proposal point of a place target
+    suppressed_move_end,
+)
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState
@@ -52,27 +58,28 @@ def held_swing_update(
     )
 
 
-def stalemate_break_update(entity: "EntityState", strat_up: Any, wander_to: Tuple[float, float]) -> EntityUpdate:
-    """The STALEMATE_BREAK wander to an already-chosen, region-contained point."""
+def stalemate_break_update(entity: "EntityState", strat_up: Any, wander_to: Tuple[float, float], purpose: TargetPurpose, gated: bool) -> EntityUpdate:
+    """The STALEMATE_BREAK wander to an already-chosen, region-contained point. ``purpose`` is the caller's bound name; ``gated`` is True when ``wander_to`` came through the gate, False for the own-tile hold."""
     return EntityUpdate(
         entity_id=entity.id,
         strategic=strat_up,
-        navigation=NavigationUpdate(target_set=wander_to, movement_mode_set=MovementMode.WANDER),
+        navigation=NavigationUpdate(target_set=wander_to, movement_mode_set=MovementMode.WANDER, target_purpose_set=purpose, target_gated_set=gated),
         task=TaskUpdate(work_kind_set="ENTITY_MOVE", payload_set={"target_position": wander_to, "reason": "STALEMATE_BREAK"}),
     )
 
 
-def leash_return_update(entity: "EntityState") -> Optional[EntityUpdate]:
+def leash_return_update(entity: "EntityState", tick: int) -> Optional[EntityUpdate]:
     """A mob beyond its leash that is not chasing, or past the chase limit, heads home (``LEASH_RETURN``); None otherwise (GAP-T08)."""
     is_engaged = entity.task.payload.get("target_id") is not None
     if not ((not is_engaged and LeashService.is_beyond_leash(entity)) or LeashService.should_give_up_chase(entity)):
         return None
     home_pos = LeashService.get_return_home_target(entity)
-    if not home_pos:
+    purpose = purpose_of(entity, None, MovementMode.RETREAT)
+    if not home_pos or propose_target(entity, home_pos, tick, purpose) is None:  # F2 class C: a suppressed home tile means the return does not fire
         return None
     return EntityUpdate(
         entity_id=entity.id,
-        navigation=NavigationUpdate(target_set=home_pos, movement_mode_set=MovementMode.RETREAT),
+        navigation=NavigationUpdate(target_set=home_pos, movement_mode_set=MovementMode.RETREAT, target_purpose_set=purpose, target_gated_set=True),
         task=TaskUpdate(work_kind_set="ENTITY_MOVE", payload_set={"target_position": home_pos, "reason": "LEASH_RETURN"}),
     )
 
@@ -93,11 +100,16 @@ def notice_unengaged_hostile(
     posture = props.get("last_combat_posture")
     if posture == "ignore":
         goal = entity.navigation.target
-        if goal is None:
+        purpose = stored_purpose(entity)  # a re-emission carries the STORED purpose and gate flag (the #996 rework, design section 4)
+        if goal is None:  # no goal is the same stand as a suppressed one
+            return EntityUpdate(entity_id=entity.id, strategic=strat_up)
+        if purpose is None:  # a target restored from an old checkpoint has no purpose: the move ends typed and the subject re-decides (disclosed in 2.220)
+            return replace(suppressed_move_end(entity.id), strategic=strat_up)
+        if propose_target(entity, goal, state.tick, purpose) is None:  # F2 v2.2a: a suppressed goal is the same stand as no goal (None would mean 'go on to fight')
             return EntityUpdate(entity_id=entity.id, strategic=strat_up)
         return EntityUpdate(
             entity_id=entity.id, strategic=strat_up,
-            navigation=NavigationUpdate(target_set=goal, **{"movement_mode_set": entity.navigation.movement_mode, **hold_reset_kwargs(entity)}),
+            navigation=NavigationUpdate(target_set=goal, target_purpose_set=purpose, target_gated_set=entity.navigation.target_gated, **{"movement_mode_set": entity.navigation.movement_mode, **hold_reset_kwargs(entity)}),
             task=TaskUpdate(work_kind_set="ENTITY_MOVE", payload_set={"target_position": goal, "reason": "KEEP_WALKING"}),
         )
     if posture == "watch":
@@ -109,7 +121,8 @@ def notice_unengaged_hostile(
             task=TaskUpdate(work_kind_set="ENTITY_ACT", payload_set={"action": "HOLD", "reason": "WATCH_HOSTILE", "target_id": target.id}),
         )
     if posture == "avoid":
-        away = retreat_destination(state, entity, hostiles)
+        purpose = purpose_of(entity, None, MovementMode.RETREAT)
+        away = retreat_destination(state, entity, hostiles, purpose)
         if away is None:
             # No route away: a typed wait, not a fall-through to an attack the verdict refused (same record shape as WATCH_HOSTILE).
             return EntityUpdate(
@@ -119,7 +132,7 @@ def notice_unengaged_hostile(
             )
         return EntityUpdate(
             entity_id=entity.id, strategic=strat_up,
-            navigation=NavigationUpdate(target_set=away, movement_mode_set=MovementMode.RETREAT),
+            navigation=NavigationUpdate(target_set=away, movement_mode_set=MovementMode.RETREAT, target_purpose_set=purpose, target_gated_set=True),
             task=TaskUpdate(work_kind_set="ENTITY_MOVE", payload_set={"target_position": away, "reason": "AVOID_HOSTILE"}),
         )
     return None

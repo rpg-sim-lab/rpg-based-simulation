@@ -10,6 +10,7 @@ from dataclasses import replace
 
 import pytest
 
+from src.core.navigation_purpose import TargetPurpose
 from src.core.builder import V2EntityBuilder
 from src.core.enums import EntityRole, Faction
 from src.core.movement_modes import MovementMode
@@ -47,7 +48,7 @@ def _walker(posture=None, target=GOAL, task=None):
     props = dict(e.identity.properties)
     if posture:
         props["last_combat_posture"], props["last_combat_posture_target"] = posture, 2
-    return replace(e, navigation=replace(e.navigation, target=target, movement_mode=MovementMode.PURSUE),
+    return replace(e, navigation=replace(e.navigation, target=target, movement_mode=MovementMode.PURSUE, target_purpose=TargetPurpose("none", "PURSUE")),
                    identity=replace(e.identity, properties=props), task=task or TaskComponent(work_kind="ENTITY_ACT", payload={}))
 
 

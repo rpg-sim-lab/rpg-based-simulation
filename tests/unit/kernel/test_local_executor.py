@@ -1,4 +1,5 @@
 import pytest
+from dataclasses import replace
 from src.engine.executor import LocalSequentialExecutor
 from src.core.state import AuthoritativeState
 from src.core.work import WorkItem, WorkClass
@@ -6,6 +7,7 @@ from src.platform.rng import DeterministicRNG
 from src.core.builder import V2EntityBuilder
 from src.config.profiles import RuntimeProfile, HardwareClass
 from src.core.movement_modes import MovementMode
+from src.core.navigation_purpose import purpose_of
 
 def test_local_executor_movement():
     """Verify that LocalSequentialExecutor handles ENTITY_MOVE correctly."""
@@ -15,6 +17,7 @@ def test_local_executor_movement():
           .location(0.0, 0.0)
           .combat(readiness=100.0)
           .build())
+    e1 = replace(e1, navigation=replace(e1.navigation, target_purpose=purpose_of(e1, None, MovementMode.WANDER), target_gated=True))  # the #996 rework: a held move carries its stored purpose, set the writers' way
     state = AuthoritativeState(tick=0, seed=42, entities={1: e1})
     rng = DeterministicRNG(42)
     profile = RuntimeProfile(

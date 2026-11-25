@@ -13,12 +13,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from src.core.need_lines import (
+    STARVING_LINE as _STARVING_LINE,  # the ONE source of 95.0 (foundation layer)
+)
+
 
 @dataclass(frozen=True, slots=True)
 class StarvationTable:
     """The stage lines and effects, tuned in this one place."""
     weakened_line: float = 85.0   # hunger at which the body weakens: recovery and attack are scaled
-    starving_line: float = 95.0   # hunger at which health starts to go (the pre-existing line)
+    starving_line: float = _STARVING_LINE   # hunger at which health starts to go (the pre-existing line; the one source is `src.core.need_lines`)
     recovery_scale: float = 0.5   # stamina and readiness regeneration while weakened
     attack_scale: float = 0.8     # attack multiplier while weakened (compounds with EXHAUSTION: 0.8 * 0.8 = 0.64)
     death_ticks: int = 6000       # ticks from the starving line to death for a full-health body (2.5 days)

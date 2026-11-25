@@ -11,12 +11,21 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, List, Optional, Sequence, Tuple
 
+from src.core.arrival import has_arrived
 from src.core.movement_modes import MovementMode
-from src.core.strategic import ObjectiveKind
+from src.core.navigation_purpose import TargetPurpose, purpose_of
+from src.core.strategic import (
+    SEEK_WORK_TARGET_ID,
+    ObjectiveKind,
+    ProjectEnd,
+    ProjectStatus,
+    end_record,
+)
 from src.core.updates import (
     EntityUpdate,
     InteractionUpdate,
     NavigationUpdate,
+    StrategicUpdate,
     TaskUpdate,
 )
 from src.domains.adventure.resolver import ObjectiveIntentResolver
@@ -25,6 +34,10 @@ from src.engine.intent.action_intent import ActionIntent, ActionIntentAdapter
 from src.engine.lodging import rest_would_lodge
 from src.engine.tactical_avoid import eat_at_hunger_corpse
 from src.engine.tactical_rest import in_danger
+from src.strategy.destination_suppression import (
+    ObjectiveDestinationSuppressed,
+    propose_target,
+)
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, EntityState
@@ -33,13 +46,9 @@ if TYPE_CHECKING:
 Resolver = Callable[["AuthoritativeState", "ObjectiveState"], Tuple[Optional[Tuple[float, float]], Optional[int], Optional[int]]]
 
 
-def _distance(entity: "EntityState", target_pos: Tuple[float, float]) -> float:
-    return abs(target_pos[0] - entity.navigation.position[0]) + abs(target_pos[1] - entity.navigation.position[1])
-
-
-def _walk_to(entity: "EntityState", target_pos: Tuple[float, float]) -> EntityUpdate:
-    """Still en route: set the nav target and stay idle so the brain re-evaluates on each cadence tick."""
-    return EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(target_set=target_pos, movement_mode_set=MovementMode.WANDER))
+def _walk_to(entity: "EntityState", target_pos: Tuple[float, float], purpose: TargetPurpose) -> EntityUpdate:
+    """Still en route: set the nav target (stored with ``purpose``, the caller's bound name, as gated) and stay idle so the brain re-evaluates on each cadence tick."""
+    return EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(target_set=target_pos, movement_mode_set=MovementMode.WANDER, target_purpose_set=purpose, target_gated_set=True))
 
 
 def _fatigue_arrival_waits(state: "AuthoritativeState", entity: "EntityState", obj: "ObjectiveState", resolve: Resolver, hostiles: Sequence["EntityState"]) -> bool:
@@ -50,7 +59,7 @@ def _fatigue_arrival_waits(state: "AuthoritativeState", entity: "EntityState", o
     if not hostiles or project is None or str(getattr(project.kind, "value", project.kind)).lower() != "fatigue":
         return False
     target_pos, _, building_id = resolve(state, obj)
-    if not target_pos or building_id is None or _distance(entity, target_pos) > 1.0:
+    if not target_pos or building_id is None or not has_arrived(entity.navigation.position, target_pos):
         return False
     return not rest_would_lodge(state, entity, state.buildings.get(building_id)) and in_danger(entity, hostiles)
 
@@ -59,8 +68,11 @@ def _reach_location_step(state: "AuthoritativeState", entity: "EntityState", pro
     target_pos, node_id, building_id = resolve(state, obj)
     if not target_pos:
         return None
-    if _distance(entity, target_pos) > 1.0:
-        return _walk_to(entity, target_pos)
+    if not has_arrived(entity.navigation.position, target_pos):
+        purpose = purpose_of(entity, None, MovementMode.WANDER)
+        if propose_target(entity, target_pos, state.tick, purpose) is None:
+            return ObjectiveDestinationSuppressed(entity_id=entity.id)
+        return _walk_to(entity, target_pos, purpose)
     if node_id is not None:
         return EntityUpdate(
             entity_id=entity.id,
@@ -69,6 +81,11 @@ def _reach_location_step(state: "AuthoritativeState", entity: "EntityState", pro
         )
     if building_id is not None:
         return building_arrival_update(state, entity, project, building_id)
+    if obj.target == SEEK_WORK_TARGET_ID and str(getattr(project.kind, "value", project.kind)).lower() == "hunger":
+        # Arrived at the SEEK_WORK target, the town centre (decision 73, divergence 2.218): the step's guard closes it here, and the project ends with the typed way-closed end, as a fatigue project
+        # that finds no bed does (`building_arrival`); the next tick re-decides, so `earn_then_buy` can open here if there is work or a buyer.
+        return EntityUpdate(entity_id=entity.id, strategic=StrategicUpdate(projects_add_or_update=[end_record(project, ProjectStatus.ABANDONED, ProjectEnd.WAY_CLOSED, state.tick)],
+                                                                          current_project_id_set="", current_objective_id_set=""))
     # Arrived at a carcass the hunger goal pointed at (decision 44): eat where it lies.
     return eat_at_hunger_corpse(entity, state, project, obj) or EntityUpdate(entity_id=entity.id)
 
@@ -93,8 +110,11 @@ def _other_objective_step(state: "AuthoritativeState", entity: "EntityState", ob
     if obj.target:
         target_pos, node_id, _ = resolve(state, obj)
     if target_pos:
-        if _distance(entity, target_pos) > 1.0:
-            return _walk_to(entity, target_pos)
+        if not has_arrived(entity.navigation.position, target_pos):
+            purpose = purpose_of(entity, None, MovementMode.WANDER)
+            if propose_target(entity, target_pos, state.tick, purpose) is None:
+                return ObjectiveDestinationSuppressed(entity_id=entity.id)
+            return _walk_to(entity, target_pos, purpose)
         if obj.kind == ObjectiveKind.REACH_RESOURCE and node_id is not None:
             return _harvest_at_node(state, entity, obj, node_id, neighbors)
     intent = ObjectiveIntentResolver.resolve(entity.id, obj, payload={"position": target_pos} if target_pos else {})

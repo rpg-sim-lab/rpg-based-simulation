@@ -164,6 +164,13 @@
   event_types: []
   notes: "TCK-20260831-STATUS-EFFECT-STATE-UNIFICATION added this field, migrating the prior scattered identity.properties.get('status_frozen') dict-lookup reads onto a single typed StatusEffectUpdate -> StatusEffectPatch path landing on entity.combat.status_effects (also repairing docs/parity_ledger/combat_movement.yaml's COMB-122 SHATTER entry's test_path in the same change). No observability event exists for status_effect_update mutations from any producer — mirrors the ENTITY-015/ENTITY-021 pattern of a real, disclosed gap rather than a documentation oversight. Wiring a new event, if warranted, is out of this ticket's scope."
 
+- id: ENTITY-023
+  mutation_source: "EntityUpdate.navigation_experience"
+  status: silent
+  evidence: "grep -rn \"navigation_experience\\|NavigationExperience\\|memory\\.navigation\" src/observability/ -- 0 matches. One write site: src/systems/strategic_systems/blocker_lifecycle.py::consume_giveup_records stages the update (built by src/systems/strategic_systems/navigation_experience_step.py::navigation_experience_update); src/engine/patches.py::NavigationExperiencePatch applies it to cognition.memory.navigation."
+  event_types: []
+  notes: "TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON added this field (the #996 rework: a subject's navigation experience memory; reviews, upserts and evictions, written only by its strategic consume step). No observability event exists for it, a real, disclosed gap in the pattern of ENTITY-015/ENTITY-021/ENTITY-022. The memory is visible through the entity detail presenter (`navigation_experiences`) and counted by `NavigationExperienceCounts` (observability only). Wiring a navigation-experience event is out of this ticket's scope."
+
 # Excluded from this audit (docs/core/update_intents.md's own framing):
 # - EntityUpdate.intent_results: explicitly non-durable feedback, "not applied to durable state."
 # - EntityUpdate.property_updates: generic catch-all, too broad to classify as observed/silent.

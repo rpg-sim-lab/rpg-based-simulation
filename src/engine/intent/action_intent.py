@@ -7,8 +7,10 @@ from src.core.updates import EntityUpdate, NavigationUpdate, InventoryUpdate, Bi
 from src.world.providers.requirements import Requirement, RequirementEvaluator
 from src.engine.domain.action_router import ActionRouter
 from src.core.hold_mode import hold_reset_kwargs
+from src.core.navigation_purpose import purpose_of
 from src.core.registries import RecipeRegistry, ItemRegistry, ResourceRegistry
 from src.town.shop import ShopService
+from src.strategy.destination_suppression import suppressed_move_to  # F2 v2.2 D2
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,6 +71,9 @@ class ActionIntentAdapter:
         neighbor_view: Any = None,
         context: Any = None
     ) -> Dict[int, EntityUpdate]:
+        purpose = purpose_of(entity)  # a pure read; the MOVE_TO below is gated and stored with it (the #996 rework)
+        if (refused := suppressed_move_to(entity, intent.kind, intent.payload.get("position"), current_tick, purpose)) is not None:  # F2 v2.2a class O: a MOVE_TO at a suppressed position is the typed idle
+            return refused
         # 1. Validate requirements first (honest requirement gating)
         reqs = []
         if intent.kind == "BUY_ITEM":
@@ -137,7 +142,7 @@ class ActionIntentAdapter:
             cls._traces.append(trace)
             return {entity.id: EntityUpdate(
                 entity_id=entity.id,
-                navigation=NavigationUpdate(target_set=intent.payload.get("position"), **hold_reset_kwargs(entity))
+                navigation=NavigationUpdate(target_set=intent.payload.get("position"), target_purpose_set=purpose, target_gated_set=True, **hold_reset_kwargs(entity))
             )}
 
         elif intent.kind == "REST_AT_INN":

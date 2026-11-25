@@ -415,6 +415,26 @@ class DefaultCompileProfile(CatalogBaseDefinition):
     default_tax_share: float = Field(0.0, ge=0.0, le=1.0, description="Share of a sale or a wage paid to the treasury of the faction holding the place, rounded down per transaction (decision 51)")
 
 
+class BlockerSettingsDefinition(CatalogBaseDefinition):
+    """Schema for the blocker settings that are balance values, not law (F2, divergence 2.220): a one-record family like `defaults`, so the value is part of the catalog fingerprint (the run's identity)."""
+    access_giveup_limit: int = Field(..., ge=1, strict=True, description="Give-ups of one place for one purpose within one project (the navigation experience's project_giveups) that end that project; an integer >= 1")
+
+
+class NavigationExperienceSettingsDefinition(CatalogBaseDefinition):
+    """Schema for the navigation experience memory's balance values (the #996 rework, design section 9): a one-record family like `blocker_settings`, so the values are part of the catalog fingerprint (the run's identity). All five are integers >= 1."""
+    oscillation_review_delay: int = Field(..., ge=1, strict=True, description="Ticks after an oscillation give-up before the place is due for another try; an integer >= 1")
+    bodies_review_delay: int = Field(..., ge=1, strict=True, description="Ticks after a ring block with bodies among its evidence before the place is due; an integer >= 1")
+    approach_change_radius: int = Field(..., ge=1, strict=True, description="Tiles (Chebyshev) from where the subject gave up that count as a changed approach; an integer >= 1")
+    navigation_experience_cap: int = Field(..., ge=1, strict=True, description="Navigation experiences one subject keeps; an integer >= 1")
+    occupied_review_delay: int = Field(..., ge=1, strict=True, description="Ticks after an OCCUPIED give-up (other bodies at the place: waiting, not failure) before the place is due for another try; an integer >= 1")
+
+
+class WayroundSettingsDefinition(CatalogBaseDefinition):
+    """Schema for the way-round law's two numbers (F1, divergence 2.213): a one-record family like `defaults`, so the values are part of the catalog fingerprint (the run's identity). Both are integers >= 1; there is no cross-check between them (one counts steps, the other ticks)."""
+    wayround_limit: int = Field(..., ge=1, strict=True, description="Way-round steps allowed on one target with no net progress before the oscillation replan is the real one; an integer >= 1")
+    wayround_quiet_ticks: int = Field(..., ge=1, strict=True, description="The longest gap, in ticks, between two events of one pursuit; past it the next event opens a fresh count; an integer >= 1")
+
+
 class ItemDefinition(CatalogBaseDefinition):
     """Schema for item definitions under the dynamic content catalog."""
     categories: List[str] = Field(..., description="Category tags (e.g. weapon, melee, material)")

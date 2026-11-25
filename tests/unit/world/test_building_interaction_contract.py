@@ -29,18 +29,19 @@ def _inn_rest_update(gold):
 
 
 def test_building_interaction_inn_rest_recovery():
-    # Free beds stay as on main (owner decision 44): the recovery is on the update and the 10-gold charge is clamped at what the subject holds.
+    # [TAG B RESHAPE] Decision 73: the bed is ONE paid transfer (the price on gold_cost under ATOMIC, hp and readiness on the same transfer); same property, new place.
     upd = _inn_rest_update(gold=REST_PRICE_GOLD)
     (bed,) = upd.resource_transfers
-    assert bed.gold_delta == -REST_PRICE_GOLD
-    assert upd.combat.hp_delta == 5
+    assert bed.gold_cost == REST_PRICE_GOLD
+    assert bed.combat_upd.hp_delta == 5
     assert upd.biological.sleep_debt_delta == 0.0  # decision 41 (ruled): the debt falls per tick while asleep; a bed has no separate rate
-    assert upd.readiness_delta == 10.0
+    assert bed.readiness_delta == 10.0 and upd.readiness_delta == 0.0
 
 
-def test_inn_rest_without_gold_still_recovers_as_on_main():
+def test_inn_rest_without_gold_recovers_nothing_under_atomic():  # [TAG C REMOVED LAW] was: ..._still_recovers_as_on_main (free beds stay on)
+    """Decision 73: nothing is free, so a subject that cannot pay the bed gets no bed: no transfer, no readiness, no health."""
     upd = _inn_rest_update(gold=0)
-    assert upd.readiness_delta == 10.0 and upd.combat.hp_delta == 5  # free beds stay on until the removal lands
+    assert not upd.resource_transfers and upd.readiness_delta == 0.0 and upd.combat is None
 
 
 def test_standing_on_a_building_tile_is_not_a_service_trigger():

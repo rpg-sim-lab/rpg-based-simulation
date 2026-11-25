@@ -108,6 +108,7 @@ class ReasonCode(str, Enum):
     CONGESTION = "congestion"
     PATH_EXHAUSTED = "path_exhausted"
     TARGET_REACHED = "target_reached"
+    WAYROUND_GIVE_UP = "WAYROUND_GIVE_UP"  # 2.213 item 6: the oscillation give-up (the replan that drops the target) writes this as its own code; it replaces any older code, and infer_blockers files nothing from it
     FELT_LETHAL_FREE_SWING = "FELT_LETHAL_FREE_SWING"  # 2.204: a step that would give the free swing to a hostile whose felt blow finishes the subject is not taken
     
     # Movement / position swap
@@ -174,6 +175,7 @@ class ReasonCode(str, Enum):
     PRICE_STALE = "PRICE_STALE"
     INVENTORY_FULL = "INVENTORY_FULL"
     SOURCE_MISSING = "SOURCE_MISSING"
+    PAYEE_MISSING = "PAYEE_MISSING"  # a service that must name a payee (ATOMIC inn law) named none: refused, no debit, no relief
     UNKNOWN_SOURCE_KIND = "UNKNOWN_SOURCE_KIND"
     GROUP_ROLLBACK = "GROUP_ROLLBACK"
     

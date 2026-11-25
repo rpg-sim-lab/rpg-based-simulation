@@ -54,6 +54,9 @@ from src.content.schema import (
     TerrainDefinition,
     SpawnTableDefinition,
     ClassTableDefinition,
+    BlockerSettingsDefinition,
+    NavigationExperienceSettingsDefinition,
+    WayroundSettingsDefinition,
     DefaultCompileProfile,
     ItemDefinition,
     RecipeDefinition,
@@ -134,6 +137,9 @@ CANONICAL_FAMILIES: List[ContentFamilySpec] = [
 
     # 6. Defaults & Legacy
     ContentFamilySpec("defaults", "defaults.yaml", DefaultCompileProfile, "defaults", required=False),
+    ContentFamilySpec("movement.wayround_settings", "movement/wayround_settings.yaml", WayroundSettingsDefinition, "wayround_settings", required=False),  # F1/F2: a one-record family, so its values are in the catalog fingerprint
+    ContentFamilySpec("strategy.blocker_settings", "strategy/blocker_settings.yaml", BlockerSettingsDefinition, "blocker_settings", required=False),  # F2: a one-record family, so its value is in the catalog fingerprint
+    ContentFamilySpec("strategy.navigation_experience_settings", "strategy/navigation_experience_settings.yaml", NavigationExperienceSettingsDefinition, "navigation_experience_settings", required=False),  # the #996 rework: a one-record family, so its values are in the catalog fingerprint
     ContentFamilySpec("spawn_tables", "spawn_tables.yaml", SpawnTableDefinition, "spawn_tables", required=False,
                       schema_version_map={"spawntabledefinition.v1": SpawnTableDefinition, "classtable.v1": ClassTableDefinition}),
 
@@ -228,6 +234,9 @@ class CatalogRepository:
         self.spawn_tables: Dict[str, SpawnTableDefinition] = {}
         self.class_tables: Dict[str, ClassTableDefinition] = {}
         self.defaults: Dict[str, DefaultCompileProfile] = {}
+        self.blocker_settings: Dict[str, BlockerSettingsDefinition] = {}
+        self.navigation_experience_settings: Dict[str, NavigationExperienceSettingsDefinition] = {}
+        self.wayround_settings: Dict[str, WayroundSettingsDefinition] = {}
         
         # Compatibility Projection
         self.legacy_enemy_projections: Dict[str, LegacyEnemyProjectionDefinition] = {}
@@ -578,6 +587,9 @@ class CatalogRepository:
             "spawn_table": self.spawn_tables,
             "class_table": self.class_tables,
             "defaults": self.defaults,
+            "blocker_settings": self.blocker_settings,
+            "navigation_experience_settings": self.navigation_experience_settings,
+            "wayround_settings": self.wayround_settings,
             "legacy_enemy_projection": self.legacy_enemy_projections,
         }
         return list(mapping.get(type_name.lower(), {}).keys())
@@ -619,6 +631,9 @@ class CatalogRepository:
             ("spawn_table", self.spawn_tables),
             ("class_table", self.class_tables),
             ("defaults", self.defaults),
+            ("blocker_settings", self.blocker_settings),
+            ("navigation_experience_settings", self.navigation_experience_settings),
+            ("wayround_settings", self.wayround_settings),
             ("legacy_enemy_projection", self.legacy_enemy_projections),
         ]:
             deprecated_map[cat_name] = [item_id for item_id, obj in registry.items() if obj.deprecated]

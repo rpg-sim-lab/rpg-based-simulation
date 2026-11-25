@@ -11,6 +11,7 @@ from dataclasses import replace
 
 import pytest
 
+from src.core.navigation_purpose import TargetPurpose
 from src.core.builder import V2EntityBuilder
 from src.core.enums import EntityRole, Faction
 from src.core.movement_modes import MovementMode
@@ -42,7 +43,7 @@ def _fighter(eid, pos, faction):
 
 def _walker(task_kind="ENTITY_ACT", payload=None):
     e = _fighter(1, (10.0, 10.0), Faction.HERO_GUILD)
-    return replace(e, navigation=replace(e.navigation, target=STORED, movement_mode=MovementMode.PURSUE),
+    return replace(e, navigation=replace(e.navigation, target=STORED, movement_mode=MovementMode.PURSUE, target_purpose=TargetPurpose("none", "PURSUE")),
                    task=TaskComponent(work_kind=task_kind, payload=dict(payload or {})))
 
 
@@ -163,7 +164,7 @@ def test_the_two_dispatchers_release_or_keep_a_blocked_held_move_identically(rea
     state = AuthoritativeState(tick=5, seed=42, world_time=5, entities={1: held, 2: hostile})
     item = WorkItem(owner_id=1, work_id="5:1:ENTITY_MOVE", work_class=WorkClass.CRITICAL, work_kind="ENTITY_MOVE", payload=held.task.payload)
     local = LocalSequentialExecutor().execute([item], state, DeterministicRNG(42), PROD_SMALL)[0].update
-    packet = SimpleNamespace(packet_id="pk", work_id="w", work_class=WorkClass.CRITICAL, class_priority=0, local_priority=0,
+    packet = SimpleNamespace(packet_id="pk", work_id="w", work_class=WorkClass.CRITICAL, class_priority=0, local_priority=0, tick=1,
                              work_kind="ENTITY_MOVE", payload=held.task.payload, subject=held, all_entities={1: held, 2: hostile})
     worker = default_simulation_worker(packet)[0].update
     if released:

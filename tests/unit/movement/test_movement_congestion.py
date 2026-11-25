@@ -159,9 +159,16 @@ class TestReplan:
         """[RPG-COMBAT-014] After oscillation_count >= 3, movement replans."""
         # Entity at (5,5) with last_position=(6,5) and osc=3
         # When it moves to (6,5) again, oscillation is detected
+        # Setup change following the STALEMATE ruling (TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK, divergence 2.213): on an open map the ladder
+        # now finds a way round the loop before the replan, so the hero is boxed in on every side but the looped step; the asserts are unchanged.
         e = make_entity(1, (5.0, 5.0), osc_count=3, last_pos=(6.0, 5.0))
-        state = make_state(entities={1: e})
-        result = MovementSystem.resolve_move(state, e, (6.0, 5.0))
+        blockers = {
+            2: make_entity(2, (5.0, 4.0), mode=MovementMode.HOLD),
+            3: make_entity(3, (5.0, 6.0), mode=MovementMode.HOLD),
+            4: make_entity(4, (4.0, 5.0), mode=MovementMode.HOLD),
+        }
+        state = make_state(entities={1: e, **blockers})
+        result = MovementSystem.resolve_move(state, e, (7.0, 5.0))
         
         # Should detect oscillation and trigger replan
         assert result[1].navigation.clear_target is True

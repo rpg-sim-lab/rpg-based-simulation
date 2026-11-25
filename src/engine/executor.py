@@ -10,6 +10,7 @@ from src.core.state import ReadOnlyDict
 from src.core.worker_protocol import WorkerResult, ResultStatus, WorkerPacket
 from src.core.work import WorkClass, packet_work_id
 from src.engine.candidate_selector import MovementCandidateSelector
+from src.strategy.destination_suppression import reaffirm_move_update  # F2 v2.2 D2 (class X)
 
 if TYPE_CHECKING:
     from src.core.work import WorkItem
@@ -80,7 +81,7 @@ class IWorkExecutor(Protocol):
 
 
 def _entity_move_updates(
-    subject: EntityState, payload: Dict[str, Any], entities: Mapping[int, EntityState], index_cache: List[Any]
+    subject: EntityState, payload: Dict[str, Any], entities: Mapping[int, EntityState], index_cache: List[Any], tick: int
 ) -> Dict[int, EntityUpdate]:
     """The update for one ``ENTITY_MOVE`` work item: the move ends here (idle task, target cleared) when
     ``MovementCandidateSelector.move_ends_here`` says so, else the target is re-affirmed.
@@ -88,7 +89,6 @@ def _entity_move_updates(
     A tracked move whose target is in reach, or dead/gone, or a held move blocked beside an engaged hostile, ends here so the brain
     chooses (Sticky-Task Law, docs/engine/kernel.md; ``tracked_move_complete``, CONFLICT-04 at the movement layer). The other
     dispatcher, ``worker_logic.default_simulation_worker``, asks the same ``move_ends_here``."""
-    from src.core.updates import EntityUpdate, NavigationUpdate
 
     if not index_cache:
         index_cache.append(MovementCandidateSelector.position_index(entities))
@@ -107,7 +107,7 @@ def _entity_move_updates(
     # (WANDER/RETREAT/objective movement) relies on, while fixing pursuit at its
     # own real origin.
     target = MovementCandidateSelector.resolve_live_tracking_target(subject, entities, target)
-    return {subject.id: EntityUpdate(entity_id=subject.id, navigation=NavigationUpdate(target_set=target))}
+    return {subject.id: reaffirm_move_update(subject, target, tick)}  # F2 v2.2a class X: a held target that became suppressed is not re-emitted; the move ends typed and tactics re-decides
 
 
 class LocalSequentialExecutor:
@@ -148,7 +148,7 @@ class LocalSequentialExecutor:
                 frozen_subject = subject
 
                 if item.work_kind == "ENTITY_MOVE":
-                    updates = _entity_move_updates(frozen_subject, item.payload, readonly_state.entities, move_index)
+                    updates = _entity_move_updates(frozen_subject, item.payload, readonly_state.entities, move_index, readonly_state.tick)
 
                 elif item.work_kind == "ENTITY_ACT":
                     updates = SimulationDomainLogic.execute_action(

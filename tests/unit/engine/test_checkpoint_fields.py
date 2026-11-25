@@ -41,14 +41,17 @@ def test_a_navigation_without_lodged_in_restores_to_none_keeps_every_other_field
     try:
         st = k._state
         nav = st.entities[1].navigation
-        old = _old_shape(nav, ["lodged_in", "last_moved_tick"])      # PERC-02 appended last_moved_tick after it: a pre-F3 checkpoint lacks both
+        # lodged_in is no longer the last slot: PERC-02 appended last_moved_tick and the 2.213 way-round fields (count, best, and the F1 anchor and last tick) follow it, so the pre-F3 shape lacks all seven trailing fields
+        trailing = ["lodged_in", "last_moved_tick", "wayround_count", "wayround_best_distance", "wayround_anchor", "wayround_last_tick", "giveup_records", "target_purpose", "target_gated", "arrived_this_attempt"]
+        old = _old_shape(nav, trailing)
         with pytest.raises(AttributeError):
             old.lodged_in
         object.__setattr__(st.entities[1], "navigation", old)
-        fill_missing_fields(st, [r for r in FIELD_RULES if r.field in ("lodged_in", "last_moved_tick")])
+        fill_missing_fields(st, [r for r in FIELD_RULES if r.field in trailing])
         restored = st.entities[1].navigation
         assert restored.lodged_in is None and restored.last_moved_tick is None
-        assert _values(restored, skip=("lodged_in", "last_moved_tick")) == _values(nav, skip=("lodged_in", "last_moved_tick"))      # nothing shifted
+        assert (restored.wayround_count, restored.wayround_best_distance, restored.wayround_anchor, restored.wayround_last_tick) == (0, None, None, None) and restored.giveup_records == ()
+        assert _values(restored, skip=tuple(trailing)) == _values(nav, skip=tuple(trailing))      # nothing shifted
         r = Kernel(profile(), pickle.loads(pickle.dumps(st, protocol=pickle.HIGHEST_PROTOCOL)), DeterministicRNG(1))
         try:
             r.tick_once()
@@ -134,14 +137,17 @@ def test_a_navigation_without_last_moved_tick_restores_to_never_stepped_and_keep
     try:
         st = k._state
         nav = st.entities[1].navigation
-        old = _old_shape(nav, ["last_moved_tick"])
+        # an old save without last_moved_tick also predates every field appended after it (the 2.213 way-round fields and the F2 give-up records), so those are dropped too
+        trailing = ["last_moved_tick", "wayround_count", "wayround_best_distance", "wayround_anchor", "wayround_last_tick", "giveup_records", "target_purpose", "target_gated", "arrived_this_attempt"]
+        old = _old_shape(nav, trailing)
         with pytest.raises(AttributeError):
             old.last_moved_tick
         object.__setattr__(st.entities[1], "navigation", old)
-        fill_missing_fields(st, [r for r in FIELD_RULES if r.field == "last_moved_tick"])
+        fill_missing_fields(st, [r for r in FIELD_RULES if r.field in trailing])
         restored = st.entities[1].navigation
         assert restored.last_moved_tick is None
-        assert _values(restored, skip=("last_moved_tick",)) == _values(nav, skip=("last_moved_tick",))      # nothing shifted
+        assert (restored.wayround_count, restored.wayround_best_distance, restored.wayround_anchor, restored.wayround_last_tick, restored.giveup_records) == (0, None, None, None, ())
+        assert _values(restored, skip=tuple(trailing)) == _values(nav, skip=tuple(trailing))      # nothing shifted
         assert {r.field: r.record for r in FIELD_RULES}["last_moved_tick"] == "NavigationComponent"
     finally:
         k.shutdown()

@@ -2,15 +2,22 @@
 # Compliance IDs: COMB-009, COMB-010, COMB-011, COMB-012, COMB-188, COMB-189, COMB-190, COMB-199, COMB-201, COMB-202, COMB-203, COMB-204, COMB-205, COMB-206, COMB-207, COMB-208, COMB-211, COMB-212, COMB-213, COMB-214, COMB-219, COMB-220, COMB-221, COMB-222, COMB-223, COMB-224, COMB-225, COMB-226, COMB-231, COMB-232, COMB-233, COMB-234, COMB-235, COMB-236, COMB-238, COMB-239, COMB-240, COMB-241, COMB-242, COMB-243, COMB-272, COMB-273
 # src/engine/movement.py
 from __future__ import annotations
-from typing import TYPE_CHECKING, Tuple, Optional, Any, Dict, List
-from dataclasses import replace
+from typing import TYPE_CHECKING, Tuple, Optional, Any, Dict, FrozenSet, List
+from dataclasses import dataclass, replace
 
+from src.content.common_knowledge_seed import warmed_catalog
+from src.content.wayround_settings import WayroundSettings, wayround_settings
+from src.core.arrival import has_arrived
+from src.core.giveup_records import GiveUpRecord
+from src.core.navigation_experience import NavCause, NeedService, RingEvidence, ring_evidence_of
 from src.core.movement_modes import MovementMode
 from src.core.updates import EntityUpdate, NavigationUpdate, StaminaUpdate, LifecycleUpdate
 from src.core.enums import ReasonCode
 
 from src.engine.felt_swing import felt_lethal_attacker
+from src.engine.building_services import SERVICE_KINDS
 from src.engine.legality import LegalityServiceV2
+from src.engine.service_reach import service_tile
 from src.systems.world_systems.navigation import NavigationSystem
 from src.world.environment import EnvironmentService
 from src.engine.combat import CombatResolutionSystem
@@ -20,11 +27,25 @@ from src.engine.movement_cache import MovementPlanKey, MovementPlan
 from src.engine.route_search import route_next_step
 
 if TYPE_CHECKING:
-    from src.core.state import AuthoritativeState, EntityState
+    from src.core.state import AuthoritativeState, EntityState, NavigationComponent
 
 # A step rejected for one of these reasons failed because the destination tile is static terrain or a building footprint,
 # not because another entity stands there (that is OCCUPANCY_VIOLATION).
 _UNENTERABLE_TILE_REASONS = (ReasonCode.PATH_NOT_FOUND, ReasonCode.BUILDING_OBSTRUCTION)
+
+
+def need_services_at(state_or_context: Any, anchor: Tuple[int, int]) -> FrozenSet[NeedService]:
+    """The needs the building in reach of ``anchor`` serves (an inn: EAT and REST; a home: REST), or the empty set: a pure read through main's building-kind table, taken at the give-up and carried on its record. It reads
+    the building map the serial state and a worker's read-only packet both carry, so the two paths agree."""
+    return frozenset(NeedService(action) for action in ("EAT", "REST") if service_tile(state_or_context, (int(anchor[0]), int(anchor[1])), SERVICE_KINDS[action]) is not None)
+
+
+@dataclass(frozen=True, slots=True)
+class StepQuery:
+    """What the sidestep and way-round search asks about: the ``step`` that was rejected (or the looped step), the ``target_pos`` it was walking to, and the ``move_speed_mult`` the legality check uses. Read only."""
+    step: Tuple[float, float]
+    target_pos: Tuple[float, float]
+    move_speed_mult: float
 
 
 def is_evasive_flight(mode: MovementMode, style: int) -> bool:
@@ -49,6 +70,65 @@ def live_action_style(entity: "EntityState", state_or_context: Any) -> int:
         effective_bravery = max(0.0, min(1.0, effective_bravery))
         style = get_action_style_for_bravery(effective_bravery)
     return style
+
+
+# 2.213 (COMB-356): the way-round law's two numbers live in data (data/content/movement/wayround_settings.yaml, a catalog family, so they are part of the run's identity): the step limit before the
+# oscillation replan is the real one (rpg-designer 2026-11-17, N = 2) and the quiet window, the longest gap between two events of one pursuit, past which the next event opens a fresh count (200 ticks).
+# They are read from the warmed catalog, never from the file at tick time, and bound per catalog: one provider call per way-round EVENT (never per entity per tick), the result cached against the catalog
+# object it came from and re-read when the warmed catalog is a different one (so the cache is never hidden durable state); `WAYROUND_LIMIT` and `WAYROUND_QUIET_TICKS` remain importable names that
+# resolve to the bound values.
+_WAYROUND: Optional[Tuple[object, WayroundSettings]] = None
+
+
+def _wayround() -> WayroundSettings:
+    """The way-round settings of the CURRENT warmed catalog: the cached value while the catalog is the same object, a fresh read when it is not."""
+    global _WAYROUND
+    cat = warmed_catalog()
+    if _WAYROUND is None or _WAYROUND[0] is not cat:
+        _WAYROUND = (cat, wayround_settings(cat))
+    return _WAYROUND[1]
+
+
+def __getattr__(name: str) -> int:
+    """Module attributes WAYROUND_LIMIT and WAYROUND_QUIET_TICKS (PEP 562): the bound values."""
+    if name == "WAYROUND_LIMIT":
+        return _wayround().limit
+    if name == "WAYROUND_QUIET_TICKS":
+        return _wayround().quiet_ticks
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def wayround_after_event(nav: "NavigationComponent", target_tile: Tuple[int, int], dist_now: int, current_tick: int) -> Tuple[int, int, Tuple[int, int]]:
+    """The way-round count, best distance and anchor after one oscillation event (F1, amends 2.213).
+
+    The count continues while it is open, the target is within one tile (Chebyshev) of the tile it opened on, and the last event is at most the quiet window (`wayround_quiet_ticks`) ago; otherwise a fresh
+    count opens on this target (count 1, the distance now, this tile). A step closer than the best seen is progress: the count restarts at 1 and the anchor stays."""
+    best, anchor, last_ev = nav.wayround_best_distance, nav.wayround_anchor, nav.wayround_last_tick
+    if nav.wayround_count <= 0 or best is None or anchor is None or last_ev is None or current_tick - last_ev > _wayround().quiet_ticks:
+        return 1, dist_now, target_tile
+    kept = (int(anchor[0]), int(anchor[1]))
+    if max(abs(target_tile[0] - kept[0]), abs(target_tile[1] - kept[1])) > 1:
+        return 1, dist_now, target_tile
+    if dist_now < best:
+        return 1, dist_now, kept
+    return nav.wayround_count + 1, best, kept
+
+
+@dataclass(frozen=True)
+class OscReplanOutcome:
+    """What an oscillation replan decided (``MovementSystem._oscillation_replan``): the step to take instead (None when it gave up), the counter resets, and the way-round count to store."""
+    effective_target: Optional[Tuple[float, float]]
+    osc_delta: int
+    wait_delta: int
+    wayround_set: Optional[Tuple[int, int, Tuple[int, int], int]]
+    gave_up: bool
+    giveup_record: Optional[GiveUpRecord] = None  # F2: the typed record of the give-up (anchor = the tile the pursuit's count opened on, else this target's tile; the tick), None unless it gave up
+    arrived: bool = False  # the count ran out while the body is ARRIVED at the walk's nav target (`has_arrived`): not a give-up, the walk simply ends (owner #715 7128509663, "arrived never fails")
+
+
+def _place_occupied(target_tile: Tuple[int, int], entity: EntityState, state_or_context: Any) -> bool:
+    """True when another body (never the subject) stands on the target tile or on any tile within Chebyshev 1 of it: the place's own one-ring, the radius of `near_anchor`. The existing `get_occupant`, no new occupancy rule."""
+    return any(LegalityServiceV2.get_occupant((target_tile[0] + dx, target_tile[1] + dy), state_or_context, ignore_entity_id=entity.id) is not None for dx in (-1, 0, 1) for dy in (-1, 0, 1))
 
 
 class MovementSystem:
@@ -79,12 +159,12 @@ class MovementSystem:
     @staticmethod
     def _find_sidestep(
         entity: EntityState,
-        effective_target: Tuple[float, float],
-        target_pos: Tuple[float, float],
+        query: StepQuery,
         state_or_context: Any,
-        move_speed_mult: float,
+        refusals: Optional[List[ReasonCode]] = None,
     ) -> Optional[Tuple[float, float]]:
         """The first legal orthogonal sidestep around a rejected step (3.1 of the congestion ladder), or None."""
+        effective_target, target_pos, move_speed_mult = query.step, query.target_pos, query.move_speed_mult
         x, y = entity.navigation.position
         dx = effective_target[0] - x
         dy = effective_target[1] - y
@@ -100,12 +180,92 @@ class MovementSystem:
             LegalityServiceV2.get_manhattan_dist(p, target_pos)
         ))
         for side_tile in sidesteps:
-            s_ok, _ = LegalityServiceV2.verify_movement_legality(
+            s_ok, why = LegalityServiceV2.verify_movement_legality(
                 entity, side_tile, state_or_context, move_speed_mult=move_speed_mult
             )
             if s_ok:
                 return side_tile
+            if refusals is not None:
+                refusals.append(why)  # the legality refusal of this ring tile: the give-up's evidence (the #996 rework), no new world read
         return None
+
+    @staticmethod
+    def _find_way_round_loop(
+        entity: EntityState,
+        query: StepQuery,
+        state_or_context: Any,
+        refusals: Optional[List[ReasonCode]] = None,
+    ) -> Optional[Tuple[float, float]]:
+        """The legal tile that gets an A-B oscillation out of the loop, or None: the sidestep around the looped step (3.1), else the nearest legal orthogonal
+        neighbour to the target (3.3), never the tile just left (``query.step``, the looped step) and never the current tile."""
+        looped_step, target_pos, move_speed_mult = query.step, query.target_pos, query.move_speed_mult
+        here = (int(entity.navigation.position[0]), int(entity.navigation.position[1]))
+        side_tile = MovementSystem._find_sidestep(entity, query, state_or_context, refusals)
+        if side_tile is not None and (int(side_tile[0]), int(side_tile[1])) != (int(looped_step[0]), int(looped_step[1])):
+            return side_tile
+        x, y = entity.navigation.position
+        ring = sorted(((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)), key=lambda t: LegalityServiceV2.get_manhattan_dist(t, target_pos))
+        for tile in ring:
+            if (int(tile[0]), int(tile[1])) in {here, (int(looped_step[0]), int(looped_step[1]))}:
+                continue
+            ok, why = LegalityServiceV2.verify_movement_legality(entity, tile, state_or_context, move_speed_mult=move_speed_mult)
+            if ok:
+                return tile
+            if refusals is not None:
+                refusals.append(why)
+        return None
+
+    @staticmethod
+    def _oscillation_replan(
+        entity: EntityState,
+        effective_target: Tuple[float, float],
+        target_pos: Tuple[float, float],
+        state_or_context: Any,
+        move_speed_mult: float,
+    ) -> OscReplanOutcome:
+        """The oscillation replan (``oscillation_count >= 3``, the step goes back onto the tile just left): a way-round step, or the give-up when the bounded count is spent.
+
+        The rung ladder runs before the replan gives up (TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK): a step back onto the tile just left is the A-B loop, so look for a
+        legal tile that is neither it nor the current tile before dropping the target. The bounded give-up (2.213): a way-round that makes no net progress on this target counts; the count past
+        the step limit (`wayround_limit`) is the real replan. The precedence at the give-up (ruling 476631fe): ARRIVED THIS ATTEMPT (within `has_arrived` of the walk's nav target now, or at any tick since the target last took its value: nothing filed, the outcome is `arrived`) > OCCUPIED (another body on the target tile or within Chebyshev 1 of it: a wait, filed with BODIES evidence) > RING_BLOCKED > OSCILLATION. Pure: it reads the entity and the state and returns the outcome."""
+        target_tile = (int(target_pos[0]), int(target_pos[1]))
+        current_tick = state_or_context.tick  # the kernel's tick, explicitly: a context with none raises, it never stamps 0 (the #996 rework)
+        refusals: List[ReasonCode] = []
+        way_round = MovementSystem._find_way_round_loop(entity, StepQuery(effective_target, target_pos, move_speed_mult), state_or_context, refusals)
+        osc_delta = -entity.navigation.oscillation_count
+        wait_delta = -entity.navigation.wait_count
+        dist_now = int(abs(target_pos[0] - entity.navigation.position[0]) + abs(target_pos[1] - entity.navigation.position[1]))
+        wayround_count, wayround_best, wayround_anchor = wayround_after_event(entity.navigation, target_tile, dist_now, current_tick)
+        if way_round is not None and wayround_count <= _wayround().limit:
+            return OscReplanOutcome(way_round, osc_delta, wait_delta, (wayround_count, wayround_best, wayround_anchor, current_tick), False)
+        if entity.navigation.arrived_this_attempt or has_arrived(entity.navigation.position, target_pos):  # arrived never fails, at the instant or at any tick of this attempt (owner #715 7128509663 and 7130852946): ``target_pos`` is the walk's own nav target (movement sees no objective), the structural adjacency of `src/core/arrival.py`; the flag is measured from the pre-step position
+            return OscReplanOutcome(None, osc_delta, wait_delta, None, False, None, True)
+        anchor = entity.navigation.wayround_anchor
+        kept = (int(anchor[0]), int(anchor[1])) if anchor is not None else target_tile
+        occupied = _place_occupied(target_tile, entity, state_or_context)  # OCCUPIED outranks the two failure causes: other bodies at the place is waiting, not failure (owner #715 7130979190, ruling 476631fe)
+        ring_blocked = way_round is None and not occupied  # the one-ring check found no legal tile (else the bounded way-round count was spent: OSCILLATION, with no ring evidence)
+        cause = NavCause.OCCUPIED if occupied else NavCause.RING_BLOCKED if ring_blocked else NavCause.OSCILLATION
+        evidence = (RingEvidence.BODIES,) if occupied else ring_evidence_of(refusals) if ring_blocked else ()
+        record = GiveUpRecord(kept, int(current_tick), cause, evidence,
+                              (int(entity.navigation.position[0]), int(entity.navigation.position[1])), target_tile, entity.navigation.target_purpose, need_services_at(state_or_context, kept))
+        return OscReplanOutcome(None, osc_delta, wait_delta, None, True, record)
+
+    @staticmethod
+    def _osc_outcome(entity: EntityState, osc: OscReplanOutcome, success: bool, reason_code: Optional[ReasonCode]) -> Tuple[Optional[Dict[int, EntityUpdate]], bool, bool, Optional[ReasonCode], bool, Optional[GiveUpRecord]]:
+        """What `resolve_move` does with an oscillation replan's outcome: ``(early update, replan, success, reason_code, wayround_clear, giveup_record)``. ARRIVED (`osc.arrived`, "arrived never fails"): the early update ends the walk
+        (`_arrived_update`) and nothing else changes. GAVE UP: the walk is a replan that did not succeed, with the typed code WAYROUND_GIVE_UP (2.213 item 6: the give-up is not a legal step, so it writes its own code, which replaces any
+        older one), the way-round count ended and the record the outcome carries. Otherwise (a way-round step) ``success`` and ``reason_code`` pass through unchanged and nothing is set. The same assignments `resolve_move` made inline."""
+        if osc.arrived:
+            return MovementSystem._arrived_update(entity, osc), False, success, reason_code, False, None
+        if osc.gave_up:
+            return None, True, False, ReasonCode.WAYROUND_GIVE_UP, True, osc.giveup_record
+        return None, False, success, reason_code, False, None
+
+    @staticmethod
+    def _arrived_update(entity: EntityState, osc: OscReplanOutcome) -> Dict[int, EntityUpdate]:
+        """The update of a walk that ends ARRIVED when its way-round count runs out (`osc.arrived`, owner #715 7128509663, "arrived never fails"): the same shape as the beside-unenterable arrival in `resolve_move` (the walk is over:
+        `target_clear`), plus the pursuit's counters ended (`wayround_clear`, the oscillation and wait counters back to 0). No give-up code, no record, no step."""
+        return {entity.id: EntityUpdate(entity_id=entity.id, navigation=NavigationUpdate(target_clear=True, wayround_clear=True, oscillation_count_delta=osc.osc_delta, wait_count_delta=osc.wait_delta))}
 
     @staticmethod
     def _yield_update(entity: EntityState, effective_target: Tuple[float, float], state_or_context: Any, current_tick: int) -> Optional[EntityUpdate]:
@@ -218,6 +378,24 @@ class MovementSystem:
         target_pos: Tuple[float, float],
         mode: MovementMode = MovementMode.WANDER
     ) -> Dict[int, EntityUpdate]:
+        """Evaluate a move intent (`_resolve_move_ladder`) and note, in the same update, that the body is ARRIVED at its stored target (ruling 476631fe, owner #715 7130852946: "arrived this attempt").
+        The arrival is measured from the position the body holds BEFORE the step (never from the proposed step: occupancy can reject the move yet keep the navigation update), against the walk's own nav target
+        (`has_arrived`, `src/core/arrival.py`), and only while the flag is not already set; the navigation patch stores it with the target it keeps and clears it with any other target."""
+        result = MovementSystem._resolve_move_ladder(state_or_context, entity, target_pos, mode)
+        nav = entity.navigation
+        if not entity.lifecycle.active or nav.target is None or nav.arrived_this_attempt or tuple(nav.target) != tuple(target_pos) or not has_arrived(nav.position, target_pos):
+            return result
+        own = result.get(entity.id) or EntityUpdate(entity_id=entity.id)
+        result[entity.id] = replace(own, navigation=replace(own.navigation or NavigationUpdate(), arrived_this_attempt_set=True))
+        return result
+
+    @staticmethod
+    def _resolve_move_ladder(
+        state_or_context: Any,
+        entity: EntityState,
+        target_pos: Tuple[float, float],
+        mode: MovementMode = MovementMode.WANDER
+    ) -> Dict[int, EntityUpdate]:
         """
         Evaluate a move intent and produce an authoritative update dictionary.
         Implements a prioritized recovery ladder for congestion.
@@ -257,6 +435,7 @@ class MovementSystem:
         # 4. Decision Ladder
         # VERIFIED v2: collision_rejection
         # VERIFIED v2: movement_readiness_gating
+        reason_code: Optional[ReasonCode]  # the legality verdict is a ReasonCode, but the ladder successes below (sidestep, yield, reroute) set None
         success, reason_code = LegalityServiceV2.verify_movement_legality(
             entity, effective_target, state_or_context, move_speed_mult=move_speed_mult
         )
@@ -265,6 +444,9 @@ class MovementSystem:
         wait_delta = 0
         osc_delta = 0
         replan = False
+        wayround_set: Optional[Tuple[int, int, Tuple[int, int], int]] = None
+        wayround_clear = False
+        giveup_record: Optional[GiveUpRecord] = None
         pending_plan = None
 
         if not success and MovementSystem._has_arrived_beside_unenterable_target(entity, effective_target, target_pos, reason_code):
@@ -272,7 +454,7 @@ class MovementSystem:
 
         if not success:
             # 3.1 Sidestepping (Orthogonal)
-            side_tile = MovementSystem._find_sidestep(entity, effective_target, target_pos, state_or_context, move_speed_mult)
+            side_tile = MovementSystem._find_sidestep(entity, StepQuery(effective_target, target_pos, move_speed_mult), state_or_context)
             if side_tile is not None:
                 effective_target = side_tile
                 success = True; reason_code = None
@@ -304,11 +486,11 @@ class MovementSystem:
             # Oscillation Detection
             if effective_target == entity.navigation.last_position:
                 if entity.navigation.oscillation_count >= 3:
-                    replan = True
-                    success = False
-                    effective_target = None
-                    osc_delta = -entity.navigation.oscillation_count
-                    wait_delta = -entity.navigation.wait_count
+                    osc = MovementSystem._oscillation_replan(entity, effective_target, target_pos, state_or_context, move_speed_mult)
+                    effective_target, osc_delta, wait_delta, wayround_set = osc.effective_target, osc.osc_delta, osc.wait_delta, osc.wayround_set
+                    early, replan, success, reason_code, wayround_clear, giveup_record = MovementSystem._osc_outcome(entity, osc, success, reason_code)
+                    if early is not None:
+                        return early
                 else:
                     osc_delta = 1
             else:
@@ -411,6 +593,12 @@ class MovementSystem:
             wait_count_delta=wait_delta,
             # VERIFIED v2: stalemate_breaker
             oscillation_count_delta=osc_delta,
+            wayround_count_set=wayround_set[0] if wayround_set else None,
+            wayround_best_distance_set=wayround_set[1] if wayround_set else None,
+            wayround_anchor_set=wayround_set[2] if wayround_set else None,
+            wayround_last_tick_set=wayround_set[3] if wayround_set else None,
+            wayround_clear=wayround_clear,
+            giveup_record_add=giveup_record,
             last_position_set=entity.navigation.position if success else None,
             clear_target=replan,
             clear_path=replan,

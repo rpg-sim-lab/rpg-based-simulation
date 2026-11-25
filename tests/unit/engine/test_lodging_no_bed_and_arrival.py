@@ -146,13 +146,14 @@ def test_a_walk_target_in_the_same_update_as_a_granted_claim_does_not_survive_th
     from src.core.movement_modes import MovementMode
     from src.core.updates import NavigationUpdate, StateUpdate
     from src.engine.lodging import grant_beds, lodge_claim
+    from src.engine.service_admission import service_terms
     k = kernel([hero(1, REACH[0], action=None)], beds=1)
     try:
         st = k._state
         claim = lodge_claim(st.entities[1], st.buildings[INN_ID]).merge(
             EntityUpdate(entity_id=1, navigation=NavigationUpdate(target_set=(38.0, 23.0), movement_mode_set=MovementMode.REGROUP, path_set=[(38.0, 23.0)])))
         assert claim.navigation.target_set == (38.0, 23.0)                                          # the merge keeps the other writer's target beside the claim
-        out = grant_beds(st, StateUpdate(entity_updates={1: claim}))
+        out = grant_beds(st, StateUpdate(entity_updates={1: claim}), terms=service_terms("REST"))
         nav = out.entity_updates[1].navigation
         assert nav.lodged_in_set == INN_ID and nav.target_set is None and nav.movement_mode_set is None and nav.path_set is None and nav.target_clear and nav.clear_path
         assert out.rejections_delta.get("LODGER_TARGET_DROPPED") == 1
@@ -183,12 +184,13 @@ def test_a_granted_claim_stands_on_the_building_tile_whatever_step_another_write
     """A walk step onto the reach tile merged with the claim (the merge keeps the later position) must not decide where the lodger stands: a granted claim is placed on the building's tile."""
     from src.core.updates import StateUpdate
     from src.engine.lodging import grant_beds, lodge_claim
+    from src.engine.service_admission import service_terms
     k = kernel([hero(1, REACH[0], action=None)], beds=1)
     try:
         st = k._state
         claim = lodge_claim(st.entities[1], st.buildings[INN_ID]).merge(EntityUpdate(entity_id=1, new_position=(9, 11), moved_this_tick=True))
         assert claim.new_position == (9, 11)
-        out = grant_beds(st, StateUpdate(entity_updates={1: claim}))
+        out = grant_beds(st, StateUpdate(entity_updates={1: claim}), terms=service_terms("REST"))
         assert out.entity_updates[1].new_position == (10.0, 10.0) and out.entity_updates[1].moved_this_tick
     finally:
         k.shutdown()
@@ -232,16 +234,17 @@ def _lodged_stayer_kernel(items=True):
 def test_the_claim_wins_the_merge_in_either_order_and_the_refused_step_is_counted():
     from src.core.updates import StateUpdate
     from src.engine.lodging import grant_beds, lodge_claim
+    from src.engine.service_admission import service_terms
     k = kernel([hero(1, REACH[0], action=None)], beds=1)
     try:
         st = k._state
         claim = lodge_claim(st.entities[1], st.buildings[INN_ID])
         step = EntityUpdate(entity_id=1, new_position=(9, 11), moved_this_tick=True)
         for merged in (claim.merge(step), step.merge(claim)):
-            out = grant_beds(st, StateUpdate(entity_updates={1: merged}))
+            out = grant_beds(st, StateUpdate(entity_updates={1: merged}), terms=service_terms("REST"))
             assert out.entity_updates[1].new_position == (10.0, 10.0) and out.entity_updates[1].navigation.lodged_in_set == INN_ID
         assert out.rejections_delta.get("LODGER_TARGET_DROPPED") in (1, None) and out.rejections_delta.get("LODGER_DROP_CLAIM_TICK") in (1, None)
-        both = grant_beds(st, StateUpdate(entity_updates={1: claim.merge(step)}))
+        both = grant_beds(st, StateUpdate(entity_updates={1: claim.merge(step)}), terms=service_terms("REST"))
         assert both.rejections_delta["LODGER_DROP_CLAIM_TICK"] == 1 and both.rejections_delta["LODGER_TARGET_DROPPED"] == 1
     finally:
         k.shutdown()

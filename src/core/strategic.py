@@ -27,16 +27,21 @@ class ProjectStatus(str, Enum):
     ABANDONED = "ABANDONED"
 
 
+# The target id of a hunger project the SEEK_WORK opening step makes (decision 73, divergence 2.218): the town centre. The opening step (src/ai/goals/opening_steps.py) and the arrival end (src/engine/tactical_objective.py) read this one name.
+SEEK_WORK_TARGET_ID = "town_center"
+
+
 class ProjectEnd(str, Enum):
     """Why a project was ended: a typed reason set once by `end_record` together with the terminal status, never cleared or rewritten (TCK-20261027-CAPACITY-GATE-FIRST-RECORD-OF-KIND-IS-DEAD-SO-LIVE-SIBLING-NEVER-RESUMED; widened by TCK-20261031-A-RETREAT-PROJECT-OUTLIVES-ITS-THREAT).
 
     Each value names the terminal status it pairs with:
       `SUPERSEDED_BY_TARGET` (ABANDONED): a candidate of the same kind at a different target replaced this live record (`supersede_record`).
       `THREAT_CLEARED` (COMPLETED): a COMBAT_RETREAT project whose threat is gone.
-      `WAY_CLOSED` (ABANDONED): a fatigue project whose subject reached the building and no bed was free (F3, divergence 2.155).
+      `WAY_CLOSED` (ABANDONED): a fatigue project whose subject reached the building and no bed was free (F3, divergence 2.155), or a hunger project whose subject reached the SEEK_WORK target (the town centre) with nothing there to take (D73, divergence 2.218).
       `SUSPENSION_EXPIRED` (ABANDONED): a SUSPENDED project that stayed suspended for `SUSPENSION_TTL_TICKS` without resuming (N10, divergence 2.212); every project kind.
       `BLOCKER_TIMEOUT` (ABANDONED): a resolve_blocker project that ran for the 50-tick window without its blocker resolving (divergence 2.214).
       `BLOCKER_CLEARED` (COMPLETED): a resolve_blocker project whose blocker was removed after a quiet spell (divergence 2.214).
+      `DESTINATION_GIVEN_UP` (ABANDONED): the subject gave up reaching this project's destination ACCESS_GIVEUP_LIMIT times (give-up-filed ACCESS blocker, F2, divergence 2.220); every project kind.
     A project ended for any other reason keeps `ended_by` None."""
     SUPERSEDED_BY_TARGET = "SUPERSEDED_BY_TARGET"
     THREAT_CLEARED = "THREAT_CLEARED"
@@ -44,6 +49,7 @@ class ProjectEnd(str, Enum):
     SUSPENSION_EXPIRED = "SUSPENSION_EXPIRED"
     BLOCKER_TIMEOUT = "BLOCKER_TIMEOUT"
     BLOCKER_CLEARED = "BLOCKER_CLEARED"
+    DESTINATION_GIVEN_UP = "DESTINATION_GIVEN_UP"
 
 
 class ObjectiveStatus(str, Enum):

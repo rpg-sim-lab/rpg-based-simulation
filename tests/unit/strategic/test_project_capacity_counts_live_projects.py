@@ -22,6 +22,7 @@ from src.core.updates import EntityUpdate, StateUpdate, StrategicUpdate
 from src.engine.pipeline_phases.capacity_enforcement import CapacityEnforcementPhase
 from src.systems.strategic_systems.detour import DetourSuggestionSystem
 from src.systems.strategic_systems.intelligence import StrategicIntelligenceSystem
+from src.engine.service_prices import REST_PRICE_GOLD
 
 TERMINAL = (ProjectStatus.COMPLETED, ProjectStatus.ABANDONED)
 LIVE = (ProjectStatus.ACTIVE, ProjectStatus.SUSPENDED)
@@ -33,9 +34,10 @@ def _project(pid, status=ProjectStatus.ACTIVE, kind=ProjectKind.TRAVEL, score=10
                         suspended_since=500 if status == ProjectStatus.SUSPENDED else None)  # N10: a SUSPENDED record carries its clock (the state tick is 500), so the first-sight stamp has nothing to write
 
 
-def _entity(projects, max_projects=3, sleep_debt=0.0):
-    entity = V2EntityBuilder(1).kind("hero").location(0.0, 0.0).cognition(max_active_projects=max_projects).build()
-    entity = replace(entity, biological=replace(entity.biological, sleep_debt=sleep_debt))
+def _entity(projects, max_projects=3, sleep_debt=0.0, gold=REST_PRICE_GOLD):
+    """[TAG A FUND] the subject holds the bed's price by default: these tests are about project capacity, not payment (decision 73: a broke subject's way is town_return) (a coin-keeping kind: D43, 2.224)."""
+    entity = V2EntityBuilder(1).kind("human").location(0.0, 0.0).cognition(max_active_projects=max_projects).build()
+    entity = replace(entity, biological=replace(entity.biological, sleep_debt=sleep_debt), inventory=replace(entity.inventory, gold=gold))
     return replace(entity, strategic=replace(entity.strategic, projects={p.id: p for p in projects}))
 
 
@@ -104,6 +106,11 @@ def test_an_entity_holding_max_live_projects_starts_a_fatigue_project_at_or_past
 
 def test_an_entity_with_no_projects_starts_one():
     assert _fatigue_projects(_entity([], sleep_debt=90.0)) == [("fatigue", ProjectStatus.ACTIVE)]
+
+
+def test_a_broke_subject_beside_an_inn_gets_town_return_not_a_fatigue_project_under_atomic():
+    """[TAG A, new ATOMIC gold-0 case] decision 73 (SURV-06): the bed costs 10, the purse is empty, so the inn is no way to rest; the way-opening step is the return to town."""
+    assert _fatigue_projects(_entity([], sleep_debt=90.0, gold=0)) == [("town_return", ProjectStatus.ACTIVE)]
 
 
 # --- the trim: the same predicate, so it never evicts a live project for a finished record -------------------------------

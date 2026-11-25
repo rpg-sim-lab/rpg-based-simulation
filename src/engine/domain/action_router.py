@@ -1,15 +1,18 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from src.core.enums import ReasonCode
 from src.core.updates import EntityUpdate, NavigationUpdate
-from src.engine.building_services import with_service
+from src.engine.appraisal import can_use_inn_meal
+from src.engine.building_services import service_building, with_service
 from src.engine.domain.aoe_actions import AoeActions
 from src.engine.domain.combat_actions import CombatActions
 from src.engine.domain.core_actions import CoreActions, eat_at_corpse_update
 from src.engine.domain.skill_actions import SkillActions
 from src.engine.legality import LegalityServiceV2
+from src.engine.service_admission import refusal_reason
 from src.engine.work_shift import work_update
 
 if TYPE_CHECKING:
@@ -19,7 +22,19 @@ def _survival_action(entity: EntityState, action: str, payload: Optional[Dict[st
     corpse_id = (payload or {}).get("corpse_id")
     if action == "EAT" and corpse_id is not None:
         return {entity.id: eat_at_corpse_update(entity, corpse_id, context, current_tick)}
-    return with_service(CoreActions.execute_survival(entity, action, current_tick), entity, action, current_tick, context)
+    updates = CoreActions.execute_survival(entity, action, current_tick)
+    own = updates.get(entity.id)
+    if action == "EAT" and own is not None and own.navigation is not None and own.navigation.failure_reason == ReasonCode.SOURCE_MISSING:
+        # Nothing carried (decision 73: no free meal, either payment law). The failure stands unless the building service delivers the paid meal, which then replaces it.
+        meal_base = {entity.id: EntityUpdate(entity_id=entity.id, readiness_delta=-100.0)}
+        served = with_service(meal_base, entity, action, current_tick, context)
+        if served is not meal_base:
+            return served
+        # No meal was served. When a serving inn WAS found for a diet that eats there and refused the payment, the task carries that typed reason; otherwise (no inn in reach, or a diet
+        # that cannot eat its meal) SOURCE_MISSING stands.
+        refused = refusal_reason(entity, "EAT") if context is not None and can_use_inn_meal(entity) and service_building(context, entity, "EAT") is not None else None
+        return updates if refused is None else {entity.id: replace(own, navigation=replace(own.navigation, failure_reason=refused))}
+    return with_service(updates, entity, action, current_tick, context)
 
 
 def _unready(entity: EntityState) -> Optional[Dict[int, EntityUpdate]]:

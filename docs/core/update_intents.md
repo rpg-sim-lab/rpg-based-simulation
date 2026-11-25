@@ -86,7 +86,8 @@ Additional `StateUpdate` fields that control pipeline behavior rather than inten
 - `source_id`, `source_kind` — identifies the source object (NODE, GROUND_ITEM, CORPSE, CRAFTING, SHOP_BUY, SHOP_SELL)
 - `items_add`, `items_remove`, `gold_delta`, `gold_cost`, `price_multiplier` — the transfer ledger
 - `xp_reward`, `transfer_kind`, `transaction_id`, `group_id` — classification and deduplication
-- Contingent sub-updates (`biological_upd`, `attributes_upd`, `identity_upd`, `combat_upd`, `strategic_upd`, `equipment_upd`, `reward_upd`) — applied only if the transaction succeeds
+- Contingent sub-updates (`biological_upd`, `attributes_upd`, `identity_upd`, `combat_upd`, `strategic_upd`, `equipment_upd`, `reward_upd`, and the paid-service `readiness_delta`) — applied only if the transaction succeeds
+- `requires_payee` (default False): set ONLY by the ATOMIC inn builders (the meal in `building_services.service_delta`, the bed in `lodging.bed_delta`, from `service_admission.payee_required()`). A priced `TOWN_SERVICE` with this flag and no payee (no building of the world, no treasury named) is refused with `ReasonCode.PAYEE_MISSING`: no debit, no relief. Every other service or fee (repair, shop, tax) leaves it False and keeps the debit-0-and-count behaviour (divergence 2.218).
 
 Workers must always emit `ResourceTransferIntent` for item and gold transfers. Never emit `InventoryUpdate` directly from decision logic. The `ResourceTransactionResolver` in the apply path validates conservation (inputs equal outputs, no creation from nothing) before committing.
 

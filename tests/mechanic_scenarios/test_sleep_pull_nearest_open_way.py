@@ -13,6 +13,7 @@ import pytest
 from src.config.profiles import PROD_SMALL
 from src.engine.executor import LocalSequentialExecutor
 from src.engine.kernel import Kernel
+from src.engine.service_prices import REST_PRICE_GOLD
 from src.engine.sleep_debt import SLEEP_DEBT
 from src.platform.rng import DeterministicRNG
 from tests.helpers.kernel_pinning import PinnedNormalGovernor
@@ -25,13 +26,14 @@ WORLD, SEED, WINDOW = "frontier_living_world", 42, 120
 TIRED = 75.0  # above the point where the SURV-07 pull outranks ordinary goals, below the collapse line
 
 
-def _stage(gap):
+def _stage(gap, gold=REST_PRICE_GOLD):
     state = compile_world(WORLD, SEED)
     inn = next(b for b in state.buildings.values() if b.kind == "inn")
     subject = next(e for e in state.entities.values() if species_of(e) == "human" and e.combat.alive)
     x, y = inn.position
     subject = replace(subject, biological=replace(subject.biological, hunger=0.0, sleep_debt=TIRED),
-                      navigation=replace(subject.navigation, position=(x - float(gap), y), target=None, home_position=None, leash_radius=0.0))
+                      navigation=replace(subject.navigation, position=(x - float(gap), y), target=None, home_position=None, leash_radius=0.0),
+                      inventory=replace(subject.inventory, gold=gold))  # the subject can pay for a bed (D73: an unpaid bed is not an open way)
     return replace(state, entities={subject.id: subject}, resource_nodes={}), subject.id, inn.position
 
 
@@ -71,3 +73,16 @@ def test_far_the_sleep_goal_names_no_bed_beyond_reach_so_the_subject_rests_where
     leashed = replace(leashed, navigation=replace(leashed.navigation, home_position=home, leash_radius=5.0))
     assert SleepScorer().score(leashed, near_state).target_pos is None, "a bed outside a leashed subject's range is not a way"
     assert SleepScorer().score(leashed, near_state).utility > 0.0, "and the need still pulls (to rest in place)"
+
+
+def test_a_bed_the_subject_cannot_pay_for_is_not_a_way_so_it_rests_where_it_stands():
+    """D73 (decision 73, SURV-06): the same NEAR layout, but one gold short of the bed's price. The inn would not deliver the bed (`admits_at`, the ATOMIC payment law), so the sleep goal names no
+    bed and the subject rests in place (the need still pulls)."""
+    from src.ai.goals.scorers import SleepScorer
+
+    state, sid, _ = _stage(SLEEP_DEBT.bed_reach / 2, gold=REST_PRICE_GOLD - 1)
+    score = SleepScorer().score(state.entities[sid], state)
+    assert score.target_pos is None, "a bed it cannot pay for is not a way"
+    assert score.utility > 0.0, "and the need still pulls (to rest where it stands)"
+    paid_state, pid, _ = _stage(SLEEP_DEBT.bed_reach / 2)
+    assert SleepScorer().score(paid_state.entities[pid], paid_state).target_pos is not None, "the same layout with the price in the purse names the bed"

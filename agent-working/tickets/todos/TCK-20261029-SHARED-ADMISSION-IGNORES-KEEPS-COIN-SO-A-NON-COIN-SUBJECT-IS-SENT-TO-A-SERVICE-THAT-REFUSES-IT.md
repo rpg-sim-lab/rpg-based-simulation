@@ -64,6 +64,13 @@ Lane B found this while planning ONE-ADMISSION (TCK-20261029-A-PRICED-WAY-IS-OPE
 - Sequence: after ONE-ADMISSION, independent of EARN.
 
 ## Implementation Notes
+- Remaining (2026-11-25, rpg-designer per-AC verdicts, 995_CLOSE_LINES.md §3 64228b3d; written at close of #995, which does NOT close this ticket):
+  - AC1 "The counts table is delivered before any code." NOT MET (not measured): the count kit (v5 controls 6c9e70c1, driver fe5dbbdc; shape accepted 11-23) never ran; the 2.224 code is already on the branch. The "before any code" clause can no longer be met; waiving it is an owner ask, routed via the lead.
+  - AC2 "The admission grid covers keeps_coin yes/no, and admission == the real service outcome for every cell." MET: `test_admission_and_the_service_agree_for_every_kind_both_actions_and_enough_gold` runs every catalog species x EAT/REST and asserts `admits_at(...) is (service_delta(...) is not None)`; CI green at be85a25a1 (inspected). The grid's cells are at enough gold; insufficient gold is the price rule, not the keeps_coin cell.
+  - AC3 "No non-coin subject is dispatched to an inn meal or bed that the service would refuse (a kernel test)." MET: 82e5f2a5b, a real-kernel scenario with non-coin kinds picked by properties, a planted purse at the meal and bed prices, and a guard test that keeps the kind list non-empty; CI green (inspected). Not checked: a failing control or mutant for this test.
+  - AC4 "The paired run is reported, with coin-keeping kinds unchanged or a STOP." NOT MEASURED as written: the W re-measure w995e (W995E_READ 5db098d5) is all of #995 vs main, so it cannot show "coin-keeping kinds unchanged" for this rule alone. Remaining: a paired run of this rule alone (main vs main + 2.224), or an owner ruling that the W evidence suffices.
+  - Status stays OPEN; no closure record and no artifacts for it. #995's PR text says so.
+
 ## Test Summary
 ## Files Changed
 ## Completion Summary

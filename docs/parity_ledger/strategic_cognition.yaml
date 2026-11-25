@@ -4531,18 +4531,18 @@
 - id: STRAT-281
   text: 'A need with no open way pulls toward the step that opens one (SURV-07 amendment, owner decision 27):
     a hungry subject with no inn within reach carries a typed `NeedAccess` (`NO_AFFORDABLE_WAY` is defined and produced only by the parked free-meal removal), the pull goes to the first open
-    opening step (forage, with earn-then-buy and ask as closed stubs), and with no open step the goal keeps the raw
-    hunger and says `no_open_step`.'
+    opening step (forage, scavenge, hunt, earn-then-buy, ask, then seek-work), and with no open step the goal keeps the raw
+    hunger and says `no_open_step`. SEEK_WORK (decision 73, divergence 2.218) is the last step: a subject that keeps coin and has no other step goes to the town centre as a HUNGER goal, so the escalated need is admitted at a full cap through the need; on arrival the project ends WAY_CLOSED and the subject re-decides.'
   status: verified
   priority: P1
   legacy_evidence: null
   v2_evidence: '`src/ai/goals/opening_steps.py` (`opening_steps`, `first_open_step`), `src/ai/goals/scorers.py`
     (`_hunger_without_open_way`), `src/engine/need_paths.py` (`need_path_report` counts food nodes);
-    `docs/guidelines/intentional_divergences.md` section 2.91'
+    `docs/guidelines/intentional_divergences.md` section 2.91; SEEK_WORK: `src/ai/goals/opening_steps.py` (`_seek_work_step`), tests/unit/ai/test_seek_work_step.py, divergence 2.218'
   proof_type: parity
   test_path: tests/unit/ai/test_opening_steps.py
   divergence_note: 'Intentional divergence 2.91 (Intentional Gameplay Change).'
-  support_boundary: 'Held out: the earn-then-buy and ask steps are stubs that report why they are closed; broke workers have no earn path yet.'
+  support_boundary: 'Held out: the ask step is a stub that reports why it is closed. SEEK_WORK targets the town centre, not a known building: a known-building target waits for a building-knowledge fact type (none exists in code).'
 - id: STRAT-282
   text: 'TCK-20261009-HEROES-ON-A-LEASH-NEVER-SEEK-FOOD-AND-STARVE-WITHOUT-ONE-EAT-ATTEMPT: a pressing biological need (hunger or sleep debt at or past ESCALATION_ONSET of its consequence line) wakes the brain of an entity holding ENTITY_MOVE every strategic-cadence tick (staggered by id), so the need goal it already ranks first can displace the held move; a present threat to life re-issues the flight in the re-decision.'
   status: verified
@@ -4638,21 +4638,32 @@
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: 'src/engine/service_admission.py (admits, SERVICE_PAYMENT_LAW), src/engine/building_services.py (service_delta), src/ai/goals/ways.py, src/ai/goals/scorers.py, src/observability/starvation_record.py (StarvationVerdict, opening_steps_in_reach); docs/guidelines/intentional_divergences.md section 2.150'
+  v2_evidence: 'src/engine/service_admission.py (admits, SERVICE_PAYMENT_LAW, the keeps_coin clause), src/engine/building_services.py (service_delta), src/ai/goals/ways.py, src/ai/goals/scorers.py, src/observability/starvation_record.py (StarvationVerdict, opening_steps_in_reach); docs/guidelines/intentional_divergences.md section 2.150'
   proof_type: regression
   test_path: tests/unit/engine/test_service_admission.py
-  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.150.
-  support_boundary: 'Main runs the CLAMP law, so no answer changes; the ATOMIC law is exercised by tests only until the free-meal removal. keeps_coin is not in admission (pinned gap).'
+  divergence_note: See docs/guidelines/intentional_divergences.md Sections 2.150 and 2.224.
+  support_boundary: 'The ATOMIC law is main since D73 (divergence 2.218). keeps_coin is part of admission (divergence 2.224, tests/unit/engine/test_admission_includes_keeps_coin.py): a body without the coin trait is admitted to no inn meal or bed, as the service refuses it.'
 - id: STRAT-291
   text: 'A broke hungry subject takes paid work (SURV-06, SURV-07 row 27): the arrival action is derived from the building (a meal the law admits, else a takeable shift, else the project ends); the earn step is offered only if no present threat to life holds (the test that interrupts a held shift) and the subject would reach the meal alive (health lost past the starvation line over the walk to the work, SHIFT_TICKS and the walk on, at starvation.hp_loss_period, stays below its health); the pull escalates over the same step; a held shift is interrupted only by a present threat to life (wage forfeited), never by hunger.'
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: 'src/engine/work_shift.py (shift_takeable, meal_position_after), src/engine/need_pull.py (step_travel_tiles), src/engine/building_arrival.py, src/ai/goals/opening_steps.py (work_in_reach), src/ai/goals/scorers.py, src/engine/scheduler.py (_is_need_woken); docs/guidelines/intentional_divergences.md section 2.151'
+  v2_evidence: 'src/engine/work_shift.py (shift_startable, shift_takeable, meal_position_after), src/engine/need_pull.py (step_travel_tiles), src/engine/building_arrival.py, src/ai/goals/opening_steps.py (work_in_reach), src/ai/goals/scorers.py, src/engine/scheduler.py (_is_need_woken); docs/guidelines/intentional_divergences.md sections 2.151 and 2.223 (a shop arrival with nothing to sell gives the shift, tests/unit/engine/test_hunger_arrival_at_a_shop.py)'
   proof_type: regression
   test_path: tests/integration/scenarios/test_a_broke_hungry_worker_earns_and_then_eats.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.151.
   support_boundary: 'Main runs CLAMP with the free meal on, so the broke-subject effect shows only once the free-meal removal (D73) lands; the scenario tests switch off the core EAT free relief through one named fixture. No partial wages; ask stays a stub.'
+
+- id: STRAT-292
+  text: 'A need project re-points from its earn step to the buy step once the coin is in hand (SURV-06, SURV-07 row 27; #995 case (c)): the CURRENT project of a need kind whose active objective is an earn step (a building that offers a shift or buys goods, or the seek-work town centre) is re-pointed, under the same project id and with no switch check, to the direct consume way when it is open now and admitted to the subject (the one admission rule); a shift held in progress is not cut, and the arrival at a work building makes the same re-point (one shared helper) instead of starting a new shift while a meal is affordable and admitted.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/ai/goals/live_record_route.py (repoint_earn_to_consume, route_live_record), src/engine/work_shift.py (meal_in_reach, shift_held, repoint_to_consume), src/engine/building_arrival.py (the shift-start guard), src/systems/strategic_systems/intelligence.py (the state passed to the route)'
+  proof_type: regression
+  test_path: tests/unit/ai/test_need_project_repoints_from_earn_to_consume.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.224.
+  support_boundary: 'Not yet run: written before the W re-measure. A held shift is not cut (owner question, separate). The earn step is read from the building the objective targets (no typed marker on an objective).'
 
 - id: STRAT-289
   text: 'TCK-20261027-CAPACITY-GATE-FIRST-RECORD-OF-KIND-IS-DEAD-SO-LIVE-SIBLING-NEVER-RESUMED: a winning goal continues, resumes or supersedes the entity''s LIVE project of its kind, chosen as the current project of the kind, else the newest live record (ACTIVE before SUSPENDED); a COMPLETED or ABANDONED record and storage order take no part. A matching target (target_entity_id when either side has one, else target_id) continues the current project, resumes a suspended one or makes an active non-current one current, creating nothing. A different target is superseded (ABANDONED, ended_by SUPERSEDED_BY_TARGET) only when evaluate_project_switch returns an update, cap-neutral; a losing candidate changes nothing. No live record goes through the capacity gate.'
@@ -4760,3 +4771,14 @@
   test_path: tests/unit/world/test_perc02a_senses_signals_night.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.210.
   support_boundary: 'Touch: a body at Chebyshev distance 1 or less is always perceived by the touch channel (no score term; d>=2 verdicts unchanged); unit rows test_touch_* in the same test file. Unit rows: every content species derives its own profile; the ruled night_vision set; typed error for a dangling profile; signals by size, activity and life; the night grid; no perception granted below the threshold; gate error logged at ERROR and not perceived; no kind read in the perception modules. Not yet night-aware (day by default until 02b): legality.attack_allowed, is_feeding_kill, scorers_support.perceived_hostiles and the other get_neighbor_view sites.'
+
+- id: STRAT-356
+  text: 'TCK-20261117-A-SUBJECT-RE-CHOOSES-THE-TARGET-IT-JUST-GAVE-UP-ON (F2 v2.2 D1/D3/D4, divergence 2.220): the strategic pass that learns of a way-round give-up sees the staged give-up record (destination_suppressed(..., staged)), so the bridge cannot re-set the target in the same pass; the #996 rework (TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON, step (e)) files the give-up as a navigation experience of the subject (even when no project is current; the DESTINATION_GIVEN_UP end applies only when one exists) and files NO ACCESS blocker: BlockerState.giveup_count, its fingerprint part, its restore rule and the doubling suppression are removed; access_giveup_limit counts project_giveups, the give-ups of one place for one purpose within one project; an experience refuses a tile within Chebyshev 1 of its anchor for the SAME purpose only, until it is due or latched; a give-up with another body on the target tile or within Chebyshev 1 of it files an OCCUPIED experience (waiting, not failure: due after occupied_review_delay, not counted toward access_giveup_limit; owner #715 7130979190, ruling 476631fe; tests/unit/movement/test_giveup_held_tile.py, tests/unit/strategic/test_navigation_experience_step.py); a body ARRIVED at the nav target of its walk (src/core/arrival.py, Manhattan <= 1) now or at any tick of this attempt (NavigationComponent.arrived_this_attempt) never gives up and files nothing (arrived never fails, owner #715 7128509663 and 7130852946; tests/unit/movement/test_arrival_never_fails.py). v2.2a A'' + C: when ONE merged navigation update carries a give-up record, or the strategic pass''s suppression clear with its anchor (NavigationUpdate.target_clear_anchors, a transient update field), and a target_set within GIVEUP_NEAR_RADIUS (Chebyshev 1) of THAT anchor, the clear wins and the set and its path are dropped (a set farther away stands); a pass that files or extends a suppression carries the anchor with no clear, which also clears a stored target within the radius; a subject holding a pending give-up record takes the strategic pass, not the fast path, and has its own last urgent work-queue tier (6b), so the record is consumed inside the G4 window.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/core/giveup_records.py (GIVEUP_NEAR_RADIUS, near_anchor, anchored_target), src/core/updates.py (NavigationUpdate.target_clear_anchors), src/strategy/destination_suppression.py (suppression_anchors, filed_suppression_anchors, navigation_with_filing_anchor), src/engine/patches.py (NavigationPatch.apply), src/systems/strategic_systems/intelligence.py:577 (the final update carries the filing anchor), src/systems/strategic_systems/work_queue.py (tier 6b), src/systems/strategic_systems/intelligence.py:271 (the fast-path guard), src/strategy/destination_suppression.py (destination_suppressed staged arg), src/systems/strategic_systems/blocker_lifecycle.py (giveup_project_end_update, consume_giveup_records), src/systems/strategic_systems/navigation_experience_step.py (navigation_experience_update), src/core/navigation_experience.py, src/strategy/experience_due.py (due_reason), src/systems/strategic_systems/intelligence.py (the bridge sites pass the staged update), docs/mechanics/04_strategic_cognition.md, docs/guidelines/intentional_divergences.md Section 2.220.'
+  proof_type: regression
+  test_path: tests/unit/strategic/test_giveup_clear_and_service.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.220.
+  support_boundary: 'Unit rows: tests/unit/strategic/test_propose_target.py (the staged record forbids the tile, a staged experience upsert does not, a staged review lifts the refusal, the blocker fingerprint is the pre-F2 string), test_destination_suppression.py (the experience window, purpose scoping, the latch) and test_giveup_filing.py (no-project filing, per place and purpose project_giveups, the project end at the limit, a restart under another project). v2.2a A'' + C rows: tests/unit/strategic/test_giveup_clear_and_service.py (the give-up clear beats a same-update set near its own anchor, a far set stands, no record no rule, another anchor decides nothing, the fast path and the work-queue tier for a pending record, each with a failing control). Paired effect NOT MEASURED yet (the F1+F2 own-job with the v10 spy; the smoke reruns on the new head).'

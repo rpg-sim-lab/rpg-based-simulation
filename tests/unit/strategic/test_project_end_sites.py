@@ -38,8 +38,8 @@ def test_the_files_that_end_a_project_are_the_known_ones():
     """A new production caller of `end_record` must be added here on purpose; a resolve_blocker-capable one must also stamp the blocker (next test)."""
     callers = {rel for rel, name, _ in _calls() if name == "end_record"}
     assert callers == {
-        "core/strategic.py", "engine/building_arrival.py", "engine/lodging.py",
-        "systems/strategic_systems/entity_target_objective.py", "systems/strategic_systems/intelligence.py",
+        "core/strategic.py", "engine/building_arrival.py", "engine/lodging.py", "engine/tactical_objective.py",  # [TAG D NEW STEP] SEEK_WORK's arrival end (WAY_CLOSED, tactical_objective.py)
+        "systems/strategic_systems/entity_target_objective.py", "systems/strategic_systems/intelligence.py", "systems/strategic_systems/blocker_lifecycle.py",
     }
 
 

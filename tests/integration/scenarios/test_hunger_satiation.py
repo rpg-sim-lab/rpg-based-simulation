@@ -9,6 +9,7 @@ Verifies:
 from __future__ import annotations
 
 from src.engine.kernel import Kernel
+from src.engine.service_prices import EAT_PRICE_GOLD
 from src.core.builder import V2EntityBuilder
 from src.core.state import AuthoritativeState, BuildingState
 from src.core.strategic import ProjectStatus
@@ -32,9 +33,10 @@ _TEST_PROFILE = RuntimeProfile(
 def _state_with_tavern(hunger: float = 60.0, seed: int = 42) -> AuthoritativeState:
     entity = (
         V2EntityBuilder(1)
-        .kind("VILLAGER")
+        .kind("human")  # a coin-keeping kind (D43): the inn serves it; "VILLAGER" is no species, so it kept no coin and the inn refused it
         .location(0.0, 0.0)
         .biological(hunger=hunger)
+        .inventory(gold=EAT_PRICE_GOLD)  # the villager can pay for a meal (D73: an unpaid meal is not available food)
         .combat(readiness=100.0)
         .build()
     )

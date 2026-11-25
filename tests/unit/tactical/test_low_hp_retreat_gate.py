@@ -10,6 +10,7 @@ from dataclasses import replace
 
 import pytest
 
+from src.engine.service_prices import EAT_PRICE_GOLD
 from src.core.movement_modes import MovementMode
 from src.engine import tactical as tactical_module
 from src.engine.tactical import TacticalDecisionSystem
@@ -160,7 +161,7 @@ def test_a_held_retreat_does_not_walk_a_stored_target_through_the_kernel(monkeyp
         return update
 
     monkeypatch.setattr(TacticalDecisionSystem, "evaluate_entity_intent", staticmethod(spy))
-    me = hero(1, (15.0, 15.0), debt=0.0, gold=0, action=None, project=False)
+    me = hero(1, (15.0, 15.0), debt=0.0, gold=EAT_PRICE_GOLD, action=None, project=False)  # [TAG A FUND] holds the meal's price (decision 73)
     me = replace(me, combat=replace(me.combat, hp=8, max_hp=100, def_stat=50),
                  navigation=replace(me.navigation, movement_mode=MovementMode.WANDER, target=(25.0, 25.0)))
     foe = (V2EntityBuilder(2).kind("MONSTER").location(15.0, 16.0).identity(faction=Faction.MONSTER_HORDE)

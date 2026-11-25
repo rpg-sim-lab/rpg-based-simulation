@@ -35,7 +35,8 @@ def _consumers():
 
 
 def _subject(leash=RADIUS):
-    e = V2EntityBuilder(1).kind("goblin_warrior").location(*HOME).navigation(home_position=HOME, leash_radius=leash).build()
+    # "goblin" is the species (it keeps coin, D43); "goblin_warrior" is an archetype name, not a species, so it never did (2.224: a funded body must be a coin-keeper to be admitted to the inn)
+    e = V2EntityBuilder(1).kind("goblin").location(*HOME).navigation(home_position=HOME, leash_radius=leash).build()
     return replace(e, biological=replace(e.biological, hunger=0.75 * HUNGER_LINE))
 
 
@@ -66,8 +67,19 @@ def test_a_range_bound_subject_does_not_target_an_inn_outside_its_range():
 
 
 def test_a_person_targets_the_same_inn():
-    score = EatScorer().score(_subject(leash=0.0), _state(inn=(90.0, 50.0)))
+    person = _subject(leash=0.0)
+    score = EatScorer().score(replace(person, inventory=replace(person.inventory, gold=5)), _state(inn=(90.0, 50.0)))  # [TAG A FUND] holds the price: the test is about range, not payment
     assert score.target_pos == (90.0, 50.0) and not score.no_open_step
+
+
+def test_a_person_holding_nothing_has_no_inn_to_target_under_atomic():
+    """[TAG A, new ATOMIC gold-0 case for class 2] the range is free, the purse is empty: no way to the inn. The subject keeps coin (a goblin), so with no way open the pull goes to the last opening
+    step, seek-work at the town centre (D73): the target is NOT the inn and the access is NO_WAY_WITHIN_REACH. Kills the mutant that drops the gold check from the inn's admission (`payment_covers`
+    always true): the inn way would open and the target would be the inn at (90, 50)."""
+    person = _subject(leash=0.0)
+    score = EatScorer().score(replace(person, inventory=replace(person.inventory, gold=0)), _state(inn=(90.0, 50.0)))
+    assert score.target_pos != (90.0, 50.0) and score.target_id != "20003"  # the target is not the inn
+    assert score.need_access is NeedAccess.NO_WAY_WITHIN_REACH  # and the way is not the inn way
 
 
 def test_a_range_bound_subject_forages_a_node_inside_its_range_and_not_a_nearer_one_outside():

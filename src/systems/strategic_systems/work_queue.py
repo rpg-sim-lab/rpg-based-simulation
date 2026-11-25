@@ -1,6 +1,7 @@
 # Compliance IDs: PERF-006, STRAT-PERF-001, PERF-017
 from __future__ import annotations
 from typing import Tuple, List, Set, Optional, TYPE_CHECKING
+from src.core.state import EntityState
 from src.core.strategic import ProjectStatus, ObjectiveStatus, ContractStatus
 from src.systems.strategic_systems.entity_target_objective import project_transition_pending
 
@@ -8,6 +9,16 @@ if TYPE_CHECKING:
     from src.core.state import AuthoritativeState
     from src.core.updates import StateUpdate
     from src.core.dirty import DirtySet
+
+
+def _enqueue_late_urgent(entity: EntityState, e_id: int, dirty_strat: Set[int], dirty_tier: List[int], record_tier: List[int]) -> bool:
+    """Tier 6 (a dirty strategic entity) or 6b (F2 v2.2a C(b): a pending give-up record, which the subject's strategic pass consumes, so it is served the next pass and not left to the background sweep).
+    6b is the last urgent tier; every urgent tier is served in full (only tier 7 is bounded by the budget), so it takes nothing from the tiers above it. True when the entity was queued."""
+    target = dirty_tier if e_id in dirty_strat else (record_tier if entity.navigation.giveup_records else None)
+    if target is None:
+        return False
+    target.append(e_id)
+    return True
 
 
 class StrategicWorkQueue:
@@ -43,6 +54,7 @@ class StrategicWorkQueue:
         tier4: List[int] = []  # biological emergency
         tier5: List[int] = []  # contract expiration
         tier6: List[int] = []  # dirty strategic entities
+        tier6b: List[int] = []  # a pending give-up record (F2 v2.2a C(b)): served the next pass, inside the G4 window, whatever the sweep
         tier7: List[int] = []  # background sweep sample
 
         dirty_strat = dirty.strategic_entities if dirty else set()
@@ -97,10 +109,9 @@ class StrategicWorkQueue:
                     tier5.append(e_id)
                     added = True
 
-            # 6. Dirty strategic entities
-            if not added and e_id in dirty_strat:
-                tier6.append(e_id)
-                added = True
+            # 6. Dirty strategic entities, then 6b. a pending give-up record (F2 v2.2a C(b), divergence 2.220)
+            if not added:
+                added = _enqueue_late_urgent(entity, e_id, dirty_strat, tier6, tier6b)
 
             # 7. Background sweep
             if not added:
@@ -115,7 +126,7 @@ class StrategicWorkQueue:
         combined: List[int] = []
         seen: Set[int] = set()
 
-        urgent = tier1 + tier2 + tier3 + tier4 + tier5 + tier6
+        urgent = tier1 + tier2 + tier3 + tier4 + tier5 + tier6 + tier6b
         for cur_id in urgent:
             if cur_id not in seen:
                 seen.add(cur_id)

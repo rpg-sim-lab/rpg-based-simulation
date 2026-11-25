@@ -154,6 +154,26 @@ def _elem_hint(hint: Any) -> Any:
     return None
 
 
+def _perturb_set(value: Any, elem: Any, ehint: Any) -> Tuple[Any, Optional[Any]]:
+    """A set or frozenset that is NOT equal to ``value``. The usual union with ``elem`` grows it; when ``elem`` is already a member (an enum set that holds the first member,
+    which is what ``synthesize`` returns) the union equals the original and no digest could move, so add a member the set does not hold (another enum member, or a changed
+    ``elem``) and, if there is none, remove one element (the least by ``repr``, so the choice is deterministic). The second value is the added element, ``None`` for a removal."""
+    union = set(value) | {elem}
+    if union != set(value):
+        return type(value)(union), (elem if _is_instance(elem) else None)
+    candidates = [m for m in type(elem) if m not in value] if isinstance(elem, enum.Enum) else []
+    if not candidates and not isinstance(elem, enum.Enum):
+        try:
+            candidates = [perturb(elem, ehint)[0]]
+        except Cannot:
+            candidates = []
+    for candidate in candidates:
+        if candidate not in value:
+            return type(value)(set(value) | {candidate}), (candidate if _is_instance(candidate) else None)
+    smallest = min(value, key=repr)
+    return type(value)(set(value) - {smallest}), None
+
+
 def _perturb_fixed_arity(value: tuple, hint: Any) -> Optional[Tuple[Any, Optional[Any]]]:
     """A fixed-arity tuple (``Tuple[int, int]``: declared per position, no ``...``) keeps its length: appending is out of type, and ``to_canonical`` writes only the declared
     positions, so an append would read as unhashed. Change the first element that can be changed, with that position's own hint. ``None`` when ``hint`` is not a fixed-arity
@@ -217,7 +237,7 @@ def perturb(value: Any, hint: Any) -> Tuple[Any, Optional[Any]]:
             new = collections.deque(value)
             new.append(elem)
         else:
-            new = type(value)(set(value) | {elem})
+            return _perturb_set(value, elem, ehint)
         return new, (elem if _is_instance(elem) else None)
     raise Cannot(f"no perturbation for {type(value).__name__}")
 
@@ -298,6 +318,7 @@ def probe_state(state: Any) -> List[Result]:
         if id(o) in seen or depth > MAX_DEPTH:
             return
         seen.add(id(o))
+        visited.append(o)
         hints = hints_of(type(o))
         for f in dataclasses.fields(o):
             if f.name == CACHE_FIELD:
@@ -344,6 +365,7 @@ def probe_state(state: Any) -> List[Result]:
                 visit(item, fpath + "[]", depth + 1, seen, ref)
 
     base[0] = digest()
+    visited: List[Any] = []  # keeps every visited object alive for the whole probe: ``seen`` holds ids, and a freed synthesized record's id can be handed to the next one
     visit(state, "state", 0, set(), base[0])
     return results
 
