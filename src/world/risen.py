@@ -28,7 +28,7 @@ RISE_DRAW_SUB_ID = 13
 
 def rise_triggers_phase(phase_name: str, state: AuthoritativeState, cadence: Optional[SystemCadence]) -> bool:
     """The resource_transactions phase also runs on a rise check when the world holds a corpse: the rise sub-step lives at its end and a clean dirty set must not skip it."""
-    return phase_name == "resource_transactions" and bool(state.corpses) and should_run(state.tick, None, (cadence or SystemCadence()).rises)
+    return phase_name == "resource_transactions" and bool(state.corpses) and should_run(state.tick, None, cadence.rises if cadence is not None else SystemCadence.model_fields["rises"].default)
 
 
 class RisenService:
