@@ -12,6 +12,8 @@ against the real function, not a bare range check.
 """
 from __future__ import annotations
 
+import pytest
+
 from tools.calibrate_simq import _load_world_state
 from src.config.profiles import PROD_SMALL
 from src.domains.demographics.cohort import PopulationCohort
@@ -19,8 +21,10 @@ from src.engine.kernel import Kernel
 from src.platform.rng import DeterministicRNG
 from src.systems.lifecycle_systems.genetics import GeneticsSystem
 
-# Births are unflagged (M1): the run needs no flag, only enough ticks for a fed pair to meet the per-check chance.
-_RUN_TICKS = 250
+# Births are unflagged (M1): the run needs no flag, only enough ticks for a pair at the friend line to conceive and carry to term.
+# 250 -> 3000 (owner #715 7158923490): a birth is its pregnancy's due tick, 2400 ticks after the conception; measured on this world and seed (42), the first
+# birth is at tick 2161 (conceived at 961).
+_RUN_TICKS = 3000
 
 
 def test_migration_threshold_default_is_the_real_scarcity_gate():
@@ -30,6 +34,7 @@ def test_migration_threshold_default_is_the_real_scarcity_gate():
     )
 
 
+@pytest.mark.extra_slow  # about 3.5 minutes for the 3000-tick run
 def test_a_real_birth_produces_a_correctly_blended_genetic_profile_within_range():
     state, report = _load_world_state("frontier_living_world", seed=42)
     assert state is not None, "frontier_living_world must be a real, compilable corpus world"
