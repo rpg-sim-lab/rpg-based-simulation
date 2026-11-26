@@ -11,7 +11,8 @@ from src.core.spawn_source import SpawnKind, SpawnSource
 from src.core.species import species_of
 from src.domains.world_emergence.schema import WorldEvent, WorldEventCategory
 from src.engine.behavior_consumers import get_catalog
-from src.engine.cadence import SystemCadence, should_run
+from src.engine.cadence import SystemCadence
+from src.engine.rise_trigger import rise_triggers_phase
 from src.entities.archetype_factory import ArchetypeEntityFactory
 from src.entities.contract_builder import resolved_archetype_to_contract
 from src.systems.world_systems.generator import EntityGenerator, NoFreeSpawnTileError
@@ -24,11 +25,6 @@ if TYPE_CHECKING:
 
 # Below 65536 so it XORs only the low bits of the RNG key and cannot alias an `id << 16` term (see DeterministicRNG.get_float).
 RISE_DRAW_SUB_ID = 13
-
-
-def rise_triggers_phase(phase_name: str, state: AuthoritativeState, cadence: Optional[SystemCadence]) -> bool:
-    """The resource_transactions phase also runs on a rise check when the world holds a corpse: the rise sub-step lives at its end and a clean dirty set must not skip it."""
-    return phase_name == "resource_transactions" and bool(state.corpses) and should_run(state.tick, None, cadence.rises if cadence is not None else SystemCadence.model_fields["rises"].default)
 
 
 class RisenService:

@@ -1,10 +1,11 @@
 # Compliance IDs: RPG-OPT-PHASE-GRAPH, PERF-016
 from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Set, Optional, Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Optional, Set
 
 from src.engine.lodging import lodging_triggers_phase
-from src.world.risen import rise_triggers_phase
+from src.engine.rise_trigger import rise_triggers_phase
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState
