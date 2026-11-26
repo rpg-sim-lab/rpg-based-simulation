@@ -68,6 +68,8 @@ src/systems/strategic_systems/intelligence.py, tactical.py, building_arrival.py,
 - Exact module paths of the three non-intelligence sites to be confirmed by the investigator (lane A cited the file names).
 
 ## Implementation Notes
+- EVIDENCE, first concrete cause (rpg-planner, 2026-11-25), from the K3 Phase 0 trace (S9 #715 7168403412; designer read 583d6408…; /mnt/data2/rpg-measure/k3_phase0_out). In 2 rows (class D3: s8 t1472 proj_hunger_1232, s28 t1932 proj_hunger_1312), ONE update carries TWO entries for the same project, COMPLETED and then ACTIVE. The last one wins, which leaves the project ACTIVE with current cleared. That is the orphan shape, from a double write (the arrival's _end_project plus a later entry). Not consecutive, so not HARD (designer).
+- MOVED OUT of systemic_foundation (M1) to the cognition-rework backlog, 2026-11-25. Owner ruling #715 7157496515 Q2 (only HARD K1-K5 repairs stay); rpg-designer's classification posted as #715 7157686023 and recorded by the lead as 7157730160. Reason: bounded: a trim removes the orphan, and the orphan path recovers it when its goal wins.
 Filed on the rpg-planner seat after :1610; not dispatched.
 
 ## Test Summary

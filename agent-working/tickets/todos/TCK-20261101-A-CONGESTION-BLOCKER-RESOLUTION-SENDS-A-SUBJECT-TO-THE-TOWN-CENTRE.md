@@ -73,6 +73,7 @@ Counts first, with no fix shape before the counts and the designer's ruling. Tak
 - Does the blocker form from the churn (the hypothesis) or from real door crowding? Answered by count 2.
 
 ## Implementation Notes
+- MOVED OUT of systemic_foundation (M1) to the cognition-rework backlog, 2026-11-25. Owner ruling #715 7157496515 Q2 (only HARD K1-K5 repairs stay); rpg-designer's classification posted as #715 7157686023 and recorded by the lead as 7157730160. Reason: P3 behaviour quality (a wrong redirect target); the state exits.
 Filed by rpg-planner, 2026-11-01, on a designer ruling (P3, own ticket, counts-first). Not dispatched.
 
 ## Test Summary

@@ -65,6 +65,7 @@ Investigation only, then numbers to rpg-designer before any fix shape:
 - Sequenced after :1610 lands, so it reads the new lookup. Not dispatched yet.
 
 ## Implementation Notes
+- MOVED OUT of systemic_foundation (M1) to the cognition-rework backlog, 2026-11-25. Owner ruling #715 7157496515 Q2 (only HARD K1-K5 repairs stay); rpg-designer's classification posted as #715 7157686023 and recorded by the lead as 7157730160. Reason: not shown to be stuck; investigation-first by its own ruling.
 
 ### Like-for-like probe, 2026-10-29 (lane A, need_probe_base.py; data /mnt/data/scratch-rpg-implementer/c1610/needbase/ and needc/)
 - Same wrapper both arms, frontier_living_world s42-46, 5000t, base d914bace7 vs :1610 c32db1a41. Counts per decision tick.

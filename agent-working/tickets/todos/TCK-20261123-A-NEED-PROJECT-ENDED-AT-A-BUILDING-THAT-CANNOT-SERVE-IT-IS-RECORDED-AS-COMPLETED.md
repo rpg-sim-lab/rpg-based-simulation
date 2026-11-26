@@ -67,6 +67,7 @@ src/engine/building_arrival.py (_end_project, _hunger_arrival, the fatigue branc
 A project's end status and its typed ProjectEnd reason are durable. This ticket makes them true; there is no new field.
 
 ## Implementation Notes
+- EVIDENCE (rpg-planner, 2026-11-25), from the K3 Phase 0 trace (S9 #715 7168403412; rpg-designer read drafts/rpg-designer-k3-phase0-read.md, sha256 583d6408…; outputs /mnt/data2/rpg-measure/k3_phase0_out, summary 5ca380a5…). On e39fe7873, urban_political s42, 2,400 t, 8 rows (class D2) show the arrival's _end_project writing the winner's OWN hunger project COMPLETED (ended_by None) and clearing current in the same update. Hunger was unchanged or rising (70.5-96.8), gold 0, no meal, no payment, no threat. The rows come in 3 same-tick clusters (t1410-1417, t1472-1476, t1932-1936): s10 t1410, s9 t1411, s3 t1417, s7 t1473, s24 t1476, s26 t1934, s25 t1935, s24 t1936. The designer ruled it NOT HARD (the state exits: the next decision opens a new project), and it stays P2 outside M1. It is also the source of the D group (10 rows) in the K3 baseline; the K3 fix (STRAT-359) leaves it as is.
 
 ## Test Summary
 

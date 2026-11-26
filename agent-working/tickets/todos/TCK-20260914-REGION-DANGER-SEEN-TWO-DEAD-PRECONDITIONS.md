@@ -138,6 +138,7 @@ Full detail, including the counter table, in
   this ticket up to bring to peer/user, not decided here.
 
 ## Implementation Notes
+- MOVED OUT of systemic_foundation (M1) to the cognition-rework backlog, 2026-11-25. Owner ruling #715 7157496515 Q2 (only HARD K1-K5 repairs stay); rpg-designer's classification posted as #715 7157686023 and recorded by the lead as 7157730160. Reason: a dead synthesis branch, so nothing is stuck. It is re-checked at item 4's planning (places from perception and memory); it comes back only if that plan names it as an input.
 _(pending — filed, not yet picked up)_
 
 ### 2026-09-30 — classified via `TCK-20260929-UNREACHABLE-CLASSIFY-DEAD-GUARD` (epic `TCK-20260929-EPIC-UNREACHABLE-MECHANISM-CLASSIFICATION`, child `T03`): verdict `DEFECT`
