@@ -1619,7 +1619,7 @@ mechanisms:
         claim, not an accident of staging.
   - id: goal_hierarchy
     layer: entity
-    summary: "Creatures pursue goals in layers, from a standing direction down to projects, objectives and single actions. A creature that runs from danger keeps to its retreat until the threat has been gone for a while. A way that keeps refusing a body for payment becomes a blocker for it."
+    summary: "Creatures pursue goals in layers, from a standing direction down to projects, objectives and single actions. A creature that runs from danger keeps to its retreat until the threat has been gone for a while. A way that keeps refusing a body for payment becomes a blocker for it. An escalated need with no present threat takes the project switch from an ordinary goal."
     systems: [cognition]
     depends_on: [belief_cycle]
     state: done
@@ -1634,6 +1634,7 @@ mechanisms:
       - src/systems/strategic_systems/entity_target_objective.py::objective_outcome
       - src/systems/strategic_systems/entity_target_objective.py::contract_objective_outcome
       - src/ai/goals/escalation.py::escalated_need_wins
+      - src/systems/strategic_systems/project_switch_rules.py::escalated_need_takes_switch
       - src/engine/need_pull.py::step_travel_tiles
       - src/ai/goals/live_record_route.py::route_live_record
       - src/ai/goals/live_record_route.py::orphan_switch_candidate

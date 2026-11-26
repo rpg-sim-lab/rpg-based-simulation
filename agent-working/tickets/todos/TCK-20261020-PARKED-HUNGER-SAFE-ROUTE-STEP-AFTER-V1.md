@@ -75,6 +75,7 @@ The designer's ruling (2026-10-20): fix the corpse-threat hard bug alone before 
 - The worker 1 STOP on crowded s45 in the first paired run was never traced. Re-check it when this is re-measured.
 
 ## Implementation Notes
+- MOVED OUT of systemic_foundation (M1) to the cognition-rework backlog, 2026-11-25. Owner ruling #715 7157496515 Q2 (only HARD K1-K5 repairs stay); rpg-designer's classification posted as #715 7157686023 and recorded by the lead as 7157730160. Reason: parked; there is no evidenced case in any gate world.
 
 ## Test Summary
 

@@ -64,6 +64,7 @@ src/ai/goals/scorers.py (HarvestScorer, _may_gather), src/systems/strategic_syst
 - Where the gather capability is declared (body model or species content) is the designer's call.
 
 ## Implementation Notes
+- MOVED OUT of systemic_foundation (M1) to the cognition-rework backlog, 2026-11-25. Owner ruling #715 7157496515 Q2 (only HARD K1-K5 repairs stay); rpg-designer's classification posted as #715 7157686023 and recorded by the lead as 7157730160. Reason: a rule gap with no liveness or conservation effect; the V4 hits were a false positive.
 None yet.
 
 ## Test Summary

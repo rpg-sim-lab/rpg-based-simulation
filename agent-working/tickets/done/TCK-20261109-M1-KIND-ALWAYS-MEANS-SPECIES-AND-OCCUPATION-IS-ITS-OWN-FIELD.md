@@ -1,10 +1,10 @@
 ---
-status: active
+status: historical
 layer: core
 authority: P1
 audience: agent
 ticket_id: TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD
-phase: open
+phase: done
 date: 2026-11-09
 tags: []
 ---
@@ -15,7 +15,7 @@ tags: []
 `kind` always means species, and occupation is a separate field
 
 ## Status
-INPROGRESS
+DONE
 
 ## Tier
 standard
@@ -203,6 +203,9 @@ src/core/ (entity identity), content schemas
 ## Assumptions / Open Questions
 - Order (roadmap §12.5, memo rows 89/93/95): the v1-disclosure repairs, then D80C, then the decision-73 step (#781, the v1.1 record), then the §12.3 items. Starting this item needs the owner's dispatch yes, brought by rpg-planner via lead-planner-u24.
 - Owner-level choices are asked when the milestone starts, not guessed here.
+
+## Durable state, lifecycle and clocks
+- `occupation` is a typed entity field, and `kind` is the species id (see the steps' PRs). Nothing new in this close.
 
 ## Implementation Notes
 
@@ -467,6 +470,7 @@ Steps 2 and 3 are closed as their own child tickets (TCK-20261117-AN-ENTITY-CARR
 - Step 4 approved edits to existing tests: (1) `tests/unit/world/test_natural_creature_reproduction.py:51` now asserts `kind == "goblin"` AND `identity.occupation == "goblin_warrior"` (kind=species step 4, camp spawn rule (Q2 amendment); designer YES relayed by rpg-planner). (2) The two integration fixtures `test_v1_counts_an_unbacked_hunger_drop_through_the_real_kernel.py` and `test_gate_validity_checks_fire_through_the_real_kernel.py` select the worker with `occupation_of(e) == "worker"` (label selector moved to occupation at step 4; selector only, no assertion change). `test_worldbuilding_strategy.py:148` left alone (stage 4b). The 7 `test_corpus_diversity` grade pins moved and are untouched (they equal main's numbers: stale on main).
 
 ## Files Changed
-Steps 2 and 3: see the child tickets. Steps 4 and 5 open.
+Steps 2 and 3: see the child tickets. Step 4: #952 (9d13a3356), plus the boss-dedupe follow-up a30847030. Step 5: #965 (ae2f837cb). The code is on main.
 
 ## Completion Summary
+- DONE (rpg-planner, 2026-11-25, a bookkeeping close; the code was already on main). All 5 steps landed: step 1 rulings 665b9718; step 2 #946 (f433a9530); step 3 #949 (efba7d95c); step 4 #952 (9d13a3356, plus a30847030 for the boss dedupe it exposed); step 5 #965 (ae2f837cb, the species_id mirror gone, test_k12 guards it). M1 item 1's code is complete. The ticket stayed in inprogress after #965 only by oversight (noted on #715 7157483782).

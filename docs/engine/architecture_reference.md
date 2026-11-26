@@ -131,6 +131,10 @@ The codebase already uses metrics for health, errors, world state, and gameplay 
 
 Use names like `ConcernRecord`, `DirectiveMutationService`, `ProjectSuspensionReason`, `CandidateZoneRecord`, `ContractConsequenceService`. Avoid vague names like `manager2`, `state_helper`, `info_cache`, or `temp_goal_logic`. The design vocabulary is already strong. Reuse it consistently.
 
+### 9.1a File and module names say what they do
+
+File and module names say what the file does; no bare internal codes (k<N>, phase<N>, step<N>, s<N>, f<N>); `tests/tools/test_file_names_carry_meaning.py` enforces this for new files.
+
 ### 9.2 Prefer small, explicit data transformations
 
 A clean method should usually do one of these:

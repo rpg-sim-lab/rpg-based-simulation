@@ -58,3 +58,23 @@ Evidence labels, strongest last; a packet states which one each claim has:
 The shared gate (`lib/busy_gate.sh`) finds a heavy job by `pgrep -af "python.*(<heavy words>)"` plus a project path over the WHOLE command line. A waiting or launcher shell whose command line carries the kit words
 (`_spy`, `_probe`, `pytest`, ...) and a project path therefore reads as a heavy job, blocks every other lane's gate and its own (a deadlock). Never self-queue behind the gate, and never put the kit
 words on a launcher's command line: put the command in a script file and run that file, as the runners do. Run a heavy job only on the planner's explicit HOST FREE.
+
+## Old names (renamed by owner direction #715 7181423761; no logic change)
+
+The measurement kits and their tests were renamed so a file name says what it measures. The #715 records, the designers' reads and the kit directories under `/mnt/data2/rpg-measure` (sha-pinned evidence, not renamed) use the OLD names.
+
+| old name | new name |
+|---|---|
+| `tools/rpg_measure/k2k3_count_{launch.sh,logic.py,spy.py,summary.py}` | `tools/rpg_measure/service_refusal_and_need_switch_count_*` |
+| `tools/rpg_measure/k2fix_ownjob_{launch.sh,spy.py,summary.py}` | `tools/rpg_measure/inn_refusal_blocker_ownjob_*` |
+| `tools/rpg_measure/k3_phase0_{launch.sh,spy.py,summary.py}` | `tools/rpg_measure/need_project_cleared_trace_*` |
+| `tools/rpg_measure/k3_switch_{launch.sh,spy.py,summary.py}` | `tools/rpg_measure/escalated_need_switch_ownjob_*` |
+| `tests/tools/test_k2k3_count_kit.py` | `tests/tools/test_service_refusal_and_need_switch_count_kit.py` |
+| `tests/tools/test_k2fix_ownjob_kit.py` | `tests/tools/test_inn_refusal_blocker_ownjob_kit.py` |
+| `tests/tools/test_k3_phase0_kit.py` | `tests/tools/test_need_project_cleared_trace_kit.py` |
+| `tests/tools/test_k3_switch_kit.py` | `tests/tools/test_escalated_need_switch_ownjob_kit.py` |
+| `tools/release/phase10_enhanced_rollout_gate.py` | `tools/release/rollout_report_gate.py` (class `RolloutGate` unchanged) |
+| `tests/certification/test_phase10_enhanced_rollout_gate.py` | `tests/certification/test_rollout_report_gate.py` |
+
+Kit directories on the host (unchanged, old names): `k2k3_kit_v5`/`v6`, `k2fix_ownjob_kit_v1`-`v3`, `k3_phase0_kit_v1`/`v2`, `k3_switch_kit_v1`-`v3`, and their output directories (`k3_phase0_out`, `k3_ownjob_*_out`, `k3_k6_neg_out`, `k2fix_*`). Closed tickets, stored artifacts, monitoring shards and archive docs keep the old names as history. `tests/tools/test_file_names_carry_meaning.py` fails on a new file whose name carries a bare internal code.
+

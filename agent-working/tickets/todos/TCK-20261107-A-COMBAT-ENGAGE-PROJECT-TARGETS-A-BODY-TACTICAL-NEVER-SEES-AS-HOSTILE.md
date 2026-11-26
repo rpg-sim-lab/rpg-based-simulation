@@ -75,6 +75,11 @@ Fix lean (rpg-designer, after counts): one hostility predicate, read by the scor
   - The ubuntu lead's exact evidence line: "Today only hostility.py:67 and legality.py:59/:265 pass species into project_relation. So the species_relations step reaches faction_hostile and attack legality only, and the 13 direct faction sites never see it. Cure: why-it-fights' single extracted module (the only caller of are_entities_hostile, with a static test)."
   - So tactical and engage-project readers can disagree with the attack-legality verdict on the same pair, which is this ticket's symptom.
   - The cure belongs to TCK-20261109-M1-EACH-MONSTER-KIND-DECLARES-WHY-IT-FIGHTS: one extracted hostility module that every site calls, plus a static test that no site calls are_entities_hostile directly. The owner answered all 8 why-it-fights questions with the recommended options (#715 6985558474).
+- 2026-11-24, MORE EVIDENCE from #996's post-fix3 read (rpg-designer, executed read-only; /mnt/data2/rpg-measure/f2/postfix3_designer_read/POSTFIX3_READ_FINAL.md, sha256 f2a33c41; inspected by rpg-planner). In lifecycle_full_coverage_world, seed 42, 200 t:
+  - head 0d0141804 subjects 5 and 40, and base 878403208 subjects 15, 29 and 34, are labelled STILL_AFTER_TAKE: a combat_engage pick is TAKEN, and then the body doesn't walk toward the enemy and stands still for 40+ ticks.
+  - 40 picks (93,55) and then (84,55) at t80, and neither starts a walk. 5 picks (36,10) at t133 and stands beside it at (36,11), idle 42 of 45 ticks.
+  - It's on base too, so #996 doesn't cause it. It's the symptom this ticket counts ("an objective tactical never pursues"), seen in another world. The ticket's counts should include lifecycle_full_coverage_world.
+  - Not yet checked: whether these targets are missing from hood.hostiles (this ticket's scope item 1). Also related: divergence 2.84 (an entity holding an action task doesn't walk on a navigation target left behind).
 
 ## Test Summary
 

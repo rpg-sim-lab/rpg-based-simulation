@@ -1,4 +1,4 @@
-"""Unit controls for the K2/K3 re-count kit (tools/rpg_measure/k2k3_count_*): planted positives, negatives and mutants for the fixed count definitions
+"""Unit controls for the K2/K3 re-count kit (tools/rpg_measure/service_refusal_and_need_switch_count_*): planted positives, negatives and mutants for the fixed count definitions
 (rpg-designer-k2-k3-count-definitions.md, sha256 992b7ce37e1a...940cd5855). No simulation is run here."""
 from __future__ import annotations
 
@@ -20,8 +20,8 @@ def load(name):
     return module
 
 
-logic = load("k2k3_count_logic")
-spy_mod = load("k2k3_count_spy")
+logic = load("service_refusal_and_need_switch_count_logic")
+spy_mod = load("service_refusal_and_need_switch_count_spy")
 K = 10
 
 
@@ -544,7 +544,7 @@ def _run(action, lodged, length=30, building=7):
 
 
 def test_the_negative_control_lists_every_run_over_10_and_passes_when_no_rest_run_was_lodged(tmp_path):
-    summary = load("k2k3_count_summary")
+    summary = load("service_refusal_and_need_switch_count_summary")
     _neg_cell(tmp_path, [_run("EAT", None), _run("REST", None, 8), _run("REST", 9)])
     doc = summary.neg_summary(tmp_path)
     assert doc["valid"] is True and len(doc["runs_over_10"]) == 2 and doc["kit_defect_rest_runs"] == [] and doc["verdict"].startswith("NO DEFECT")
@@ -552,7 +552,7 @@ def test_the_negative_control_lists_every_run_over_10_and_passes_when_no_rest_ru
 
 
 def test_the_negative_control_stops_on_a_rest_run_whose_subject_was_lodged_at_its_building(tmp_path):
-    summary = load("k2k3_count_summary")
+    summary = load("service_refusal_and_need_switch_count_summary")
     _neg_cell(tmp_path, [_run("REST", 7)])
     doc = summary.neg_summary(tmp_path)
     assert len(doc["kit_defect_rest_runs"]) == 1 and doc["verdict"].startswith("STOP")
@@ -562,7 +562,7 @@ def test_the_negative_control_stops_on_a_rest_run_whose_subject_was_lodged_at_it
 
 
 def test_the_negative_control_is_void_when_the_spy_hash_differs(tmp_path):
-    summary = load("k2k3_count_summary")
+    summary = load("service_refusal_and_need_switch_count_summary")
     _neg_cell(tmp_path, [_run("EAT", None)], hash_spy="other")
     assert summary.neg_summary(tmp_path)["verdict"] == "VOID"
 
@@ -604,7 +604,7 @@ import shutil
 import subprocess
 
 REPO = KIT.parents[1]
-KIT_FILES = ("arm_child.py", "person_attack_spy.py", "person_attack_summary.py", "k2k3_count_logic.py", "k2k3_count_spy.py", "k2k3_count_summary.py", "k2k3_count_launch.sh")
+KIT_FILES = ("arm_child.py", "person_attack_spy.py", "person_attack_summary.py", "service_refusal_and_need_switch_count_logic.py", "service_refusal_and_need_switch_count_spy.py", "service_refusal_and_need_switch_count_summary.py", "service_refusal_and_need_switch_count_launch.sh")
 
 
 def build_kit_layout(root, with_pinned_runner=True):
@@ -637,7 +637,7 @@ def test_arm_child_resolves_the_pinned_runner_from_the_v5_kit_layout(tmp_path):
 
 def test_the_spy_imports_and_reaches_the_pinned_runner_through_its_own_sibling_loader_in_the_v5_layout(tmp_path):
     kit = build_kit_layout(tmp_path / "kit")
-    spy = load_from(kit / "tools" / "rpg_measure" / "k2k3_count_spy.py", "_v5_spy")
+    spy = load_from(kit / "tools" / "rpg_measure" / "service_refusal_and_need_switch_count_spy.py", "_v5_spy")
     assert hasattr(spy, "main") and hasattr(spy.load_sibling("arm_child")._pinned_runner(), "require_pinned")
 
 
@@ -653,7 +653,7 @@ def test_a_flat_kit_dir_cannot_resolve_the_pinned_runner_the_defect_of_v1_to_v4(
 def _launch(kit, tmp_path, **env):
     import os
     full = dict(os.environ, KIT=str(kit), OUT=str(tmp_path / "out"), TREE=str(tmp_path / "tree"), LAUNCH_DRY_RUN="1", **env)
-    return subprocess.run(["bash", str(kit / "tools" / "rpg_measure" / "k2k3_count_launch.sh")], env=full, capture_output=True, text=True, timeout=60)
+    return subprocess.run(["bash", str(kit / "tools" / "rpg_measure" / "service_refusal_and_need_switch_count_launch.sh")], env=full, capture_output=True, text=True, timeout=60)
 
 
 def test_the_launcher_exits_1_with_a_message_when_the_pinned_runner_is_missing(tmp_path):
@@ -668,7 +668,7 @@ def test_the_launcher_dry_run_names_the_layout_paths_for_every_stage(tmp_path):
         done = _launch(kit, tmp_path, STAGE=stage)
         assert done.returncode == 0, done.stdout + done.stderr
         lines = [line for line in done.stdout.splitlines() if line.startswith("CELL ")]
-        assert len(lines) == cells and all(f"{kit}/tools/rpg_measure/k2k3_count_spy.py" in line and f" {ticks} " in line for line in lines)
+        assert len(lines) == cells and all(f"{kit}/tools/rpg_measure/service_refusal_and_need_switch_count_spy.py" in line and f" {ticks} " in line for line in lines)
 
 
 # ---- Amendment 4: A6 fresh results only, A7 the tree's REST held marker, A8 held_rest_not_resting (controls l-o)
@@ -733,7 +733,7 @@ def test_fresh_results_helper_treats_a_missing_transaction_id_by_equality_not_as
 
 
 def test_the_negative_control_summary_carries_the_a8_channel_and_the_stale_count(tmp_path):
-    summary = load("k2k3_count_summary")
+    summary = load("service_refusal_and_need_switch_count_summary")
     _neg_cell(tmp_path, [_run("EAT", None)])
     doc = summary.neg_summary(tmp_path)
     assert "held_rest_not_resting" in doc and "stale_results_ignored" in doc and "dispatch_visibility" in doc

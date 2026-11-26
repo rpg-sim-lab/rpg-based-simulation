@@ -1,4 +1,4 @@
-"""Unit controls for the K2 fix own-job kit (tools/rpg_measure/k2fix_ownjob_*): planted positives and negatives for every count the designer fixed (A(i), A(ii), B(i), B(ii) false fires, B(iii) still looping,
+"""Unit controls for the K2 fix own-job kit (tools/rpg_measure/inn_refusal_blocker_ownjob_*): planted positives and negatives for every count the designer fixed (A(i), A(ii), B(i), B(ii) false fires, B(iii) still looping,
 neutrality), the layout and launcher controls, and the startup resolution. No simulation is run here."""
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[2]
 KIT = REPO / "tools" / "rpg_measure"
-KIT_FILES = ("arm_child.py", "person_attack_spy.py", "person_attack_summary.py", "k2fix_ownjob_spy.py", "k2fix_ownjob_summary.py", "k2fix_ownjob_launch.sh")
+KIT_FILES = ("arm_child.py", "person_attack_spy.py", "person_attack_summary.py", "inn_refusal_blocker_ownjob_spy.py", "inn_refusal_blocker_ownjob_summary.py", "inn_refusal_blocker_ownjob_launch.sh")
 
 
 def load_from(path, key):
@@ -26,8 +26,8 @@ def load_from(path, key):
     return module
 
 
-spy_mod = load_from(KIT / "k2fix_ownjob_spy.py", "_t_ownjob_spy")
-summary = load_from(KIT / "k2fix_ownjob_summary.py", "_t_ownjob_summary")
+spy_mod = load_from(KIT / "inn_refusal_blocker_ownjob_spy.py", "_t_ownjob_spy")
+summary = load_from(KIT / "inn_refusal_blocker_ownjob_summary.py", "_t_ownjob_summary")
 
 INN = 7
 INN_POS = (40, 31)                                                                                    # a real fatigue objective's target is a POSITION (trace v8: [40.0, 31.0]), not a building id
@@ -363,7 +363,7 @@ def build_kit_layout(root, with_pinned_runner=True):
 
 def test_the_spy_resolves_the_pinned_runner_from_the_tool_checkout_layout_and_a_flat_dir_cannot(tmp_path):
     kit = build_kit_layout(tmp_path / "kit")
-    spy = load_from(kit / "tools" / "rpg_measure" / "k2fix_ownjob_spy.py", "_layout_ownjob_spy")
+    spy = load_from(kit / "tools" / "rpg_measure" / "inn_refusal_blocker_ownjob_spy.py", "_layout_ownjob_spy")
     assert hasattr(spy, "main") and hasattr(spy.load_sibling("arm_child")._pinned_runner(), "require_pinned")
     flat = tmp_path / "a" / "b" / "flat"
     flat.mkdir(parents=True)
@@ -376,7 +376,7 @@ def test_the_spy_resolves_the_pinned_runner_from_the_tool_checkout_layout_and_a_
 def _launch(kit, tmp_path, **env):
     import os
     full = {**os.environ, "KIT": str(kit), "OUT": str(tmp_path / "out"), "TREE_MAIN": str(tmp_path / "tmain"), "TREE_FIX": str(tmp_path / "tfix"), "LAUNCH_DRY_RUN": "1", **env}
-    return subprocess.run(["bash", str(kit / "tools" / "rpg_measure" / "k2fix_ownjob_launch.sh")], env=full, capture_output=True, text=True, timeout=60)
+    return subprocess.run(["bash", str(kit / "tools" / "rpg_measure" / "inn_refusal_blocker_ownjob_launch.sh")], env=full, capture_output=True, text=True, timeout=60)
 
 
 def test_the_launcher_prechecks_the_pinned_runner_refuses_a_used_tree_and_dry_runs_both_arms_of_every_cell(tmp_path):
@@ -387,7 +387,7 @@ def test_the_launcher_prechecks_the_pinned_runner_refuses_a_used_tree_and_dry_ru
     done = _launch(kit, tmp_path)
     lines = [l for l in done.stdout.splitlines() if l.startswith("CELL ")]
     assert done.returncode == 0 and len(lines) == 8 and sum(" main " in l for l in lines) == 4 and sum(" fix " in l for l in lines) == 4
-    assert any("urban_political s42 2400t" in l for l in lines) and all(f"{kit}/tools/rpg_measure/k2fix_ownjob_spy.py" in l for l in lines)
+    assert any("urban_political s42 2400t" in l for l in lines) and all(f"{kit}/tools/rpg_measure/inn_refusal_blocker_ownjob_spy.py" in l for l in lines)
     used = _launch(kit, tmp_path, TREE_FIX=str(tmp_path / "k2k3_tree2_main_d084b9248"))
     assert used.returncode == 18
 
