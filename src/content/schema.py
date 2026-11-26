@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Optional, Any, Dict, List, Literal, Tuple
 from enum import Enum
 from pydantic import BaseModel, Field, ConfigDict, field_validator
+from src.core.enums import ReasonCode
 
 
 class CatalogBaseDefinition(BaseModel):
@@ -452,6 +453,18 @@ class DefaultCompileProfile(CatalogBaseDefinition):
 class BlockerSettingsDefinition(CatalogBaseDefinition):
     """Schema for the blocker settings that are balance values, not law (F2, divergence 2.220): a one-record family like `defaults`, so the value is part of the catalog fingerprint (the run's identity)."""
     access_giveup_limit: int = Field(..., ge=1, strict=True, description="Give-ups of one place for one purpose within one project (the navigation experience's project_giveups) that end that project; an integer >= 1")
+    service_refusal_limit: int = Field(..., ge=1, le=8, strict=True, description="Consecutive typed refusals of one building service (action, building) that file the access blocker for that way; an integer >= 1 and at most the held-record cap (src/core/service_refusals.py)")
+    service_refusal_window: int = Field(..., ge=1, strict=True, description="Ticks within which a refusal continues the streak of the previous one; an integer >= 1")
+    service_refusal_reasons: List[str] = Field(..., min_length=1, description="The ReasonCode names a refusal must carry to be counted (a transient reason is not listed)")
+    service_refusal_severity: float = Field(..., gt=0.0, lt=1.0, description="Severity of the blocker the rule files, in (0, 1) (the congestion blocker's is 0.5)")
+
+    @field_validator("service_refusal_reasons")
+    @classmethod
+    def _reasons_are_reason_codes(cls, value: List[str]) -> List[str]:
+        unknown = [name for name in value if name not in {r.value for r in ReasonCode}]
+        if unknown:
+            raise ValueError(f"service_refusal_reasons names no ReasonCode: {unknown}")
+        return value
 
 
 class NavigationExperienceSettingsDefinition(CatalogBaseDefinition):

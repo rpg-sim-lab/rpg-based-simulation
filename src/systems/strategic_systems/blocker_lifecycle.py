@@ -5,14 +5,16 @@ import ast
 from dataclasses import replace
 from typing import Any, Dict, Optional, Tuple
 
-from src.content.blocker_settings import access_giveup_limit
+from src.content.blocker_settings import access_giveup_limit, service_refusal_settings
 from src.content.navigation_experience_settings import navigation_experience_settings
 from src.core.giveup_records import HeldTargetAtAnchorCounts, near_anchor
 from src.core.inventory import InventoryService
 from src.core.navigation_experience import NavCause, NavigationExperienceUpdate
+from src.core.service_refusals import consecutive_refusals, service_blocker_id
 from src.core.state import AuthoritativeState, EntityState
 from src.core.strategic import (
     CONGESTION_BLOCKER_ID,
+    BlockerKind,
     BlockerRemoval,
     BlockerState,
     ObjectiveStatus,
@@ -155,6 +157,22 @@ def infer_blockers(
         unique_blockers[b.id] = b
 
     return StrategicUpdate(blockers_add_or_update=list(unique_blockers.values()))
+
+
+def service_refusal_blockers(entity: EntityState, inferred: StrategicUpdate, tick: int) -> StrategicUpdate:
+    """K2 fix B (STRAT-191-194): ``inferred`` plus the blocker for every building service refused the SAME way (action, building) `limit` times in a row for a counted typed reason (the settings are data). A streak whose
+    newest refusal is older than the window has lapsed (the subject stopped being refused), so it is not re-inferred and the blocker expires by the quiet spell. ``inferred`` itself when none is filed."""
+    if not entity.navigation.service_refusals:
+        return inferred
+    settings = service_refusal_settings()
+    filed = []
+    for action, building in sorted({(r.action, r.building) for r in entity.navigation.service_refusals}):
+        newest = max(r.tick for r in entity.navigation.service_refusals if (r.action, r.building) == (action, building))
+        if tick - newest <= settings.window and consecutive_refusals(entity.navigation.service_refusals, action, building, settings.window, settings.reasons) >= settings.limit:
+            filed.append(BlockerState(id=service_blocker_id(action, building), kind=BlockerKind.ACCESS, subject=str(building), severity=settings.severity))
+    if not filed:
+        return inferred
+    return replace(inferred, blockers_add_or_update=[*inferred.blockers_add_or_update, *filed])
 
 
 def generate_crafting_blockers(

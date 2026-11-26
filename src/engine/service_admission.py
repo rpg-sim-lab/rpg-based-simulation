@@ -21,7 +21,7 @@ from typing import Any, Dict, Optional
 
 from src.core.enums import ReasonCode
 from src.engine.appraisal import can_use_inn_meal
-from src.engine.lodging import has_free_bed
+from src.engine.lodging import finds_no_bed, has_free_bed, lodges
 from src.engine.serves import keeps_coin
 from src.engine.service_prices import EAT_PRICE_GOLD, REST_PRICE_GOLD
 
@@ -83,6 +83,16 @@ def admits_at(entity: Any, building: Any, action: str, state: Any = None, law: O
     if action == "REST" and building is not None and state is not None:
         return has_free_bed(state, building, entity)
     return True
+
+
+def no_bed_for(state: Any, entity: Any, building: Any, law: Optional[PaymentLaw] = None) -> bool:
+    """THE shared bed-refusal predicate (divergence 2.155 and TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER, part A): the subject finds no bed at ``building``, either because none is free
+    (`finds_no_bed`) or because it cannot pay the bed (the same admission rule `admits_at` reads, `payment_covers` for REST). The scope is `finds_no_bed`'s own and nothing wider: a subject with the coin trait (`keeps_coin`) at a
+    functional building that declares beds. A body without the trait, a building without beds and a building that is not functional are not refused here: their rest runs as on main. Under CLAMP the purse half is never true.
+    Both callers (the first execution of a REST, `building_services.no_bed_in_reach`, and the fatigue arrival, `building_arrival`) ask this one function."""
+    if finds_no_bed(state, entity, building):
+        return True
+    return building is not None and building.functional and lodges(building) and keeps_coin(entity) and not payment_covers(entity, "REST", law)
 
 
 def admits(entity: Any, action: str, law: Optional[PaymentLaw] = None) -> bool:

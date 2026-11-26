@@ -1619,7 +1619,7 @@ mechanisms:
         claim, not an accident of staging.
   - id: goal_hierarchy
     layer: entity
-    summary: "Creatures pursue goals in layers, from a standing direction down to projects, objectives and single actions. A creature that runs from danger keeps to its retreat until the threat has been gone for a while."
+    summary: "Creatures pursue goals in layers, from a standing direction down to projects, objectives and single actions. A creature that runs from danger keeps to its retreat until the threat has been gone for a while. A way that keeps refusing a body for payment becomes a blocker for it."
     systems: [cognition]
     depends_on: [belief_cycle]
     state: done
@@ -1640,6 +1640,8 @@ mechanisms:
       - src/ai/goals/live_record_route.py::supersede_on_win
       - src/core/strategic.py::note_threat_state
       - src/core/strategic.py::restart_clear_window
+      - src/core/service_refusals.py::consecutive_refusals
+      - src/systems/strategic_systems/blocker_lifecycle.py::infer_blockers
     verified:
       instrument: scenario
       verdict: observed
@@ -2982,7 +2984,7 @@ mechanisms:
         `navigation.lodged_in` names it (`town_services`).
   - id: town_services
     layer: world
-    summary: "Buildings provide services: inns give beds, and guild halls, shops and blacksmiths work. Church blessings and resurrection are not in play, and no church is placed in any world."
+    summary: "Buildings provide services: inns give beds, and guild halls, shops and blacksmiths work. Church blessings and resurrection are not in play, and no church is placed in any world. A body that keeps coin and cannot pay for an inn bed gives up that inn instead of resting rough there."
     systems: [economy]
     depends_on: [buildings]
     state: done
@@ -3013,6 +3015,7 @@ mechanisms:
       - src/engine/work_shift.py::shift_takeable
       - src/engine/work_wake.py::held_work_is_threatened
       - src/engine/serves.py::serves
+      - src/engine/service_admission.py::no_bed_for
     verified:
       instrument: code_trace
       verdict: observed

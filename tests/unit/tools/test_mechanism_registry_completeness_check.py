@@ -315,7 +315,9 @@ def test_wider_scope_numbers_pinned():
     # 386 -> 387 on 2026-11-24 (S8, the lead's record on #715 after 7137525427, from the check's own output): +src/core/navigation_component.py (NavigationComponent moved out of state.py, TCK-20261124-NAVIGATION-STATE-MOVES-OUT-OF-STATE-PY, owner #715 after 7135893456); unbound, as it was inside state.py
     # 387 -> 391 on 2026-11-25 (TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND rebased onto main; its reproduction scope: 2026-11-18 372 -> 376): +src/core/pregnancy.py, +src/world/mate_gate.py, +src/world/corpse_goods.py, +src/world/risen.py, each bound (pregnancy_gestation, humanoid_reproduction, corpse_goods_conservation, corpse_rising).  Confirmed from the check's own output (392).
     # 391 -> 392 on 2026-11-25 (the same ticket, senses (A'), 2026-11-18 378 -> 379): +src/content/sense_resolution.py (the pure species_sense_profile resolver moved out of species_senses.py to break the load-time import cycle), cited under `sense_gated_detection`.
-    assert wider["scope_files"] == 392
+    # 387 -> 388 on 2026-11-25 (TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER, rpg-planner ruling, from the check's own output): +src/core/service_refusals.py (the typed ServiceRefusal record and its streak count, K2 fix B), unbound
+    # 392 -> 393 on 2026-11-26 (merge of main 0ba291224 into the births branch; sum of both sides, to be confirmed from the check's own output)
+    assert wider["scope_files"] == 393
     # 233 -> 227 on 2026-10-05: the world-building split names six more files (worldmodules/normalizer,
     # worldassembly/resolve_io, worldbuilding/repository and validator, worldgeneration/generator and scorer).
     # Then +1 for the unbound entity_target_objective.py module (TCK-20261002-COMBAT-OBJECTIVE-TARGETS-...).
@@ -392,6 +394,8 @@ def test_wider_scope_numbers_pinned():
     # 271 -> 272 on 2026-11-24 (the same S8): src/core/arrival.py is unbound
     # 272 -> 273 on 2026-11-24 (the same S8): +src/core/navigation_component.py, unbound
     # 273 -> 272 on 2026-11-25 (TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND rebased onto main, rpg-planner ok in the slot message): the check's own output; the branch's four new modules are bound and its senses (A') step carried its own 264 -> 263 drop. The provisional sum 273 was wrong by one; scope_files 392 matched the check.
+    # 273 -> 274 -> 273 on 2026-11-25 (TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER, rpg-planner ruling, from the check's own output): the new src/core/service_refusals.py first counted as unbound and is now bound under `goal_hierarchy`, so the number is unchanged
+    # 272 on 2026-11-26 (merge of main 0ba291224: K2's net change is 0, births' is 272; confirm from the check's own output)
     assert wider["unbound_files"] == 272
     # 73 -> 72 on 2026-10-07 (row 7 (b) pass): src/quests/generator.py::QuestGenerator is now bound under `guilds`.
     # 72 -> 71 on 2026-10-11 (#500, D57): src/engine/rpg_depth.py::LeashService is cited under `tactical_decision` (it became wired when
