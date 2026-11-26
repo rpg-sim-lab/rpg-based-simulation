@@ -13,6 +13,7 @@ from src.core.state import (
 )
 from src.content.hero_species import hero_species_id
 from src.core.enums import EntityRole, Faction, ActionType, Domain
+from src.core.spawn_errors import NoFreeSpawnTileError
 from src.platform.rng import DeterministicRNG
 
 if TYPE_CHECKING:
@@ -67,10 +68,6 @@ def _catalog_faction_properties(occupation: Optional[str]) -> Dict[str, Any]:
     """The catalog faction of a spawn LABEL (M1 step 4: `SPAWN_KIND_CATALOG_FACTION` is keyed by the occupation a spawner writes, not by the species in `kind`)."""
     faction_id = SPAWN_KIND_CATALOG_FACTION.get(occupation) if occupation else None
     return {"faction_id": faction_id} if faction_id else {}
-
-
-class NoFreeSpawnTileError(RuntimeError):
-    """`free_spawn_position` found no clear tile in its search radius (births record the newborn as unplaced; a bare RuntimeError from anywhere else is a bug)."""
 
 
 class EntityGenerator:
