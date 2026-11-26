@@ -2092,7 +2092,7 @@
     \ under TCK-20260811-INTERRUPTION-BYPASS-RETENTION-MARGIN-SCALE-BUG. The 27 pre-existing\
     \ direct test call sites (state=None default) reach this block unconditionally,\
     \ byte-identical to before; only callers passing a real state can short-circuit\
-    \ past it via the STRAT-236 threat-resolved check."
+    \ past it via the STRAT-236 threat-resolved check. Exception for an escalated hunger/fatigue winner with no present threat: STRAT-359 / 2.228."
   proof_type: parity
   test_path: tests/unit/strategic/test_score_normalization.py::test_locked_system_a_current_interrupted_by_high_urgency_system_b_candidate
   divergence_note: null
@@ -2112,7 +2112,7 @@
     \ left this blocking behavior intact. Reservation priority is now conditional\
     \ on the STRAT-236 threat-resolved gate not having already released the lock \u2014\
     \ the 27 pre-existing direct test call sites (state=None default) are unaffected,\
-    \ byte-identical to before."
+    \ byte-identical to before. Exception for an escalated hunger/fatigue winner with no present threat: STRAT-359 / 2.228."
   proof_type: parity
   test_path: tests/unit/strategic/test_score_normalization.py::test_locked_system_a_current_still_blocks_low_urgency_system_b_candidate
   divergence_note: null

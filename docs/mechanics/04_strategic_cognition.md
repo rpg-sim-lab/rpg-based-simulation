@@ -297,9 +297,11 @@ pre-epic set with live registered scorers — `ADVENTURE_ROUTE`/`SOCIAL_CONTRACT
 `REGION_STABILIZATION` are excluded, MVP scope), it is synthesized as an ordinary tier-5
 `GoalScore` candidate (`utility=50.0`, a fixed mid-scale value) and appended to the same
 candidate list `GoalRegistry`'s live scorers populate — before routine/role-utility biasing, so
-it is boosted identically to a live candidate. It then competes through the completely
-**unmodified** `evaluate_project_switch()` arbiter (STRAT-185/186/187 lock/margin logic
-applies exactly as it does to every other tier-5 candidate). Because the 10 eligible kinds
+it is boosted identically to a live candidate. It then competes through `evaluate_project_switch()` like every other tier-5 candidate, with no
+rule keyed on its source: the lock/margin logic (STRAT-185/186/187) applies to it as to any
+candidate, and a materialized HUNGER or FATIGUE intention at or past its escalation onset takes
+the switch past the lock and margin exactly as a live need candidate does (SURV-07, STRAT-359,
+divergence 2.228). Because the 10 eligible kinds
 always resolve to a real `GoalKind` instance (not `ProjectKind`), a committed intention's
 materialized `ProjectState.score` equals `best_candidate.utility` directly (the 100-ceiling
 scale) — this is scale-consistent by construction, unlike the three special branches, which

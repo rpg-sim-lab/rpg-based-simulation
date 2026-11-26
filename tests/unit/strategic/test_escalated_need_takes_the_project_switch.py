@@ -138,3 +138,21 @@ def test_with_the_rule_off_the_helpers_give_the_pre_refactor_decision(monkeypatc
     state = _state(entity, tick=50)
     got = switch(entity, candidate, state)
     assert (got.current_project_id_set if got is not None else None) == oracle(entity, candidate, 50, state)
+
+
+def test_a_materialized_hunger_committed_intention_at_onset_takes_the_switch_and_below_onset_does_not():
+    """rpg-designer ruling ff02a9df: the rule is keyed on kind plus need state, never on the candidate's source. A HUNGER committed intention (an eligible kind) is a GoalKind candidate, so at or past onset, with no
+    present threat and a locked town_return current, it takes the switch exactly as a live hunger candidate does (SURV-07, STRAT-359, divergence 2.228); below onset the ordinary lock holds it off."""
+    from src.core.state import AuthoritativeState
+    from src.core.strategic import CommittedIntention
+
+    def decide(hunger):
+        intention = CommittedIntention(intention_id="ci_1", goal_kind="hunger", target_hint="inn_1", sequence_index=0, status="pending")
+        entity = subject(project("tr", "town_return", 90.0, lock=60), hunger=hunger)
+        entity = replace(entity, strategic=replace(entity.strategic, committed_intentions=(intention,)))
+        return SIS.evaluate_strategic_intent(AuthoritativeState(tick=50, seed=42, entities={1: entity}), entity, force=True)
+
+    taken = decide(80.0)
+    assert taken.current_project_id_set == "proj_hunger_50"
+    assert {p.id: p for p in taken.projects_add_or_update}["tr"].status == ProjectStatus.SUSPENDED
+    assert decide(20.0).current_project_id_set is None
