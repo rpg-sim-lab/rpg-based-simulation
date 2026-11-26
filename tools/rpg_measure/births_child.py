@@ -103,6 +103,7 @@ def main(argv: list[str]) -> int:
     metrics_hash = hashlib.sha256()
     if mode in SPIED_MODES:
         spy = BirthSpy().install()
+        spy._first_check_ids = set(start_state.entities)  # the t0 bodies, so a body added in ticks 1-29 is not counted as a legacy (t0) one
         watch = TickWatch(spy, start_state)
         deaths = DeathWatch(spy, start_state)
         cohorts = CohortWatch(start_state)

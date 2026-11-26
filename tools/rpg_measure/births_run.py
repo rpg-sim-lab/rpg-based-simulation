@@ -35,6 +35,7 @@ from tools.rpg_measure import paired
 
 CHILD = Path(__file__).resolve().with_name("births_child.py")
 COST_CHILD = Path(__file__).resolve().with_name("births_cost_child.py")
+REF_STOP_EXIT = 4  # the reference-hash comparison failed (its own exit code, apart from 1 = probe STOP)
 BARS = ("K6", "K6b", "K8", "W1", "W2", "W3", "W4", "W5", "G1", "G2", "G3", "G4", "G5", "G6", "R1", "R2", "R3", "R4", "N1")
 ARMS = ("spied", "plain", "control")
 TRIGGER_ARMS = ("trigger_on", "trigger_off", "trigger_pos")
@@ -364,6 +365,12 @@ def trigger_report(docs: Dict[Key, dict]) -> Dict[str, Any]:
     return {"cells": rows, "worlds_with_no_firing": stops, "verdict": verdict}
 
 
+def ref_hash_report(docs: Dict[Key, dict]) -> Dict[str, Any]:
+    """Per cell, whether the reference tree's plain final hash equals the head's plain one; STOP when any differs or no reference arm ran."""
+    equal = {f"{w}/{s}": docs[(w, s, "ref")]["final_hash"] == docs[(w, s, "plain")]["final_hash"] for (w, s, m) in sorted(docs) if m == "ref"}
+    return {"equal": equal, "verdict": "PASS" if equal and all(equal.values()) else "STOP"}
+
+
 def run_evidence(args: argparse.Namespace) -> int:
     """Evidence block, serial: per cell the head arms, then the interleaved head plain / main cost pair, and for seed 42 a second pair (the noise band)."""
     docs: Dict[Key, dict] = {}
@@ -381,6 +388,8 @@ def run_evidence(args: argparse.Namespace) -> int:
             head(world, seed, "control")
             head(world, seed, "plain")
             main_arm(world, seed, "main")
+            if args.ref_tree is not None:  # the births-head twin on the reference tree (a fresh c4e2dde60 archive): its plain final hash must equal this head's plain hash
+                docs[(world, seed, "ref")] = json.loads(run_child(args.ref_tree, args.out, world, seed, args.ticks, "plain", args.recording_off, "_ref").read_text(encoding="utf-8"))
             if seed == paired.SEEDS[0]:
                 head(world, seed, "plain", "_r2")
                 main_arm(world, seed, "main_r2")
@@ -390,8 +399,16 @@ def run_evidence(args: argparse.Namespace) -> int:
     summary["twin_hash_equal_repeat"] = {f"{w}/{s}": docs[(w, s, "plain_r2")]["final_hash"] == docs[(w, s, "plain")]["final_hash"] for (w, s, m) in sorted(docs) if m == "plain_r2"}
     if args.main_tree is not None:
         summary["cost"] = cost_report(docs)
+    ref = ref_hash_report(docs)
+    ref_equal = ref["equal"]
+    if args.ref_tree is not None:
+        summary["ref_hash_equal"] = ref_equal
+        summary["ref_verdict"] = ref["verdict"]
     (args.out / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
     print(json.dumps(summary, indent=2, sort_keys=True))
+    if args.ref_tree is not None and summary["ref_verdict"] == "STOP":
+        print(f"REF STOP: the births head's plain final hash differs from the reference tree's in {[c for c, ok in ref_equal.items() if not ok]}; report to rpg-designer")
+        return REF_STOP_EXIT
     return 0
 
 
@@ -459,6 +476,7 @@ def main(argv: List[str]) -> int:
     ap.add_argument("--go", required=True, help="reference of the lead-planner go for THIS block")
     ap.add_argument("--ticks", type=int, default=None, help=f"ticks per run (default {paired.TICKS}; {TRIGGER_TICKS} for the trigger block)")
     ap.add_argument("--recording-off", action="store_true", help="recording-off = observability mode OFF + the kernel flag no_replay, in every child including the main-tree cost child (allowed only after the 100-tick check passed)")
+    ap.add_argument("--ref-tree", type=Path, default=None, help="a fresh git-archive tree of the reference births head (c4e2dde60): its plain arm per cell is compared by final hash with this head's plain arm (evidence block)")
     ap.add_argument("--worlds", nargs="*", default=list(paired.WORLDS))
     ap.add_argument("--seeds", nargs="*", type=int, default=None, help=f"default: {list(paired.SEEDS)}; {list(TRIGGER_SEEDS)} for the trigger block")
     args = ap.parse_args(argv)

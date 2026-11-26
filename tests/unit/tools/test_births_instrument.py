@@ -410,3 +410,11 @@ def test_the_probe_stops_when_the_recording_on_plain_hash_differs_from_the_recor
     assert births_run.probe_hash_check("h", "h") == {"equal": True, "recording_off_plain": "h", "recording_on_plain": "h", "verdict": "PASS"}
     stop = births_run.probe_hash_check("h", "other")
     assert stop["verdict"] == "STOP" and stop["equal"] is False
+
+
+def test_the_reference_hash_report_passes_only_when_every_cell_matches_and_stops_on_a_difference_or_no_reference_arm():
+    docs = {("w", 42, "plain"): {"final_hash": "a"}, ("w", 42, "ref"): {"final_hash": "a"}, ("w", 43, "plain"): {"final_hash": "b"}, ("w", 43, "ref"): {"final_hash": "b"}}
+    assert births_run.ref_hash_report(docs) == {"equal": {"w/42": True, "w/43": True}, "verdict": "PASS"}
+    docs[("w", 43, "ref")] = {"final_hash": "c"}
+    assert births_run.ref_hash_report(docs) == {"equal": {"w/42": True, "w/43": False}, "verdict": "STOP"}
+    assert births_run.ref_hash_report({("w", 42, "plain"): {"final_hash": "a"}})["verdict"] == "STOP"
