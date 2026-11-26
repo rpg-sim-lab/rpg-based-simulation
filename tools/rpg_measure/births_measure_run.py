@@ -2,12 +2,12 @@
 
 Four arms, serial, in this order: head spied, head plain, main spied, main plain. The plain arm of a side is the same run with NO spy; its final state hash must equal the spied arm's (the spy is read-only).
 A mismatch on either side makes the verdict INVALID: no BLOCK, FINDINGS or CLEAR line is printed. Both hashes are printed in every case.
-Each spied arm runs the same pinned kernel (``build_kernel``: audit_mode, no frame pacing, sequential executor) with the S9 spy installed from the HEAD checkout's ``s9_spy.py`` (loaded by file
+Each spied arm runs the same pinned kernel (``build_kernel``: audit_mode, no frame pacing, sequential executor) with the S9 spy installed from the HEAD checkout's ``births_measure_spy.py`` (loaded by file
 path, so the main tree needs no copy of it); recording stays ON (the default run directory is written; the spy itself reads only state and the applied update). TMPDIR is set under ``--out``.
 Output: every group's formation, last-seen and dissolution tick and typed reason on both arms; every hit row uncapped, split between t0 and newborn members; one class per eid
 (BLOCK / MAIN-DEFECT / FINDING; an eid with no head hit has class none and is not listed); and one final line ``S9 VERDICT: BLOCK|FINDINGS|CLEAR``.
 
-Usage: python -m tools.rpg_measure.s9_run --tree <head tree> --main-tree <frozen main 3aafdb383> --out <dir> --go <ref> [--world urban_political] [--seed 42] [--ticks 2000]
+Usage: python -m tools.rpg_measure.births_measure_run --tree <head tree> --main-tree <frozen main 3aafdb383> --out <dir> --go <ref> [--world urban_political] [--seed 42] [--ticks 2000]
 Run under ``systemd-run --user --scope -q -p MemoryMax=3G -p MemorySwapMax=0 taskset -c 4-5`` with PYTHONHASHSEED=0, detached under setsid; refuses to start without --go; deletes nothing.
 """
 from __future__ import annotations
@@ -21,12 +21,12 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-SPY_FILE = Path(__file__).resolve().with_name("s9_spy.py")
+SPY_FILE = Path(__file__).resolve().with_name("births_measure_spy.py")
 WORLD, SEED, TICKS = "urban_political", 42, 2000
 
 
 def load_spy(path: Path) -> Any:
-    spec = importlib.util.spec_from_file_location("s9_spy_loaded", path)
+    spec = importlib.util.spec_from_file_location("births_measure_spy_loaded", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

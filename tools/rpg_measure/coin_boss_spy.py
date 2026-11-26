@@ -1,6 +1,6 @@
 """Coin and world-boss counter for the births re-check (rpg-designer u24 rulings Q1 and Q2, rpg-planner-ubuntu relay record section 41).
 
-One additive kit file, for the SPIED arm only (plain, control and the main-tree cost arm never import it). It wraps ``ApplyPath.apply_generation`` like ``s9_spy.GroupSpy`` does: it READS the
+One additive kit file, for the SPIED arm only (plain, control and the main-tree cost arm never import it). It wraps ``ApplyPath.apply_generation`` like ``births_measure_spy.GroupSpy`` does: it READS the
 (prior, update, new state) of every applied tick and returns the new state untouched, so the run's final hash must equal the plain twin's (the re-check proves it). Nothing here writes simulation
 state; the positive-control mode hands COPIES of the last state to the observers and never gives one back to the kernel.
 

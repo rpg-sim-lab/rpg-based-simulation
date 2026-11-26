@@ -9,10 +9,10 @@ from src.core.group_record import GroupRecord
 from src.core.state import AuthoritativeState, IntentResult
 from src.core.updates import BiologicalUpdate, CombatUpdate, EntityUpdate, StateUpdate
 from src.engine.starvation import STARVING_LINE
-from tools.rpg_measure import s9_run, s9_spy
-from tools.rpg_measure.s9_spy import GroupSpy, c1_stuck, c2_repeat_fail, c3_needs, classify, final_verdict, hits_by_eid, split_counts
+from tools.rpg_measure import births_measure_run, births_measure_spy
+from tools.rpg_measure.births_measure_spy import GroupSpy, c1_stuck, c2_repeat_fail, c3_needs, classify, final_verdict, hits_by_eid, split_counts
 
-W = s9_spy.WINDOW
+W = births_measure_spy.WINDOW
 
 
 def row(tick, group=1, **kw):
@@ -141,10 +141,10 @@ def _doc(rows_by_eid, start_ids, mother=None):
 
 def test_the_judge_prints_block_when_head_alone_has_a_stuck_t0_member_and_clear_when_both_are_clean():
     stuck, clean = rows(W), rows(5, moved=True)
-    report = s9_run.judge(_doc({10: stuck}, [10]), _doc({10: clean}, [10]), s9_spy)
+    report = births_measure_run.judge(_doc({10: stuck}, [10]), _doc({10: clean}, [10]), births_measure_spy)
     assert report["verdict"] == "BLOCK" and report["eids"][0]["eid"] == 10
-    assert s9_run.judge(_doc({10: clean}, [10]), _doc({10: clean}, [10]), s9_spy)["verdict"] == "CLEAR"
-    assert s9_run.judge(_doc({10: stuck}, [10]), _doc({10: stuck}, [10]), s9_spy)["verdict"] == "FINDINGS"
+    assert births_measure_run.judge(_doc({10: clean}, [10]), _doc({10: clean}, [10]), births_measure_spy)["verdict"] == "CLEAR"
+    assert births_measure_run.judge(_doc({10: stuck}, [10]), _doc({10: stuck}, [10]), births_measure_spy)["verdict"] == "FINDINGS"
 
 
 def test_a_member_whose_only_activity_is_an_inn_meal_is_not_stuck_and_a_missing_meal_is():
@@ -175,29 +175,29 @@ def _plain(h):
 def test_a_spied_hash_that_differs_from_its_plain_twin_makes_the_verdict_invalid_and_prints_no_class():
     stuck = rows(W)
     head, main = _doc({10: stuck}, [10]), _doc({10: rows(5, moved=True)}, [10])
-    ok = s9_run.judge(head, main, s9_spy, _plain("h"), _plain("h"))
+    ok = births_measure_run.judge(head, main, births_measure_spy, _plain("h"), _plain("h"))
     assert ok["verdict"] == "BLOCK" and ok["twin_hash_equal"] == {"head": True, "main": True}
-    bad = s9_run.judge(head, main, s9_spy, _plain("other"), _plain("h"))
+    bad = births_measure_run.judge(head, main, births_measure_spy, _plain("other"), _plain("h"))
     assert bad["verdict"] == "INVALID" and bad["eids"] == [] and bad["twin_hash"]["head"] == {"spied": "h", "plain": "other"}
-    bad_main = s9_run.judge(head, main, s9_spy, _plain("h"), _plain("other"))
+    bad_main = births_measure_run.judge(head, main, births_measure_spy, _plain("h"), _plain("other"))
     assert bad_main["verdict"] == "INVALID"
 
 
 def test_the_follow_up_fires_when_the_verdict_is_not_clear_or_any_group_is_alive_on_head_and_not_otherwise():
     dead, alive = {"1": {"alive_at_end": False}}, {"7": {"alive_at_end": True}, "9": {"alive_at_end": False}}
-    assert s9_run.follow_up("CLEAR", dead, alive) == {"fired": False, "verdict": "CLEAR", "head_alive_at_end": [], "main_alive_at_end": [7]}, "a group alive on main alone does not fire it"
-    assert s9_run.follow_up("CLEAR", alive, dead)["fired"] is True and s9_run.follow_up("CLEAR", alive, dead)["head_alive_at_end"] == [7]
-    assert s9_run.follow_up("FINDINGS", dead, dead)["fired"] is True and s9_run.follow_up("BLOCK", dead, dead)["fired"] is True and s9_run.follow_up("INVALID", dead, dead)["fired"] is True
-    assert s9_run.follow_up_line(s9_run.follow_up("CLEAR", dead, dead)).startswith("FOLLOW-UP: cohesion-capture NOT FIRED")
-    assert "FIRED (verdict BLOCK" in s9_run.follow_up_line(s9_run.follow_up("BLOCK", dead, alive))
+    assert births_measure_run.follow_up("CLEAR", dead, alive) == {"fired": False, "verdict": "CLEAR", "head_alive_at_end": [], "main_alive_at_end": [7]}, "a group alive on main alone does not fire it"
+    assert births_measure_run.follow_up("CLEAR", alive, dead)["fired"] is True and births_measure_run.follow_up("CLEAR", alive, dead)["head_alive_at_end"] == [7]
+    assert births_measure_run.follow_up("FINDINGS", dead, dead)["fired"] is True and births_measure_run.follow_up("BLOCK", dead, dead)["fired"] is True and births_measure_run.follow_up("INVALID", dead, dead)["fired"] is True
+    assert births_measure_run.follow_up_line(births_measure_run.follow_up("CLEAR", dead, dead)).startswith("FOLLOW-UP: cohesion-capture NOT FIRED")
+    assert "FIRED (verdict BLOCK" in births_measure_run.follow_up_line(births_measure_run.follow_up("BLOCK", dead, alive))
 
 
 def test_the_judge_carries_the_follow_up_in_both_the_valid_and_the_invalid_report():
     head = {**_doc({10: rows(5, moved=True)}, [10]), "groups": {"3": {"alive_at_end": True}}}
     main = {**_doc({10: rows(5, moved=True)}, [10]), "groups": {}}
-    valid = s9_run.judge(head, main, s9_spy, _plain("h"), _plain("h"))
+    valid = births_measure_run.judge(head, main, births_measure_spy, _plain("h"), _plain("h"))
     assert valid["verdict"] == "CLEAR" and valid["follow_up"]["fired"] is True and valid["follow_up"]["head_alive_at_end"] == [3]
-    assert s9_run.judge(head, main, s9_spy, _plain("x"), _plain("h"))["follow_up"]["fired"] is True
+    assert births_measure_run.judge(head, main, births_measure_spy, _plain("x"), _plain("h"))["follow_up"]["fired"] is True
 
 
 def test_births_and_conceptions_counts_two_newborns_one_pregnancy_and_zero_on_a_main_shaped_state():
@@ -213,8 +213,8 @@ def test_births_and_conceptions_counts_two_newborns_one_pregnancy_and_zero_on_a_
     spy = GroupSpy(start)
     spy.observe(state, StateUpdate(), state)
     spy.observe(state, StateUpdate(), dataclasses.replace(state, tick=11))
-    assert s9_spy.count_births(state.entities, spy.start_ids) == 2, "bodies 3 and 4 carry both parent ids, alive or dead"
-    assert s9_spy.count_other_adds(state.entities, spy.start_ids) == 0
+    assert births_measure_spy.count_births(state.entities, spy.start_ids) == 2, "bodies 3 and 4 carry both parent ids, alive or dead"
+    assert births_measure_spy.count_other_adds(state.entities, spy.start_ids) == 0
     assert len(spy.conceptions) == 1, "the same (mother, conceived_tick) seen on two ticks counts once"
     main_shaped = type("Lifecycle", (), {})()
     body = type("Body", (), {"id": 1, "lifecycle": main_shaped})()
@@ -227,19 +227,19 @@ def test_births_and_conceptions_counts_two_newborns_one_pregnancy_and_zero_on_a_
 def test_the_judge_report_carries_births_and_conceptions_for_both_arms():
     head = {**_doc({10: rows(5, moved=True)}, [10]), "births": 2, "conceptions": 1}
     main = {**_doc({10: rows(5, moved=True)}, [10]), "births": 0, "conceptions": 0}
-    report = s9_run.judge(head, main, s9_spy, _plain("h"), _plain("h"))
+    report = births_measure_run.judge(head, main, births_measure_spy, _plain("h"), _plain("h"))
     assert report["births"] == {"head": 2, "main": 0} and report["conceptions"] == {"head": 1, "main": 0}
 
 
 def test_the_runner_prints_the_newborns_in_any_group_as_a_count_and_rows_of_any_kind(capsys, monkeypatch, tmp_path):
-    report = {"verdict": "CLEAR", "eids": [], "twin_hash": {}, "births": {"head": 1, "main": 0}, "conceptions": {"head": 1, "main": 0}, "follow_up": s9_run.follow_up("CLEAR", {}, {}),
+    report = {"verdict": "CLEAR", "eids": [], "twin_hash": {}, "births": {"head": 1, "main": 0}, "conceptions": {"head": 1, "main": 0}, "follow_up": births_measure_run.follow_up("CLEAR", {}, {}),
               "newborn_in_group_head": [{"group": 4, "tick": 120, "newborn": 77, "kind": "wolf"}, {"group": 4, "tick": 130, "newborn": 78, "kind": "human"}]}
-    monkeypatch.setattr(s9_run, "judge", lambda *a, **k: report)
-    monkeypatch.setattr(s9_run.subprocess, "run", lambda cmd, **kw: type("P", (), {"returncode": 0, "stderr": ""})())
+    monkeypatch.setattr(births_measure_run, "judge", lambda *a, **k: report)
+    monkeypatch.setattr(births_measure_run.subprocess, "run", lambda cmd, **kw: type("P", (), {"returncode": 0, "stderr": ""})())
     for arm in ("head", "head_plain", "main", "main_plain"):
         (tmp_path / f"{arm}.json").write_text("{}")
-    monkeypatch.setattr(s9_run, "load_spy", lambda path: s9_spy)
-    s9_run.main(["--tree", str(tmp_path), "--main-tree", str(tmp_path), "--out", str(tmp_path), "--go", "x"])
+    monkeypatch.setattr(births_measure_run, "load_spy", lambda path: births_measure_spy)
+    births_measure_run.main(["--tree", str(tmp_path), "--main-tree", str(tmp_path), "--out", str(tmp_path), "--go", "x"])
     out = capsys.readouterr().out
     assert "newborns in any group at any tick (head, any kind): 2" in out
     assert "newborn eid 77 kind wolf group 4 first tick in a group 120" in out and "newborn eid 78 kind human group 4 first tick in a group 130" in out
@@ -250,14 +250,14 @@ def test_one_newborn_with_both_parents_and_one_parentless_add_give_births_1_and_
     parentless = _body(4)
     only_mother = V2EntityBuilder(5).kind("human").location(5.0, 5.0).birth_record(parent_a_entity_id=1, parent_b_entity_id=None, birth_tick=10).build()
     entities = {1: _body(1), 2: _body(2), 3: newborn, 4: parentless, 5: only_mother}
-    assert s9_spy.count_births(entities, {1, 2}) == 1 and s9_spy.count_other_adds(entities, {1, 2}) == 2, "a body with one parent id is not a birth"
+    assert births_measure_spy.count_births(entities, {1, 2}) == 1 and births_measure_spy.count_other_adds(entities, {1, 2}) == 2, "a body with one parent id is not a birth"
     entities.pop(5)
-    assert s9_spy.count_births(entities, {1, 2}) == 1 and s9_spy.count_other_adds(entities, {1, 2}) == 1
+    assert births_measure_spy.count_births(entities, {1, 2}) == 1 and births_measure_spy.count_other_adds(entities, {1, 2}) == 1
     bare = {7: type("B", (), {})()}
-    assert s9_spy.count_births(bare, set()) == 0 and s9_spy.count_other_adds(bare, set()) == 1
+    assert births_measure_spy.count_births(bare, set()) == 0 and births_measure_spy.count_other_adds(bare, set()) == 1
 
 
 def test_the_judge_report_carries_other_adds_for_both_arms():
     head = {**_doc({10: rows(5, moved=True)}, [10]), "births": 1, "other_adds": 1, "conceptions": 1}
     main = {**_doc({10: rows(5, moved=True)}, [10]), "births": 0, "other_adds": 0, "conceptions": 0}
-    assert s9_run.judge(head, main, s9_spy, _plain("h"), _plain("h"))["other_adds"] == {"head": 1, "main": 0}
+    assert births_measure_run.judge(head, main, births_measure_spy, _plain("h"), _plain("h"))["other_adds"] == {"head": 1, "main": 0}

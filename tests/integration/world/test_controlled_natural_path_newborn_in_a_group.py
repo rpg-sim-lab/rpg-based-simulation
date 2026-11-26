@@ -22,7 +22,7 @@ check, probe dir above.)
 Passes when (rpg-designer-ubuntu Read 2 (b), 2026-11-18): BirthService bears the newborn at due (G1), born + unplaced = the litter (G2), at life stage CHILD; then, for W+1 = 201 ticks after the
 birth, the newborn EITHER forms a group through the engine path (GroupSystem formation) OR stays ungrouped - both outcomes pass, and the test does NOT assert a join into the mother's existing group
 (no join-existing path has been seen: TCK-20261118-A-RECRUIT-OR-A-NEWBORN-NEVER-JOINS-AN-EXISTING-GROUP). In either case: no member has C3 (the newborn, and every member of the mother's group
-or of any group the newborn is in), and every group the newborn is in either dissolves through its typed dissolution or has no member with C1/C2 (s9_spy's detectors, imported unchanged).
+or of any group the newborn is in), and every group the newborn is in either dissolves through its typed dissolution or has no member with C1/C2 (births_measure_spy's detectors, imported unchanged).
 A C3 is a BLOCK; a newborn C1/C2 in a group without a TYPED dissolution (dissolution_tick set) is a FINDING, and a newborn group that vanishes untyped is a FINDING.
 C3 is read from the kernel state every tick for each newborn and each watched id, independent of group membership (the spy only has rows for members of a live group, so an ungrouped newborn has none):
 hunger >= STARVING_LINE or death by STARVATION is a BLOCK; each newborn must have >= 201 reads or a typed death (its cause is reported). The checker is a pure function (``violations``) positive-controlled below with planted rows.
@@ -58,13 +58,13 @@ from src.engine.checkpoint import CanonicalStateHasher
 from src.engine.starvation import STARVING_LINE
 from src.systems.world_systems.generator import EntityGenerator
 from src.world import births
-from tools.rpg_measure import s9_spy
-from tools.rpg_measure.s9_spy import GroupSpy, hits_by_eid
+from tools.rpg_measure import births_measure_spy
+from tools.rpg_measure.births_measure_spy import GroupSpy, hits_by_eid
 from tools.test_architecture.rpg_gate_run import build_kernel
 
 WORLD, SEED = "crowded_frontier", 42
 N_TICKS = 30  # due = set-up + N; a multiple of the 30-tick births check, <= 60
-WINDOW = s9_spy.WINDOW
+WINDOW = births_measure_spy.WINDOW
 FIRST_SETUP_TICK, LAST_SETUP_TICK = 90, 270
 
 

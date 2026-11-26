@@ -9,11 +9,11 @@ W-tick window, so no member has C1 or C2. Deterministic: urban_political seed 42
 import dataclasses
 
 from src.core.state import LifeStage
-from tools.rpg_measure import s9_spy
-from tools.rpg_measure.s9_spy import GroupSpy, hits_by_eid
+from tools.rpg_measure import births_measure_spy
+from tools.rpg_measure.births_measure_spy import GroupSpy, hits_by_eid
 from tools.test_architecture.rpg_gate_run import build_kernel
 
-WINDOW = s9_spy.WINDOW
+WINDOW = births_measure_spy.WINDOW
 SETTLE_TICKS = 8  # the first groups form around tick 5 in this world
 RUN_TICKS = WINDOW + 1  # at least W + 1 ticks after the child joins
 
