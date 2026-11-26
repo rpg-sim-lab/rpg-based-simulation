@@ -122,6 +122,15 @@ def test_a_clean_birth_at_term_has_no_fail_and_g1_flags_a_birth_at_another_tick(
     assert {k: len(v) for k, v in spy.fails.items()} == {"G1": 1}
 
 
+def test_a_birth_row_carries_the_mothers_species_and_her_pregnancys_ticks_and_a_birth_with_no_due_pregnancy_carries_none(monkeypatch):
+    spy, _ = _term_run(monkeypatch, _state(_with_pregnancy(_body(1), _preg(conceived=3, due=30)), _body(2)))
+    row = spy.births[0]
+    assert (row["species"], row["conceived_tick"], row["due_tick"], row["born_tick"]) == ("human", 3, 30, row["tick"])
+    bare = BirthSpy()
+    unmatched = bare._birth_row(_state(_body(1)), _body(3))
+    assert (unmatched["species"], unmatched["conceived_tick"], unmatched["due_tick"]) == (None, None, None)
+
+
 def test_g2_born_plus_unplaced_is_the_litter_and_an_unplaceable_litter_is_not_a_fail_but_a_missing_newborn_is(monkeypatch):
     def no_tile(generator):
         generator.free_spawn_position = lambda pos, st: (_ for _ in ()).throw(NoFreeSpawnTileError("none"))

@@ -196,7 +196,7 @@ class BirthSpy:
             pregnancy = mother.lifecycle.pregnancy
             kids = born.pop(mother.id, [])
             row = {"tick": state.tick, "mother": mother.id, "father": pregnancy.father_entity_id, "due": pregnancy.due_tick, "litter": pregnancy.litter_size}
-            self.births.extend(self._birth_row(state, child) for child in kids)
+            self.births.extend(self._birth_row(state, child, mother, pregnancy) for child in kids)
             if kids:
                 self._born_by[state.tick].add(mother.id)
             if pregnancy.due_tick != state.tick:
@@ -222,9 +222,13 @@ class BirthSpy:
                 self.births.append(self._birth_row(state, child))
                 self.fails["G1"].append({"tick": state.tick, "mother": mother_id, "child": child.id, "why": "a birth with no due pregnancy"})
 
-    def _birth_row(self, state, child) -> Dict[str, Any]:
+    def _birth_row(self, state, child, mother=None, pregnancy=None) -> Dict[str, Any]:
+        """One newborn. `born_tick` is the tick it was added; `species` is the MOTHER's species (`species_of`), and `conceived_tick` / `due_tick` are her pregnancy's, all None when no due pregnancy accompanied the birth (a G1 row)."""
         return {"tick": state.tick, "child": child.id, "mother": child.lifecycle.parent_a_entity_id, "mate": child.lifecycle.parent_b_entity_id, "kind": child.kind,
-                "region": region_id_at(state, child.navigation.position)}
+                "region": region_id_at(state, child.navigation.position), "born_tick": state.tick,
+                "species": species_of(mother) if mother is not None else None,
+                "conceived_tick": pregnancy.conceived_tick if pregnancy is not None else None,
+                "due_tick": pregnancy.due_tick if pregnancy is not None else None}
 
     def _check_term_children(self, state, update, catalog, mother, kids, row) -> None:
         profile = _profile_of(catalog, mother)
