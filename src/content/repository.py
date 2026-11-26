@@ -30,6 +30,7 @@ class ContentHotPathViolation(RuntimeError):
 # CatalogRepository.load_all() checks this to enforce WORLD-CAT-004.
 _tick_context_active: threading.local = threading.local()
 
+from src.content.profile_lookups import ProfileLookups
 from src.content.schema import (
     BIRTH_CHECK_INTERVAL_TICKS,
     CatalogBaseDefinition,
@@ -278,7 +279,7 @@ def _check_newborn_archetype(repo: "CatalogRepository", species_id: str, species
     species_sense_profile(repo, species_id)  # PERC-02: a species that bears newborns resolves a usable sense profile at load (SenseProfileError), before tick 0 in every process
 
 
-class CatalogRepository:
+class CatalogRepository(ProfileLookups):
     """
     Thread-safe repository loader that coordinates static catalog schema configuration loading
     from data/content/**/*.yaml. Exposes clean lookup operations.
@@ -568,40 +569,8 @@ class CatalogRepository:
     def get_species(self, def_id: str) -> Optional[SpeciesDefinition]:
         return self.species.get(def_id)
 
-    def get_need_profile(self, def_id: str) -> Optional[NeedProfileDefinition]:
-        return self.need_profiles.get(def_id)
-
-    def get_risen_profile(self, def_id: str) -> Optional[RisenProfileDefinition]:
-        """The risen profile with this ID, or None."""
-        return self.risen_profiles.get(def_id)
-
-    def get_reproduction_profile(self, def_id: str) -> Optional[ReproductionProfileDefinition]:
-        """The reproduction profile with this id, or None."""
-        return self.reproduction_profiles.get(def_id)
-
-    def get_sense_profile(self, def_id: str) -> Optional[SenseProfileDefinition]:
-        return self.sense_profiles.get(def_id)
-
     def get_body_model(self, def_id: str) -> Optional[BodyModelDefinition]:
         return self.body_models.get(def_id)
-
-    def get_drive_profile(self, def_id: str) -> Optional[DriveProfileDefinition]:
-        return self.drive_profiles.get(def_id)
-
-    def get_cognition_profile(self, def_id: str) -> Optional[CognitionProfileDefinition]:
-        return self.cognition_profiles.get(def_id)
-
-    def get_stats_profile(self, def_id: str) -> Optional[StatsProfileDefinition]:
-        return self.stats_profiles.get(def_id)
-
-    def get_combat_profile(self, def_id: str) -> Optional[CombatProfileDefinition]:
-        return self.combat_profiles.get(def_id)
-
-    def get_inventory_profile(self, def_id: str) -> Optional[InventoryProfileDefinition]:
-        return self.inventory_profiles.get(def_id)
-
-    def get_skill_profile(self, def_id: str) -> Optional[SkillProfileDefinition]:
-        return self.skill_profiles.get(def_id)
 
     def get_population_recipe(self, def_id: str) -> Optional[PopulationRecipeDefinition]:
         return self.populations.get(def_id)
