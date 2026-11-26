@@ -76,7 +76,7 @@ from src.core.strategic import (
     CognitionProfile, ProjectKind, GoalKind, ObjectiveKind, has_project_capacity, restart_clear_window, suspend_record, expire_suspended, end_record, typed_completion, ProjectEnd, blocker_timeout_suppression, with_live_current_score, ended_blocker_stamps
 )
 from src.engine.spatial_query import SpatialQueryService
-from src.systems.strategic_systems.blocker_lifecycle import consume_giveup_records, generate_crafting_blockers, infer_blockers, reinferred_blockers_update, resolve_blockers
+from src.systems.strategic_systems.blocker_lifecycle import consume_giveup_records, generate_crafting_blockers, infer_blockers, reinferred_blockers_update, resolve_blockers, service_refusal_blockers
 from src.core.lodging_rules import is_lodged_stayer
 from src.content_semantics.faction import are_entities_hostile
 from src.content_semantics.relation import RelationContext
@@ -90,6 +90,7 @@ from src.systems.world_systems.routine import RoutineService
 from src.systems.world_systems.intake import ConcernIntakeSystem
 from src.engine.domain_logic import SimulationDomainLogic
 from src.ai.goals import GoalRegistry, escalated_need_wins
+from src.systems.strategic_systems.project_switch_rules import SwitchEnv, escalated_need_takes_switch, ordinary_switch_allows
 from src.ai.goals.base import GoalScore
 from src.ai.goals.live_record_route import orphan_switch_candidate, route_live_record, supersede_on_win
 from src.ai.score_modifiers import ScoreModifierSystem
@@ -162,6 +163,10 @@ def _threat_resolved(hero: EntityState, state: AuthoritativeState) -> bool:
         for eid in nearby_ids
     )
     return not has_hostile
+
+
+# What the ordinary switch decision reads from this module (project_switch_rules imports nothing from here).
+_SWITCH_ENV = SwitchEnv(_score_scale_max, _GOAL_UTILITY_SCORE_MAX, _INTERRUPTION_URGENCY_FLOOR_PCT, _threat_resolved)
 
 
 class StrategicIntelligenceSystem:
@@ -379,6 +384,7 @@ class StrategicIntelligenceSystem:
                 navigation_failure=entity.navigation.last_failure_reason,
                 current_project=current_proj
             )
+            inferred_up = service_refusal_blockers(entity, inferred_up, state.tick)  # K2 fix B: the refusal rule, merged after the ordinary inference (its own function)
             
             strat_up = reinferred_blockers_update(entity, strat_up, inferred_up, state.tick)
             strat_up, ent_upd = consume_giveup_records(entity, strat_up, ent_upd, state.tick)  # F2 (divergence 2.220), the #996 rework: file the give-up records as navigation experiences, end the project at the give-up limit, clear the records
@@ -801,7 +807,6 @@ class StrategicIntelligenceSystem:
         VERIFIED v2: current_project_retention
         """
         # Logic ID: STRAT-003 (Cognition profiles enforce bandwidth)
-        profile = entity.strategic.profile
         current_id = entity.strategic.current_project_id
 
         if not current_id:
@@ -819,46 +824,8 @@ class StrategicIntelligenceSystem:
                 current_objective_id_set=candidate_project.active_objective_id
             )
 
-        # Logic ID: STRAT-005 (Project switching uses interruption resistance)
-        retention_margin = profile.interruption_resistance * profile.resistance_multiplier
-        # Logic ID: STRAT-006 (Current project gets retention priority)
-        effective_current_score = current.score + retention_margin
-
-        if current.lock_until_tick > current_tick:
-            # STRAT-236 (generalized): when a real world `state` is supplied and the triggering
-            # threat has resolved (HP > 80%, no hostile within radius 10.0), the lock is treated
-            # as already expired. `state is None` (the default for the 27 pre-existing direct
-            # test call sites that predate this check) short-circuits `and` before
-            # `_threat_resolved` is ever called, preserving today's behavior exactly. Computed
-            # here, inside the lock-active gate, rather than above it, so the O(radius^2) spatial
-            # scan in SpatialQueryService.nearby_entities() only runs when the current project is
-            # actually locked — not on every evaluate_project_switch() call for an unlocked,
-            # healthy entity (the common case across all 3 real production call sites).
-            threat_resolved = state is not None and _threat_resolved(entity, state)
-
-            if not threat_resolved:
-                # STRAT-186 (generalized): the lock may be bypassed only for the unconditional "detour"
-                # structural override, or when the candidate's score — expressed as a percentage of its own
-                # system's declared max — both exceeds the current project's own normalized effective score
-                # AND clears the urgency floor. This comparison is intentionally normalized and kept separate
-                # from the raw `effective_current_score` comparison below: the raw formula and the unlocked
-                # path must stay byte-identical (test_interruption_resistance_margin depends on this).
-                if candidate_project.kind == "detour":
-                    pass
-                else:
-                    candidate_max = _score_scale_max(candidate_project.kind)
-                    current_max = _score_scale_max(current.kind)
-                    candidate_pct = candidate_project.score / candidate_max
-                    # TCK-20260811-INTERRUPTION-BYPASS-RETENTION-MARGIN-SCALE-BUG: the margin term is
-                    # deliberately normalized against the universal baseline scale (_GOAL_UTILITY_SCORE_MAX),
-                    # not current_max — current_max can be as small as _ADVENTURE_ROUTE_SCORE_MAX (2.9),
-                    # which made retention_margin/current_max structurally dominate the comparison.
-                    normalized_effective_current_pct = (current.score / current_max) + (retention_margin / _GOAL_UTILITY_SCORE_MAX)
-                    if not (candidate_pct > normalized_effective_current_pct
-                            and candidate_pct > _INTERRUPTION_URGENCY_FLOOR_PCT):
-                        return None
-
-        if candidate_project.score > effective_current_score:
+        # TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH (SURV-07): an escalated need with no present threat takes the switch; every other case is the ordinary lock-and-margin decision, unchanged.
+        if escalated_need_takes_switch(entity, candidate_project, current, state) or ordinary_switch_allows(entity, candidate_project, current_tick, state, _SWITCH_ENV):
             return StrategicUpdate(
                 projects_add_or_update=[
                     suspend_record(current, current_tick),

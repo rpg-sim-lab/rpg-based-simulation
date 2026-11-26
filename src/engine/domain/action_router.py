@@ -4,6 +4,7 @@ from dataclasses import replace
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from src.core.enums import ReasonCode
+from src.core.service_refusals import ServiceRefusal
 from src.core.updates import EntityUpdate, NavigationUpdate
 from src.engine.appraisal import can_use_inn_meal
 from src.engine.building_services import service_building, with_service
@@ -32,8 +33,12 @@ def _survival_action(entity: EntityState, action: str, payload: Optional[Dict[st
             return served
         # No meal was served. When a serving inn WAS found for a diet that eats there and refused the payment, the task carries that typed reason; otherwise (no inn in reach, or a diet
         # that cannot eat its meal) SOURCE_MISSING stands.
-        refused = refusal_reason(entity, "EAT") if context is not None and can_use_inn_meal(entity) and service_building(context, entity, "EAT") is not None else None
-        return updates if refused is None else {entity.id: replace(own, navigation=replace(own.navigation, failure_reason=refused))}
+        serving = service_building(context, entity, "EAT") if context is not None and can_use_inn_meal(entity) else None
+        refused = refusal_reason(entity, "EAT") if serving is not None else None
+        if serving is None or refused is None:
+            return updates
+        # K2 fix B: the typed refusal is also COUNTED as a record naming the building (the payload that held its id is wiped when this reason ends the task), read by `infer_blockers`.
+        return {entity.id: replace(own, navigation=replace(own.navigation, failure_reason=refused, service_refusal_add=ServiceRefusal("EAT", serving.id, int(current_tick), refused.value)))}
     return with_service(updates, entity, action, current_tick, context)
 
 

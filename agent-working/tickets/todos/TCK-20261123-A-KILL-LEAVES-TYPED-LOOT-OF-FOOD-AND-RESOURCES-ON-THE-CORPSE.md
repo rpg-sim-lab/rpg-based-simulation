@@ -58,6 +58,13 @@ CORRECTED by rpg-designer, 2026-11-23: the loot already EXISTS. It is the corpse
    - Drops differ BY KIND, as fits a fantasy world. Examples only, not values: a skeleton gives bone and no meat; a spirit gives nothing, or a spirit-only item; a winged reptile gives scale; a spider gives silk. Kinds have their own origins, not only natural species.
    - The mechanism is rpg-designer's choice, from data, never from name checks. One option is a per-species `yields` override of the body model's default, which also solves undead sharing `spirit_body` with true spirits (inspected at main).
    - rpg-designer drafts a PER-KIND TABLE (item, quantity by size, base value). It goes to the owner as numbers BEFORE data. The approved values (hide 0/1/2, bone 0/1/2, hide 2 g, bone 1 g) stand wherever those items appear.
+   PER-KIND TABLE OWNER-APPROVED, #715 7097769107, all as recommended (draft main-checkout .claude/handover/drafts/rpg-designer-kill-loot-yield-table.md, 8fb98144):
+   - Mechanism: each body model has a default `yields`; a species `yields` REPLACES it; each item has one `quantity_by_size` table in items.yaml. No names in code.
+   - Body defaults: humanoid bone; quadruped hide + bone; arachnid silk; winged_reptilian scale + bone; amorphous slime_gel; spirit none.
+   - Species overrides: lizardfolk scale + bone; troll hide + bone; undead bone, and no meat.
+   - Humanoids yield by what they are made of, like every kind: a killed human, elf or dwarf yields bone 1.
+   - Spirit: nothing.
+   - New items: silk 1/2/3 at 2 g; scale 0/1/2 at 3 g; slime_gel 1/2/3 at 1 g. Kept: hide 0/1/2 at 2 g and bone 0/1/2 at 1 g. Small bodies keep hide and bone at 0. A body is worth at most 8 g (dragonkin).
 8. Bible ch03 and ch05, world rules and parity, updated in the same change.
 
 ## Out of Scope
@@ -65,7 +72,7 @@ CORRECTED by rpg-designer, 2026-11-23: the loot already EXISTS. It is the corpse
 - Prices for resources.
 
 ## Acceptance Criteria
-1. The owner's answers are recorded (#715 7097645868), and data matches them exactly: the per-kind table (owner-approved, #715 id to be recorded) by what each body is made of; quantities by size band; hide and bone at 0/1/2 with values 2 and 1 wherever they appear. No name checks in code.
+1. The owner's answers are recorded (#715 7097645868), and data matches them exactly: the per-kind table (owner-approved, #715 7097769107) by what each body is made of; quantities by size band; hide and bone at 0/1/2 with values 2 and 1 wherever they appear. No name checks in code.
 2. A kill's corpse inventory gains its RESOURCE items from body properties beside unchanged meat. With all yields empty, the run hash equals the base (tests, plus a failing control).
 3. Resources decay with the corpse (RESOURCE_DECAYED). QUEST_EVIDENCE is refused by the shop law. No kind name appears in the logic (a static or unit check).
 4. Measurement: a W cell pair (hunger kit) with P2 HARD on food, plus kills → loot → taken counts grouped by MOTIVE, not diet (the owner's combat-motive rule). rpg-designer reads it.

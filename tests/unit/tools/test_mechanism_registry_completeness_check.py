@@ -168,8 +168,8 @@ def test_real_registry_enumeration_and_binding_counts_pinned():
     """
     data = _real_registry_data()
     report = build_report(data)
-    assert report.total_targets == 60  # 59 -> 60 on 2026-11-23: +systems/strategic_systems/navigation_experience_step (TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON, bound under strategic_intelligence_core, from the check's own output); 65 -> 63 on 2026-10-26: economy_systems/chests and world_systems/quest_generator deleted (dead); 58 -> 59 on 2026-11-18: +systems/strategic_systems/blocker_lifecycle (TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION, bound under strategic_intelligence_core)
-    assert len(report.bound) == 56  # 55 -> 56 on 2026-11-23: strategic_systems/navigation_experience_step bound by strategic_intelligence_core (the same ticket, from the check's own output); 53 -> 54 on 2026-10-26: domains/motivation bound by `role_fit_preference`; 54 -> 55 on 2026-11-18: strategic_systems/blocker_lifecycle bound by strategic_intelligence_core
+    assert report.total_targets == 61  # 60 -> 61 on 2026-11-26: +systems/strategic_systems/project_switch_rules (TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH, bound under goal_hierarchy, rpg-planner ruling, from the check's own output); 59 -> 60 on 2026-11-23: +systems/strategic_systems/navigation_experience_step (TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON, bound under strategic_intelligence_core, from the check's own output); 65 -> 63 on 2026-10-26: economy_systems/chests and world_systems/quest_generator deleted (dead); 58 -> 59 on 2026-11-18: +systems/strategic_systems/blocker_lifecycle (TCK-20261117-A-RESOLVE-BLOCKER-PROJECT-IS-RE-CREATED-EVERY-80-TICKS-AND-STALLS-COOPERATION, bound under strategic_intelligence_core)
+    assert len(report.bound) == 57  # 56 -> 57 on 2026-11-26: strategic_systems/project_switch_rules bound by goal_hierarchy (the same ticket, from the check's own output); 55 -> 56 on 2026-11-23: strategic_systems/navigation_experience_step bound by strategic_intelligence_core (the same ticket, from the check's own output); 53 -> 54 on 2026-10-26: domains/motivation bound by `role_fit_preference`; 54 -> 55 on 2026-11-18: strategic_systems/blocker_lifecycle bound by strategic_intelligence_core
     assert len(report.excluded) == 4
     assert len(report.unbound) == 0  # 5 -> 0 on 2026-10-27: the five dead classes are deleted
 
@@ -313,7 +313,8 @@ def test_wider_scope_numbers_pinned():
     # 384 -> 385 on 2026-11-24 (S8 #715 7123495747): +src/core/need_lines.py, the one source of the starving and sleep lines (TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON, item 2 CI fix, owner #715 7122168466); a new file counted, none removed
     # 385 -> 386 on 2026-11-24 (S8, the lead's record on #715 after 7128579145): +src/core/arrival.py, the structural arrival rule (TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON, "arrived never fails", owner #715 7128509663); a new file counted, none removed
     # 386 -> 387 on 2026-11-24 (S8, the lead's record on #715 after 7137525427, from the check's own output): +src/core/navigation_component.py (NavigationComponent moved out of state.py, TCK-20261124-NAVIGATION-STATE-MOVES-OUT-OF-STATE-PY, owner #715 after 7135893456); unbound, as it was inside state.py
-    assert wider["scope_files"] == 387
+    # 387 -> 388 on 2026-11-25 (TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER, rpg-planner ruling, from the check's own output): +src/core/service_refusals.py (the typed ServiceRefusal record and its streak count, K2 fix B), unbound
+    assert wider["scope_files"] == 388
     # 233 -> 227 on 2026-10-05: the world-building split names six more files (worldmodules/normalizer,
     # worldassembly/resolve_io, worldbuilding/repository and validator, worldgeneration/generator and scorer).
     # Then +1 for the unbound entity_target_objective.py module (TCK-20261002-COMBAT-OBJECTIVE-TARGETS-...).
@@ -389,6 +390,7 @@ def test_wider_scope_numbers_pinned():
     # 270 -> 271 on 2026-11-24 (S8 #715 7123495747): the same file, src/core/need_lines.py, is unbound
     # 271 -> 272 on 2026-11-24 (the same S8): src/core/arrival.py is unbound
     # 272 -> 273 on 2026-11-24 (the same S8): +src/core/navigation_component.py, unbound
+    # 273 -> 274 -> 273 on 2026-11-25 (TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER, rpg-planner ruling, from the check's own output): the new src/core/service_refusals.py first counted as unbound and is now bound under `goal_hierarchy`, so the number is unchanged
     assert wider["unbound_files"] == 273
     # 73 -> 72 on 2026-10-07 (row 7 (b) pass): src/quests/generator.py::QuestGenerator is now bound under `guilds`.
     # 72 -> 71 on 2026-10-11 (#500, D57): src/engine/rpg_depth.py::LeashService is cited under `tactical_decision` (it became wired when

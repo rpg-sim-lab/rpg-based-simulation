@@ -27,3 +27,8 @@ def escalated_need_wins(entity: "EntityState", goal_kind: object) -> bool:
     if kind == GoalKind.FATIGUE.value:
         return need_is_pressing(0.0, entity.biological.sleep_debt)
     return False
+
+
+def is_need_kind(kind: object) -> bool:
+    """True for a hunger or fatigue project kind, by kind identity (escalated or not)."""
+    return getattr(kind, "value", kind) in (GoalKind.HUNGER.value, GoalKind.FATIGUE.value)
