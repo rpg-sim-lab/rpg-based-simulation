@@ -19,6 +19,8 @@ from src.content.schema import (
 
 
 class ProfileLookups:
+    """The by-id profile getters; the index dicts they read are declared here and owned and filled by `CatalogRepository`."""
+
     need_profiles: Dict[str, NeedProfileDefinition]
     risen_profiles: Dict[str, RisenProfileDefinition]
     reproduction_profiles: Dict[str, ReproductionProfileDefinition]
@@ -31,6 +33,7 @@ class ProfileLookups:
     skill_profiles: Dict[str, SkillProfileDefinition]
 
     def get_need_profile(self, def_id: str) -> Optional[NeedProfileDefinition]:
+        """The need profile with this id, or None."""
         return self.need_profiles.get(def_id)
 
     def get_risen_profile(self, def_id: str) -> Optional[RisenProfileDefinition]:
@@ -42,22 +45,29 @@ class ProfileLookups:
         return self.reproduction_profiles.get(def_id)
 
     def get_sense_profile(self, def_id: str) -> Optional[SenseProfileDefinition]:
+        """The sense profile with this id, or None."""
         return self.sense_profiles.get(def_id)
 
     def get_drive_profile(self, def_id: str) -> Optional[DriveProfileDefinition]:
+        """The drive profile with this id, or None."""
         return self.drive_profiles.get(def_id)
 
     def get_cognition_profile(self, def_id: str) -> Optional[CognitionProfileDefinition]:
+        """The cognition profile with this id, or None."""
         return self.cognition_profiles.get(def_id)
 
     def get_stats_profile(self, def_id: str) -> Optional[StatsProfileDefinition]:
+        """The stats profile with this id, or None."""
         return self.stats_profiles.get(def_id)
 
     def get_combat_profile(self, def_id: str) -> Optional[CombatProfileDefinition]:
+        """The combat profile with this id, or None."""
         return self.combat_profiles.get(def_id)
 
     def get_inventory_profile(self, def_id: str) -> Optional[InventoryProfileDefinition]:
+        """The inventory profile with this id, or None."""
         return self.inventory_profiles.get(def_id)
 
     def get_skill_profile(self, def_id: str) -> Optional[SkillProfileDefinition]:
+        """The skill profile with this id, or None."""
         return self.skill_profiles.get(def_id)

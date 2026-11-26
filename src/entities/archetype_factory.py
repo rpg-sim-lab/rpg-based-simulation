@@ -66,7 +66,8 @@ NO_ARCHETYPE_DEFAULT_ROLE = EntityRole.CITIZEN  # a mother with no archetype_id 
 class ArchetypeLookup(Protocol):
     """The one catalog method `declared_newborn_role` reads (`CatalogRepository` satisfies it structurally, so the factory imports no repository)."""
 
-    def get_entity_archetype(self, def_id: str) -> Optional[EntityArchetypeDefinition]: ...
+    def get_entity_archetype(self, def_id: str) -> Optional[EntityArchetypeDefinition]:
+        """The archetype with this id, or None."""
 
 
 def declared_newborn_role(catalog: ArchetypeLookup, mother: EntityState) -> tuple[EntityRole, str]:

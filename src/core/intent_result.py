@@ -1,3 +1,4 @@
+"""The outcome record of one resource transfer intent, moved verbatim out of src/core/state.py (which re-exports it) for the module-length ceiling."""
 from __future__ import annotations
 
 from dataclasses import dataclass
