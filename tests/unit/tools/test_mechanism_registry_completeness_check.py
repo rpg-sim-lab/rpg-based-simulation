@@ -313,7 +313,8 @@ def test_wider_scope_numbers_pinned():
     # 384 -> 385 on 2026-11-24 (S8 #715 7123495747): +src/core/need_lines.py, the one source of the starving and sleep lines (TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON, item 2 CI fix, owner #715 7122168466); a new file counted, none removed
     # 385 -> 386 on 2026-11-24 (S8, the lead's record on #715 after 7128579145): +src/core/arrival.py, the structural arrival rule (TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON, "arrived never fails", owner #715 7128509663); a new file counted, none removed
     # 386 -> 387 on 2026-11-24 (S8, the lead's record on #715 after 7137525427, from the check's own output): +src/core/navigation_component.py (NavigationComponent moved out of state.py, TCK-20261124-NAVIGATION-STATE-MOVES-OUT-OF-STATE-PY, owner #715 after 7135893456); unbound, as it was inside state.py
-    assert wider["scope_files"] == 387
+    # 387 -> 388 on 2026-11-25 (TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER, rpg-planner ruling, from the check's own output): +src/core/service_refusals.py (the typed ServiceRefusal record and its streak count, K2 fix B), unbound
+    assert wider["scope_files"] == 388
     # 233 -> 227 on 2026-10-05: the world-building split names six more files (worldmodules/normalizer,
     # worldassembly/resolve_io, worldbuilding/repository and validator, worldgeneration/generator and scorer).
     # Then +1 for the unbound entity_target_objective.py module (TCK-20261002-COMBAT-OBJECTIVE-TARGETS-...).
@@ -389,6 +390,7 @@ def test_wider_scope_numbers_pinned():
     # 270 -> 271 on 2026-11-24 (S8 #715 7123495747): the same file, src/core/need_lines.py, is unbound
     # 271 -> 272 on 2026-11-24 (the same S8): src/core/arrival.py is unbound
     # 272 -> 273 on 2026-11-24 (the same S8): +src/core/navigation_component.py, unbound
+    # 273 -> 274 -> 273 on 2026-11-25 (TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER, rpg-planner ruling, from the check's own output): the new src/core/service_refusals.py first counted as unbound and is now bound under `goal_hierarchy`, so the number is unchanged
     assert wider["unbound_files"] == 273
     # 73 -> 72 on 2026-10-07 (row 7 (b) pass): src/quests/generator.py::QuestGenerator is now bound under `guilds`.
     # 72 -> 71 on 2026-10-11 (#500, D57): src/engine/rpg_depth.py::LeashService is cited under `tactical_decision` (it became wired when
