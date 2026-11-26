@@ -5,7 +5,7 @@ The fixtures go through the REAL ``LifecycleSystem.resolve_lifecycle`` and ``App
   m1 ``_end_projects_on_death`` is the identity (D1 red)        m2 only ACTIVE is ended, on a SUSPENDED fixture (D1 red)       m3 current_project_id is not cleared (D1 red from the current clause alone)
   m4 the records are removed instead of ended (D3 red)          m5 ended_tick = tick + 1 (D2 red)                              m6 a living body's field is touched on a death tick (D7 red)
   m7 the spy keys "dead" on combat.alive: on an old-age-only fixture under m1 the correct spy is D1 red and the alive-keyed spy is D1 green (the difference is shown)
-  e1 a project event of a LIVING body is never dropped   e2 a non-project event of a dead body is kept   e3 a project event of a dead body is dropped   (the exact frozen category set, no substring match)
+  e1 a project event of a LIVING body is never dropped   e2 a non-project event of a dead body is kept   e3 a project event of a dead body is dropped   (the mask logic, given an EXPLICIT category argument; the run's own set is empty, so D7 compares the full stream)
 m0 (the shipped tests pass) is run by the designer with pytest; here m0 is the UNMUTATED fixture, which must be green on D1/D2/D3 and equal to itself on D7.
 Exit 0 only when every control behaves as stated (m0 green, every mutant red on its bar, e1-e3 hold).
 """
@@ -152,21 +152,24 @@ def run_mutant(logic: Any, mutant: str, reference_digest: str) -> Tuple[bool, st
         return all(green.values()) and d7_green, desc + " (all must be green)"
     observed_red = (not d7_green) if expect == "D7" else (not green[expect])
     others_ok = all(green[k] for k in green if k != expect) if expect != "D7" else all(green.values())
-    return observed_red and others_ok, desc + f" ({expect} must be the red one)"
+    return observed_red and others_ok and (d7_green or expect == "D7"), desc + f" ({expect} must be the red one)"
+
+
+MASK = ("QUEST_COMPLETED", "QUEST_FAILED")      # explicit argument of the mask tests only
 
 
 def event_controls(logic: Any) -> List[Tuple[str, bool, str]]:
     def ev(category: str, subject: str) -> Any:
         return NS(category=NS(value=category), subject=subject, region_id=None, severity=1.0, payload={}, tick=TICK)
-    nothing = logic.living_event_digest([], [1])
+    nothing = logic.living_event_digest([], [1], MASK)
     results = []
-    living_kept = logic.living_event_digest([ev("QUEST_COMPLETED", "2")], [1]) == logic.living_event_digest([ev("QUEST_COMPLETED", "2")], [], categories=())
+    living_kept = logic.living_event_digest([ev("QUEST_COMPLETED", "2")], [1], MASK) == logic.living_event_digest([ev("QUEST_COMPLETED", "2")], [], categories=())
     results.append(("e1 a project event of a LIVING body is never dropped", living_kept, "digest equals the no-drop digest"))
-    kept = logic.living_event_digest([ev("FEEDING_KILL", "1")], [1]) == logic.living_event_digest([ev("FEEDING_KILL", "1")], [], categories=()) != nothing
+    kept = logic.living_event_digest([ev("FEEDING_KILL", "1")], [1], MASK) == logic.living_event_digest([ev("FEEDING_KILL", "1")], [], categories=()) != nothing
     results.append(("e2 a non-project event of a dead body is kept", kept, "digest equals the no-drop digest and differs from the empty one"))
-    dropped = logic.living_event_digest([ev("QUEST_FAILED", "1")], [1]) == nothing
+    dropped = logic.living_event_digest([ev("QUEST_FAILED", "1")], [1], MASK) == nothing
     results.append(("e3 a project event of a dead body is dropped", dropped, "digest equals the empty stream's"))
-    exact = logic.living_event_digest([ev("QUEST_COMPLETED_EXTRA", "1")], [1]) != nothing
+    exact = logic.living_event_digest([ev("QUEST_COMPLETED_EXTRA", "1")], [1], MASK) != nothing
     results.append(("e3b a category that only CONTAINS a project name is not dropped (no substring match)", exact, "digest differs from the empty stream's"))
     return results
 

@@ -2,10 +2,10 @@
 
 Usage: python death_closes_project_summary.py [--smoke] <BASE_OUT> <FIX_OUT>   (each dir holds <world>_s<seed>_t<ticks>_{plain,spy}.json; BASE has the spy only, FIX the spy and its plain twin)
 Per cell: D1 dead_with_live == 0 every tick (FIX); D2 DEATH ends are ABANDONED at the body's death tick on a dead body (FIX); D3 records kept (FIX); D4 non-vacuity (BASE: dead_with_live sum > 0 and >= 5 dead bodies with a live
-project at death, else that cell's D1 is NOT MEASURED and the world is widened to s43-46); D5 lag rows resolved by T+1 (FIX); D6 FIX spied hash == FIX plain hash; D7 neutrality: the LIVING PROJECTION digest equal at every tick and the
-LIVING EVENT STREAM digest equal (BASE vs FIX); a cell with no death that held a live or current project must be FULL-hash equal. A D7 divergence is a STOP (exit 4) to the designer; it is never attributed here.
-REPORTED, never bars: DEATH ends vs the extra ended transitions (FIX minus BASE), the ACTIVE/SUSPENDED split, quest-open rows, the typed ABANDONED-by-ended_by figure (SimQ project_abandoned is NOT MEASURED: recording is off),
-and the capacity_enforcement / redirection writes on a dead-or-dying body that holds a live or current project. Exit: 0 no bar failed, 2 a bar failed or a cell is void, 4 a D7 STOP. ``--smoke`` only checks that the pipeline observed the run.
+project at death; a thin cell is D4 NOT MEASURED, its D1 NOT MEASURED and the world is widened to s43-46: exit 5, not a failure); D5 lag rows resolved by T+1 (FIX); D6 FIX spied hash == FIX plain hash; D7 neutrality: the LIVING PROJECTION digest (the masked strategic hash) equal at every tick, the FULL event
+stream digest equal (no category is masked in the run: quest events stay visible, 2.226 leaves quest_status alone), and the state-diff ended count (DEATH ends == FIX minus BASE ended transitions); a cell with no death that held a live or current project must be FULL-hash equal. A D7 divergence is a STOP (exit 4) to the designer; it is never attributed here.
+REPORTED, never bars: the ACTIVE/SUSPENDED split, quest-open rows, the typed ABANDONED-by-ended_by figure (SimQ project_abandoned is NOT MEASURED: recording is off),
+and the capacity_enforcement / redirection writes on a dead-or-dying body that holds a live or current project. Exit: 0 no bar failed and nothing to widen, 2 a bar failed or a cell is void, 4 a D7 STOP, 5 no bar failed but a thin cell needs widening to s43-46. ``--smoke`` only checks that the pipeline observed the run.
 """
 from __future__ import annotations
 
@@ -57,7 +57,7 @@ def cell_summary(base_dir: Path, fix_dir: Path, world: str, seed: int, ticks: in
         bars["SMOKE"] = {"status": PASS if ok and bars["D6"]["status"] == PASS else FAIL, "ticks_observed_base_fix": [base.get("distinct_ticks"), fix.get("distinct_ticks")]}
         return cell
     measured = base.get("dwl_sum", 0) > 0 and base.get("dead_at_death_with_live", 0) >= MIN_DEAD_WITH_LIVE
-    bars["D4"] = {"status": PASS if measured else FAIL, "base_dwl_sum": base.get("dwl_sum"), "base_dead_at_death_with_live": base.get("dead_at_death_with_live"), "min": MIN_DEAD_WITH_LIVE}
+    bars["D4"] = {"status": PASS if measured else NM, "base_dwl_sum": base.get("dwl_sum"), "base_dead_at_death_with_live": base.get("dead_at_death_with_live"), "min": MIN_DEAD_WITH_LIVE}
     cell["widen"] = not measured
     d1_zero = fix.get("dwl_total_rows", 0) == 0
     bars["D1"] = {"status": (PASS if d1_zero else FAIL) if measured else NM, "fix_dwl_sum": fix.get("dwl_sum"), "first_rows": fix.get("dwl_rows", [])[:5]}
@@ -70,18 +70,22 @@ def cell_summary(base_dir: Path, fix_dir: Path, world: str, seed: int, ticks: in
     d7_events = first_divergence(base.get("events_by_tick", {}), fix.get("events_by_tick", {}))
     no_such_death = base.get("dead_at_death_with_live", 0) == 0
     full_equal = base.get("final_hash") == fix.get("final_hash")
-    d7: Dict[str, Any] = {"living_projection_first_divergence": d7_living, "living_event_stream_first_divergence": d7_events, "no_death_held_live_or_current": no_such_death, "full_hash_equal": full_equal}
+    death_ends = fix.get("ends_by", {}).get("DEATH", 0)
+    extra = fix.get("ends_total", 0) - base.get("ends_total", 0)
+    d7: Dict[str, Any] = {"living_projection_first_divergence": d7_living, "living_event_stream_first_divergence": d7_events, "no_death_held_live_or_current": no_such_death, "full_hash_equal": full_equal,
+                          "ended_count": {"death_ends": death_ends, "extra_ended_transitions_fix_minus_base": extra, "equal": death_ends == extra}}
     if d7_living or d7_events:
         d7["status"] = STOP
         d7["note"] = "STOP to the designer: first tick shown; locate the field path and body with death_closes_project_divergence_locate on --dump-tick runs. Not attributed here."
     elif no_such_death and not full_equal:
         d7["status"] = FAIL
         d7["note"] = "a cell with no such death must be FULL-hash equal"
+    elif death_ends != extra:
+        d7["status"] = FAIL
+        d7["note"] = "the DEATH ends must equal the extra ended transitions (FIX minus BASE)"
     else:
         d7["status"] = PASS
     bars["D7"] = d7
-    death_ends = fix.get("ends_by", {}).get("DEATH", 0)
-    extra = fix.get("ends_total", 0) - base.get("ends_total", 0)
     cell["reported"] = {"death_ends": death_ends, "extra_ended_transitions_fix_minus_base": extra, "death_ends_equal_extra": death_ends == extra, "death_split_active_suspended": fix.get("death_split"),
                         "suspended_branch_unit_only": fix.get("death_split", {}).get("SUSPENDED", 0) == 0, "quest_open_after_death": fix.get("quest_open_after_death_count"),
                         "abandoned_by_ended_by": {"base": base.get("abandoned_by"), "fix": fix.get("abandoned_by")}, "simq_project_abandoned": SIMQ_LINE,
@@ -102,7 +106,9 @@ def cells_in(base_dir: Path, fix_dir: Path) -> List[Tuple[str, int, int]]:
 def verdict(cells: List[Dict[str, Any]]) -> int:
     if any(b["status"] == STOP for c in cells for b in c["bars"].values()):
         return 4
-    return 2 if (not cells or any(c["problems"] or any(b["status"] == FAIL for b in c["bars"].values()) for c in cells)) else 0
+    if not cells or any(c["problems"] or any(b["status"] == FAIL for b in c["bars"].values()) for c in cells):
+        return 2
+    return 5 if any(c["widen"] for c in cells) else 0
 
 
 def main(argv: List[str]) -> int:

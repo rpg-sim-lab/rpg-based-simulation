@@ -14,10 +14,10 @@ import json
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Set
 
 LIVE_STATUSES = ("ACTIVE", "SUSPENDED")
-#: The FROZEN set of typed world-event categories of a project's lifecycle (rpg-designer, 2026-11-26: exact categories fixed before the run, never a substring match). Cited from source at 4af5ef2a3:
-#: ``WorldEventCategory.QUEST_COMPLETED`` and ``QUEST_FAILED`` (src/domains/world_emergence/schema.py:25-26; the writer is src/engine/pipeline_phases/quest_opportunity_rewards.py:108). No other WorldEventCategory
-#: names a project's start, end, suspension, resumption or abandonment (PARTY_ABANDONED is a party's, not a project's). Dropped from the LIVING EVENT STREAM only when the subject is a dead body.
-PROJECT_LIFECYCLE_EVENT_CATEGORIES = frozenset({"QUEST_COMPLETED", "QUEST_FAILED"})
+#: The set of typed world-event categories masked out of the LIVING EVENT STREAM in the RUN: EMPTY (rpg-designer, 2026-11-26). The only project/quest-named categories, QUEST_COMPLETED and QUEST_FAILED
+#: (src/domains/world_emergence/schema.py:25-26; written at quest_opportunity_rewards.py:107 and world_emergence/services.py:292), are QUEST events, and divergence 2.226 leaves ``quest_status`` alone, so masking them
+#: would hide a defect: D7 compares the FULL event stream. ``living_event_digest`` still takes an explicit ``categories`` argument (the logic tests e1-e3 of the mask pass one); an exact match, never a substring.
+PROJECT_LIFECYCLE_EVENT_CATEGORIES: frozenset = frozenset()
 ROW_CAP = 20
 
 
@@ -56,7 +56,7 @@ def living_projection_digest(canonical: Dict[str, Any], dead_ids: Iterable[Any])
 
 
 def living_event_digest(events: Iterable[Any], dead_ids: Iterable[Any], categories: Iterable[str] = PROJECT_LIFECYCLE_EVENT_CATEGORIES) -> str:
-    """The LIVING EVENT STREAM of one applied update: its typed world events minus the project-lifecycle categories whose subject is a dead body."""
+    """The LIVING EVENT STREAM of one applied update: its typed world events minus the ``categories`` (EMPTY in the run, so the full stream) whose subject is a dead body."""
     dead, drop = {str(i) for i in dead_ids}, set(categories)
     rows = []
     for e in events:

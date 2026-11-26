@@ -4,8 +4,8 @@ ONE cell per process (cwd = the frozen tree, PYTHONPATH = that tree, recording O
 ``CapacityEnforcementPhase.enforce`` and ``StrategicRedirectionSystem.enforce`` that return the ORIGINAL update. It runs on BOTH arms (BASE main and FIX): every tree read is a ``getattr``, so ``ended_by`` etc. are simply empty where the tree lacks them.
 ``--mode plain`` runs the build with no wrapper and writes the final hash; a spied cell is VOID unless its final_hash equals the plain twin's (rc 3).
 
-Per applied tick it records (see ``death_closes_project_logic``): D1-D5 counts and the first rows, the LIVING PROJECTION digest (the canonical state with every dead body's ``strategic`` dropped) and the LIVING EVENT STREAM digest (the update's typed world
-events minus the project-lifecycle categories on a dead subject), both per tick, for the D7 comparison. ``--dump-tick N`` additionally writes that tick's living projection (canonical JSON) beside the output, for locating a divergence.
+Per applied tick it records (see ``death_closes_project_logic``): D1-D5 counts and the first rows, the LIVING PROJECTION digest (the canonical state with every dead body's ``strategic`` dropped) and the LIVING EVENT STREAM digest (the update's FULL typed world
+event stream: the masked category set is empty in the run), both per tick, for the D7 comparison. ``--dump-tick N`` additionally writes that tick's living projection (canonical JSON) beside the output, for locating a divergence.
 Usage: python death_closes_project_spy.py <world> <seed> <ticks> <out.json> --mode plain|spy [--plain-hash <hex>] [--phase-rows on|off] [--dump-tick N]
 """
 from __future__ import annotations

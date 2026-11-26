@@ -108,8 +108,13 @@ def test_a_quest_project_ended_by_death_with_the_quest_status_still_open_is_repo
     assert rep["quest_open_after_death_count"] == 1
 
 
-def test_the_event_categories_are_the_exact_frozen_set():
-    assert logic.PROJECT_LIFECYCLE_EVENT_CATEGORIES == frozenset({"QUEST_COMPLETED", "QUEST_FAILED"})
+MASK = ("QUEST_COMPLETED", "QUEST_FAILED")      # an EXPLICIT argument of the mask tests only; the run's own set is empty
+
+
+def test_the_run_masks_no_event_category_so_a_dead_bodys_quest_event_stays_in_the_stream():
+    assert logic.PROJECT_LIFECYCLE_EVENT_CATEGORIES == frozenset()
+    nothing = logic.living_event_digest([], [1])
+    assert logic.living_event_digest([ev("QUEST_FAILED", "1")], [1]) != nothing and logic.living_event_digest([ev("QUEST_COMPLETED", "1")], ["1"]) != nothing   # the default drops nothing
 
 
 def ev(category, subject):
@@ -117,12 +122,12 @@ def ev(category, subject):
 
 
 def test_event_controls_living_kept_non_project_kept_dead_project_dropped_no_substring_match():
-    nothing = logic.living_event_digest([], [1])
-    assert logic.living_event_digest([ev("QUEST_COMPLETED", "2")], [1]) == logic.living_event_digest([ev("QUEST_COMPLETED", "2")], [], categories=()) != nothing     # e1
-    assert logic.living_event_digest([ev("FEEDING_KILL", "1")], [1]) != nothing                                                                                       # e2
-    assert logic.living_event_digest([ev("QUEST_FAILED", "1")], [1]) == nothing                                                                                       # e3
-    assert logic.living_event_digest([ev("QUEST_COMPLETED_EXTRA", "1")], [1]) != nothing                                                                              # no substring match
-    assert logic.living_event_digest([ev("QUEST_COMPLETED", "1"), ev("FEEDING_KILL", "9")], [1]) == logic.living_event_digest([ev("FEEDING_KILL", "9")], [1])
+    nothing = logic.living_event_digest([], [1], MASK)
+    assert logic.living_event_digest([ev("QUEST_COMPLETED", "2")], [1], MASK) == logic.living_event_digest([ev("QUEST_COMPLETED", "2")], [], categories=()) != nothing     # e1
+    assert logic.living_event_digest([ev("FEEDING_KILL", "1")], [1], MASK) != nothing                                                                                  # e2
+    assert logic.living_event_digest([ev("QUEST_FAILED", "1")], [1], MASK) == nothing                                                                                  # e3
+    assert logic.living_event_digest([ev("QUEST_COMPLETED_EXTRA", "1")], [1], MASK) != nothing                                                                         # no substring match
+    assert logic.living_event_digest([ev("QUEST_COMPLETED", "1"), ev("FEEDING_KILL", "9")], [1], MASK) == logic.living_event_digest([ev("FEEDING_KILL", "9")], [1], MASK)
 
 
 def test_the_living_projection_drops_only_a_dead_body_strategic_component():
@@ -171,7 +176,9 @@ def test_a_thin_base_cell_makes_d1_not_measured_and_asks_to_widen(tmp_path):
     base_dir, fix_dir = write_cells(tmp_path, base_over={"dead_at_death_with_live": 4, "final_hash": "same"}, fix_over={"final_hash": "same"})
     (fix_dir / "crowded_frontier_s42_t5000_plain.json").write_text(json.dumps(cell_doc(final_hash="same")), encoding="utf-8")
     cell = summary.cell_summary(base_dir, fix_dir, "crowded_frontier", 42, 5000)
-    assert cell["bars"]["D4"]["status"] == "FAIL" and cell["bars"]["D1"]["status"] == "NOT MEASURED" and cell["widen"] is True
+    assert cell["bars"]["D4"]["status"] == "NOT MEASURED" and cell["bars"]["D1"]["status"] == "NOT MEASURED" and cell["widen"] is True
+    assert summary.main([str(base_dir), str(fix_dir)]) == 5                                  # no bar failed, widening needed: its own exit code
+    assert summary.verdict([cell]) == 5 and summary.verdict([cell, {**cell, "problems": ["x"]}]) == 2
 
 
 def test_a_zero_base_cell_is_vacuous_and_must_be_full_hash_equal(tmp_path):
@@ -183,7 +190,15 @@ def test_a_zero_base_cell_is_vacuous_and_must_be_full_hash_equal(tmp_path):
 
 def test_a_remaining_dead_with_live_row_fails_d1_even_on_a_thin_cell(tmp_path):
     base_dir, fix_dir = write_cells(tmp_path, base_over={"dead_at_death_with_live": 1}, fix_over={"dwl_total_rows": 3, "dwl_rows": [{"tick": 9, "id": 4, "live_ids": ["x"]}]})
-    assert summary.cell_summary(base_dir, fix_dir, "crowded_frontier", 42, 5000)["bars"]["D1"]["status"] == "FAIL"
+    cell = summary.cell_summary(base_dir, fix_dir, "crowded_frontier", 42, 5000)
+    assert cell["bars"]["D1"]["status"] == "FAIL" and cell["bars"]["D4"]["status"] == "NOT MEASURED"
+    assert summary.verdict([cell]) == 2                                                      # a violation outranks the widening
+
+
+def test_a_death_end_count_that_differs_from_the_extra_ended_transitions_fails_d7(tmp_path):
+    base_dir, fix_dir = write_cells(tmp_path, fix_over={"ends_total": 30})                    # 20 DEATH ends against 27 extra transitions
+    cell = summary.cell_summary(base_dir, fix_dir, "crowded_frontier", 42, 5000)
+    assert cell["bars"]["D7"]["status"] == "FAIL" and cell["bars"]["D7"]["ended_count"] == {"death_ends": 20, "extra_ended_transitions_fix_minus_base": 27, "equal": False}
 
 
 def test_a_living_projection_divergence_is_a_stop_with_its_first_tick(tmp_path):

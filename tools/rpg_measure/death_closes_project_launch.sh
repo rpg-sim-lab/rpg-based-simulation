@@ -5,7 +5,7 @@
 # Arms: BASE = main 4af5ef2a3 (the spy only, read-only), FIX = f5a520daf (the PLAIN twin, then the SPY with the twin's hash; spy hash != plain = VOID rc 3).
 # STAGE=1 (default): crowded_frontier, frontier_living_world, urban_political, each s42, 5000 t. STAGE=smoke: ONE short cell (frontier_living_world s42, SMOKE_TICKS, default 300) end to end through the same pipeline and the summary --smoke.
 # STAGE=widen: s43-46 of the worlds named in WIDEN="<world> <world>" (the cells the summary marked WIDEN under D4), 5000 t.
-# Exit codes: 1 kit sha mismatch / pinned_runner missing, 9 host busy / OUT exists / bad stage, 15 disk floor, 18 a used tree named, 13 plain rc, 124 timeout, 2 / 4 the summary (a failed bar / a D7 STOP), otherwise the spy's own (3 hash, 6 finding, 8 exception).
+# Exit codes: 1 kit sha mismatch / pinned_runner missing, 9 host busy / OUT exists / bad stage, 15 disk floor, 18 a used tree named, 13 plain rc, 124 timeout, 2 / 4 / 5 the summary (a failed bar / a D7 STOP / no bar failed but a thin cell needs STAGE=widen), otherwise the spy's own (3 hash, 6 finding, 8 exception).
 # The caller runs `. /mnt/data2/rpg-measure/lib/busy_gate.sh; rpg_host_gate` as its OWN command first. Writes only under $OUT; nothing is deleted. LAUNCH_DRY_RUN=1 prints the cells and exits.
 set -u
 . /mnt/data2/rpg-measure/lib/busy_gate.sh
