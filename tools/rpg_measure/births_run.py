@@ -35,7 +35,7 @@ from tools.rpg_measure import paired
 
 CHILD = Path(__file__).resolve().with_name("births_child.py")
 COST_CHILD = Path(__file__).resolve().with_name("births_cost_child.py")
-BARS = ("K6", "K6b", "K8", "W1", "W2", "W3", "W4", "W5", "G1", "G2", "G3", "G4", "G5", "G6", "R1", "R2", "R3", "R4")
+BARS = ("K6", "K6b", "K8", "W1", "W2", "W3", "W4", "W5", "G1", "G2", "G3", "G4", "G5", "G6", "R1", "R2", "R3", "R4", "N1")
 ARMS = ("spied", "plain", "control")
 TRIGGER_ARMS = ("trigger_on", "trigger_off", "trigger_pos")
 TRIGGER_TICKS = 1000
@@ -249,6 +249,8 @@ def summarise(docs: Dict[Key, dict]) -> dict:
         "check6": cohort, "check3": {"tables": death_tables(docs), "ratios": ratios_per_world(docs)},
         "bar_status": bar_status(total_births, cohort["regioned_births"], bars, twin_equal, cohort["mismatch_total"], risings),
         "risings_total": risings,
+        "newborn_role_sources": {f"{w}/{s}": d.get("role_sources", {}) for (w, s), d in sorted(spied.items())},  # reported; other_no_archetype > 0 is a FINDING
+        "other_no_archetype_total": sum(d.get("role_sources", {}).get("other_no_archetype", 0) for d in spied.values()),
     }
 
 

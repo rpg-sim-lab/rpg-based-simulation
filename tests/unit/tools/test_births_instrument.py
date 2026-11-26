@@ -131,6 +131,21 @@ def test_a_birth_row_carries_the_mothers_species_and_her_pregnancys_ticks_and_a_
     assert (unmatched["species"], unmatched["conceived_tick"], unmatched["due_tick"]) == (None, None, None)
 
 
+def test_newborn_role_signal_splits_the_sources_and_counts_a_mismatch_against_the_old_rule_only_in_the_spy():
+    from src.core.enums import EntityRole
+    mother = lambda i, role, **props: V2EntityBuilder(i).kind("human").location(5.0, 5.0).identity(role=role, properties=props).build()
+    child = lambda i, role: V2EntityBuilder(i).kind("human").location(5.0, 5.0).identity(role=role).build()
+    spy = BirthSpy()
+    spy._first_check_ids = {1, 2}
+    catalog = births.get_catalog()
+    spy._record_newborn_roles(catalog, mother(1, EntityRole.CITIZEN, archetype_id="goblin_raider"), [child(10, EntityRole.MONSTER)], 30)  # declared MONSTER; old rule says CITIZEN -> a mismatch row
+    spy._record_newborn_roles(catalog, mother(2, EntityRole.MONSTER), [child(11, EntityRole.CITIZEN)], 30)  # present at the first check, no archetype: legacy_no_archetype; old rule MONSTER -> a mismatch row
+    spy._record_newborn_roles(catalog, mother(5, EntityRole.CITIZEN), [child(12, EntityRole.CITIZEN)], 60)  # added later with no archetype: other_no_archetype (a FINDING); old rule CITIZEN -> equal
+    spy._record_newborn_roles(catalog, mother(6, EntityRole.MONSTER, archetype_id="goblin_raider"), [child(13, EntityRole.MONSTER)], 60)  # declared MONSTER, old rule MONSTER -> equal
+    assert dict(spy.role_sources) == {"ARCHETYPE": 2, "legacy_no_archetype": 1, "other_no_archetype": 1}
+    assert [(r["child"], r["source"]) for r in spy.role_mismatches] == [(10, "ARCHETYPE"), (11, "legacy_no_archetype")]
+
+
 def test_g2_born_plus_unplaced_is_the_litter_and_an_unplaceable_litter_is_not_a_fail_but_a_missing_newborn_is(monkeypatch):
     def no_tile(generator):
         generator.free_spawn_position = lambda pos, st: (_ for _ in ()).throw(NoFreeSpawnTileError("none"))

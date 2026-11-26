@@ -347,6 +347,10 @@ class EntityArchetypeDefinition(CatalogBaseDefinition):
     skill_profile: Optional[str] = Field(None, description="Referenced SkillProfileDefinition ID")
     traits: List[str] = Field(default_factory=list)
     themes: List[str] = Field(default_factory=list)
+    newborn_role: Optional[Literal["MONSTER", "CITIZEN"]] = Field(
+        None,
+        description="M1 births: the role a child of a mother built from this archetype is born with (a child has no job, so a job role is refused here). Required when the species has a reproduction profile (checked at load); absent otherwise",
+    )
 
 
 class PopulationRecipeDefinition(CatalogBaseDefinition):

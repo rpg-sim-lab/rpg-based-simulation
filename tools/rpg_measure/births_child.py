@@ -147,10 +147,11 @@ def main(argv: list[str]) -> int:
     if spy is not None:
         fails = {k: len(v) for k, v in {**spy.fails, **watch.fails}.items()}
         fails["G5"] = fails.get("G5", 0) + spy.none_gate_reads
+        fails["N1"] = len(spy.role_mismatches)  # newborn_role vs the old rule (a bar, = 0)
         doc.update({
-            "births": spy.births, "conceptions": spy.conceptions, "unplaced": spy.unplaced, "ended": spy.ended, "risings": spy.risings, "father_dead_at_term": spy.father_dead_at_term,
+            "births": spy.births, "role_sources": dict(spy.role_sources), "role_mismatches": spy.role_mismatches, "conceptions": spy.conceptions, "unplaced": spy.unplaced, "ended": spy.ended, "risings": spy.risings, "father_dead_at_term": spy.father_dead_at_term,
             "none_gate_reads": spy.none_gate_reads,
-            "bars": {k: fails.get(k, 0) for k in ("K6", "K6b", "K8", "W1", "W2", "W3", "W4", "W5", "G1", "G2", "G3", "G4", "G5", "G6", "R1", "R2", "R3", "R4")},
+            "bars": {k: fails.get(k, 0) for k in ("K6", "K6b", "K8", "W1", "W2", "W3", "W4", "W5", "G1", "G2", "G3", "G4", "G5", "G6", "R1", "R2", "R3", "R4", "N1")},
             "fail_rows": {k: v[:20] for k, v in {**spy.fails, **watch.fails}.items()},
             "population": watch.population, "camp_census": watch.census, "max_entity_id_seen": watch.max_entity_id,
             "deaths": deaths.deaths, "live_entity_ticks": deaths.live_entity_ticks,

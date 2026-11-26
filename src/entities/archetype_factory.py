@@ -56,6 +56,19 @@ class NewbornBirth:
     mother_genetics: GeneticProfile
     mate_genetics: GeneticProfile
     home_region_id: Optional[str] = None
+    newborn_role: EntityRole = EntityRole.CITIZEN  # the mother's archetype declaration (`declared_newborn_role`); a mother with none gets the no-archetype default
+
+
+NO_ARCHETYPE_DEFAULT_ROLE = EntityRole.CITIZEN  # a mother with no archetype_id (a legacy-guard body) or an archetype that declares no newborn_role
+
+
+def declared_newborn_role(catalog, mother: EntityState) -> tuple[EntityRole, str]:
+    """(role, source) a newborn of `mother` is born with: the `newborn_role` her archetype declares (source "ARCHETYPE"), else the no-archetype default (source "NO_ARCHETYPE_DEFAULT"). Reads content only, never her role name."""
+    archetype_id = (mother.identity.properties or {}).get("archetype_id")
+    archetype = catalog.get_entity_archetype(archetype_id) if archetype_id else None
+    if archetype is None or archetype.newborn_role is None:
+        return NO_ARCHETYPE_DEFAULT_ROLE, "NO_ARCHETYPE_DEFAULT"
+    return EntityRole[archetype.newborn_role], "ARCHETYPE"
 
 
 class ArchetypeEntityFactory:
@@ -175,8 +188,8 @@ class ArchetypeEntityFactory:
     ) -> EntityState:
         """A newborn of `birth.mother` and `birth.mate`: the BODY of the species' newborn archetype (stats, body model,
         personality draw keyed by (world seed, newborn id)) at life stage CHILD, and nothing of its job. Role, occupation,
-        equipment, inventory and job traits are not taken from the archetype: the role follows the mother (MONSTER stays
-        MONSTER, anything else CITIZEN), gold is 0 and traits are the species' own declared traits (M1 births, rulings v2.2 D3).
+        equipment, inventory and job traits are not taken from the archetype: the role is `birth.newborn_role`, the mother's archetype declaration
+        (the caller reads it with `declared_newborn_role`; no role name is compared), gold is 0 and traits are the species' own declared traits (M1 births, rulings v2.2 D3).
         population_id and spawn_region are the mother's (omitted when she has none): on a newborn, spawn_region names its
         population's declared region, not where it was born; home_region_id = mother's, else the birth region (omitted when neither exists), and the mother's home anchor and leash are copied (omitted when she has none). In campaign mode, a surviving newborn can receive its
         population's pending information responses and self-model events in a later episode (resolve_pending_information), but
@@ -189,7 +202,7 @@ class ArchetypeEntityFactory:
         leash = mother.navigation.leash_radius if anchor is not None else None
         properties = _newborn_properties(contract, mother)
         personality = build_personality_for_entity(entity_id, properties.get("faction_id"), birth.seed)
-        role = EntityRole.MONSTER if mother.identity.role == EntityRole.MONSTER else EntityRole.CITIZEN
+        role = birth.newborn_role
 
         return (
             V2EntityBuilder(entity_id)

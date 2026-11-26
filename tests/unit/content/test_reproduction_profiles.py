@@ -158,3 +158,65 @@ def test_a_species_with_no_newborn_archetype_is_not_asked_for_senses_by_the_birt
     repo.load_all()
     never_born = [s for s in repo.species.values() if s.newborn_archetype is None]
     assert {s.id for s in never_born} >= {"undead", "spirit", "slime", "dragonkin"}
+
+
+def _first_breeding_archetype_id(root: str) -> str:
+    species = {s["id"]: s for s in yaml.safe_load(open(os.path.join(root, "living", "species.yaml")))}
+    archetypes = yaml.safe_load(open(os.path.join(root, "entities", "entity_archetypes.yaml")))
+    return next(a["id"] for a in archetypes if species[a["species"]].get("reproduction_profile"))
+
+
+def test_a_breeding_archetype_with_no_newborn_role_is_refused_at_load_and_a_job_role_is_refused_by_the_schema():
+    repo = _repo_with({}, "very_low", None)
+    root = os.path.join(repo.content_dir, "entities")
+    archetypes = yaml.safe_load(open(os.path.join(root, "entity_archetypes.yaml")))
+    victim = _first_breeding_archetype_id(repo.content_dir)
+    for a in archetypes:
+        if a["id"] == victim:
+            del a["newborn_role"]
+    yaml.safe_dump(archetypes, open(os.path.join(root, "entity_archetypes.yaml"), "w"))
+    with pytest.raises(ReproductionProfileError, match=f"archetype '{victim}'.*no newborn_role"):
+        repo.load_all()
+    from src.content.schema import EntityArchetypeDefinition
+    declared = next(a for a in yaml.safe_load(open("data/content/entities/entity_archetypes.yaml")) if a["id"] == victim)
+    for job_role in ("GUARD", "WORKER", "HERO", "SHOPKEEPER", "guard"):
+        with pytest.raises(ValidationError):
+            EntityArchetypeDefinition(**{**declared, "newborn_role": job_role})
+    assert EntityArchetypeDefinition(**{**declared, "newborn_role": "CITIZEN"}).newborn_role == "CITIZEN"
+
+
+def test_every_shipped_breeding_archetype_declares_a_newborn_role_and_a_non_breeding_one_needs_none():
+    repo = CatalogRepository("data/content")
+    repo.load_all()
+    breeding = [a for a in repo.entity_archetypes.values() if repo.species[a.species].reproduction_profile is not None]
+    assert len(breeding) == 27 and all(a.newborn_role in ("MONSTER", "CITIZEN") for a in breeding)
+    assert all(a.newborn_role is None for a in repo.entity_archetypes.values() if repo.species[a.species].reproduction_profile is None)
+
+
+def test_no_shipped_population_without_an_archetype_spawns_monsters_of_a_breeding_species():
+    import glob
+    from src.content_semantics.role import RoleSemanticsService
+    from src.core.enums import EntityRole
+    repo = CatalogRepository("data/content")
+    repo.load_all()
+    roles = RoleSemanticsService(repo)
+    paths = glob.glob("data/worlds/*/resolved/world.resolved.yaml") + glob.glob("data/content/world_modules/*.yaml") + glob.glob("data/world_modules/populations/*.yaml")
+    seen = 0
+    for path in paths:
+        doc = yaml.safe_load(open(path)) or {}
+        for entry in (doc.get("entities") or doc.get("populations") or []):
+            if isinstance(entry, dict) and not entry.get("archetype_id"):
+                seen += 1
+                assert roles.get_legacy_entity_role(entry["role"]) != EntityRole.MONSTER, (path, entry.get("id"))
+    assert seen > 0
+
+
+def test_the_assembly_refuses_an_archetype_less_population_that_spawns_monsters_of_a_breeding_species_and_allows_the_rest():
+    from src.worldassembly.resolver import CompileProfileResolver
+    repo = CatalogRepository("data/content")
+    repo.load_all()
+    resolver = CompileProfileResolver(repo)
+    with pytest.raises(ReproductionProfileError, match="newborn_role"):
+        resolver._refuse_legacy_monster_breeder("pop_x", "monster", "wolf")
+    resolver._refuse_legacy_monster_breeder("pop_x", "worker", "wolf")  # not MONSTER: the no-archetype default (CITIZEN) is today's outcome
+    resolver._refuse_legacy_monster_breeder("pop_x", "monster", None)  # no species named: nothing breeds

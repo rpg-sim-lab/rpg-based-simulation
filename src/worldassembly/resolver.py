@@ -12,7 +12,8 @@ from src.core.species import SpeciesNotDeclaredError
 
 logger = logging.getLogger(__name__)
 
-from src.content.repository import CatalogRepository
+from src.content.repository import CatalogRepository, ReproductionProfileError
+from src.core.enums import EntityRole
 from src.worldmodules.repository import WorldModuleRepository
 from src.worldmodules.utils import topological_sort_modules
 from src.worldmodules.normalizer import NormalizedWorldModule
@@ -976,6 +977,13 @@ class CompileProfileResolver:
             region_bounds[r_spec.id] = tuple(r_spec.bounds)  # type: ignore[assignment]
         return region_bounds
 
+    def _refuse_legacy_monster_breeder(self, key: str, role_id: str, species_id: Optional[str]) -> None:
+        """A population with no archetype carries no `newborn_role` declaration, so its children are born with the no-archetype default (CITIZEN). One that spawns MONSTERS of a breeding species would change that outcome silently: refused at load (M1 births)."""
+        species = self.repo.species.get(species_id) if species_id else None
+        if species is not None and species.reproduction_profile is not None and self.role_semantics.get_legacy_entity_role(role_id) == EntityRole.MONSTER:
+            raise ReproductionProfileError(
+                f"population {key!r} names no archetype and spawns role {role_id!r} (MONSTER) of species {species_id!r}, which breeds: declare an archetype with a newborn_role, since a child of an archetype-less mother is born CITIZEN")
+
     def resolve(self, spec: Any, population_recipes: Optional[Dict[str, Any]] = None) -> CompileContext:
         """
         Processes a WorldSpec (or template recipes) and populates resolved profiles.
@@ -1086,6 +1094,7 @@ class CompileProfileResolver:
                     starting_items=dict(resolved_arch.inventory_profile.starting_items) if resolved_arch.inventory_profile else {},
                 )
             else:
+                self._refuse_legacy_monster_breeder(key, pop_spec.role, getattr(pop_recipe, "species_id", None))
                 resolved_entity = ResolvedEntityProfile(
                     legacy_role=self.role_semantics.get_legacy_entity_role(pop_spec.role),
                     legacy_faction=self.faction_semantics.get_legacy_faction_bucket(pop_spec.faction),

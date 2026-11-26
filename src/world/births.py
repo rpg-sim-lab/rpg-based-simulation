@@ -23,7 +23,7 @@ from src.core.updates import (
 from src.domains.world_emergence.schema import WorldEvent, WorldEventCategory
 from src.engine.behavior_consumers import get_catalog
 from src.engine.spatial_query import SpatialQueryService
-from src.entities.archetype_factory import ArchetypeEntityFactory, NewbornBirth
+from src.entities.archetype_factory import ArchetypeEntityFactory, NewbornBirth, declared_newborn_role
 from src.entities.contract_builder import resolved_archetype_to_contract
 from src.systems.lifecycle_systems.genetics import GeneticsSystem
 from src.systems.world_systems.generator import NoFreeSpawnTileError
@@ -203,7 +203,7 @@ def _birth_at_term(check: _Check, mother: EntityState, profile: ReproductionProf
             continue
         birth = NewbornBirth(
             mother, father, position, state.tick, state.seed, mother.lifecycle.genetic_profile or _fallback_genetics(state, mother),
-            pregnancy.father_genetic_profile, home_region_id,
+            pregnancy.father_genetic_profile, home_region_id, declared_newborn_role(check.catalog, mother)[0],
         )
         newborns.append(ArchetypeEntityFactory().build_newborn(generator.get_next_id(), check.contract(species_id), birth))
 

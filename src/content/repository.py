@@ -209,6 +209,16 @@ def check_reproduction_profiles(repo: "CatalogRepository") -> None:
         if need_profile is not None and need_profile.needs.get("hunger") == "none":
             raise ReproductionProfileError(f"species {species_id!r} declares reproduction profile {declared_profile!r} but its need profile {species.need_profile!r} has hunger 'none': a kind that does not eat has no births")
         _check_newborn_archetype(repo, species_id, species)
+    _check_newborn_roles(repo)
+
+
+def _check_newborn_roles(repo: "CatalogRepository") -> None:
+    """An archetype whose species breeds declares `newborn_role` (MONSTER or CITIZEN; the schema refuses a job role): a mother's child is born with it, read from the archetype and never from her role name."""
+    for archetype_id, archetype in repo.entity_archetypes.items():
+        species = repo.species.get(archetype.species)
+        if species is not None and species.reproduction_profile is not None and archetype.newborn_role is None:
+            raise ReproductionProfileError(
+                f"archetype {archetype_id!r} has species {archetype.species!r}, which breeds, but declares no newborn_role (MONSTER or CITIZEN)")
 
 
 def check_risen_profiles(repo: "CatalogRepository") -> None:

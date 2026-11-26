@@ -29,6 +29,8 @@ import hashlib
 from collections import Counter, defaultdict
 from typing import Any, Dict, List, Optional
 
+from src.core.enums import EntityRole
+from src.entities.archetype_factory import declared_newborn_role
 from src.core.species import NON_LIVING_KIND_ALLOWLIST, species_of
 from src.core.state import LifeStage
 from src.core.strategic import MarriageStatus
@@ -91,6 +93,9 @@ class BirthSpy:
         self._born_by: Dict[int, set] = defaultdict(set)  # tick -> mothers who bore on that tick (a PREGNANCY_ENDED for one of them is a G6 row)
         self._birthed_pregnancies: set = set()  # (mother, conceived_tick) already delivered (G4: one birth per pregnancy)
         self._risen_corpses: set = set()
+        self._first_check_ids: Optional[set] = None  # ids of the bodies present at the FIRST births check (the t0 bodies, for the legacy_no_archetype split)
+        self.role_sources: Counter = Counter()  # newborn_role: per newborn, where its role came from: ARCHETYPE | legacy_no_archetype | other_no_archetype (other > 0 is a FINDING)
+        self.role_mismatches: List[Dict[str, Any]] = []  # newborn_role bar (= 0): a newborn whose role differs from the OLD rule (mother MONSTER -> MONSTER, else CITIZEN), computed here only
         self._events = hashlib.sha256()  # the neutrality arms compare the typed world-event stream of two runs by this digest
         self._patched: List[tuple] = []
 
@@ -143,6 +148,8 @@ class BirthSpy:
     # ---- per check -------------------------------------------------------------------------------------------------------------------------------
     def _check_births(self, state, update) -> None:
         catalog = get_catalog()
+        if self._first_check_ids is None:
+            self._first_check_ids = set(state.entities)
         self._check_conceptions(state, update, catalog)
         self._check_births_at_term(state, update, catalog)
         self._record_nudges(state, update)
@@ -197,6 +204,7 @@ class BirthSpy:
             kids = born.pop(mother.id, [])
             row = {"tick": state.tick, "mother": mother.id, "father": pregnancy.father_entity_id, "due": pregnancy.due_tick, "litter": pregnancy.litter_size}
             self.births.extend(self._birth_row(state, child, mother, pregnancy) for child in kids)
+            self._record_newborn_roles(catalog, mother, kids, state.tick)
             if kids:
                 self._born_by[state.tick].add(mother.id)
             if pregnancy.due_tick != state.tick:
@@ -221,6 +229,18 @@ class BirthSpy:
             for child in kids:
                 self.births.append(self._birth_row(state, child))
                 self.fails["G1"].append({"tick": state.tick, "mother": mother_id, "child": child.id, "why": "a birth with no due pregnancy"})
+
+    def _record_newborn_roles(self, catalog, mother, kids, tick) -> None:
+        """newborn_role signal: each newborn's role source (ARCHETYPE, or NO_ARCHETYPE_DEFAULT split by the mother into legacy_no_archetype, a body present at the first check without an archetype_id, and other_no_archetype)
+        and the mismatch against the OLD rule (a MONSTER mother -> MONSTER, anything else CITIZEN), which is computed only here and never read by the product."""
+        _, source = declared_newborn_role(catalog, mother)
+        if source == "NO_ARCHETYPE_DEFAULT":
+            source = "legacy_no_archetype" if mother.id in (self._first_check_ids or ()) else "other_no_archetype"
+        old_rule = EntityRole.MONSTER if mother.identity.role == EntityRole.MONSTER else EntityRole.CITIZEN
+        for child in kids:
+            self.role_sources[source] += 1
+            if child.identity.role != old_rule:
+                self.role_mismatches.append({"tick": tick, "child": child.id, "mother": mother.id, "role": int(child.identity.role), "old_rule": int(old_rule), "source": source})
 
     def _birth_row(self, state, child, mother=None, pregnancy=None) -> Dict[str, Any]:
         """One newborn. `born_tick` is the tick it was added; `species` is the MOTHER's species (`species_of`), and `conceived_tick` / `due_tick` are her pregnancy's, all None when no due pregnancy accompanied the birth (a G1 row)."""
