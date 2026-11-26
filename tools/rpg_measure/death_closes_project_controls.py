@@ -80,7 +80,7 @@ def mutate(mutant: str) -> Callable[[], None]:
     original_end = cls.__dict__["_end_projects_on_death"].__func__
     original_resolve = cls.__dict__["resolve_lifecycle"].__func__
     original_live = lc.end_live_on_death
-    if mutant == "m1":
+    if mutant in ("m1", "m7"):                      # m7 runs under m1's identity: the old-age body keeps its live project
         cls._end_projects_on_death = staticmethod(lambda entity, ent_upd, tick: ent_upd)
     elif mutant == "m2":
         lc.end_live_on_death = lambda projects, staged, removed, tick: [p for p in original_live(projects, staged, removed, tick) if _was_active(projects, staged, p.id)]
@@ -112,7 +112,7 @@ def mutate(mutant: str) -> Callable[[], None]:
                     updates[eid] = EntityUpdate(entity_id=eid, strategic=StrategicUpdate(current_objective_id_set="touched_on_a_death_tick"))
             return replace(refined, entity_updates=updates)
         cls.resolve_lifecycle = staticmethod(touch_living)
-    elif mutant in ("m0", "m7"):
+    elif mutant == "m0":
         pass
     else:
         raise ValueError(f"unknown mutant {mutant}")

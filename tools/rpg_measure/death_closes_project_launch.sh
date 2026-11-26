@@ -6,7 +6,7 @@
 # STAGE=1 (default): crowded_frontier, frontier_living_world, urban_political, each s42, 5000 t. STAGE=smoke: ONE short cell (frontier_living_world s42, SMOKE_TICKS, default 300) end to end through the same pipeline and the summary --smoke.
 # STAGE=widen: s43-46 of the worlds named in WIDEN="<world> <world>" (the cells the summary marked WIDEN under D4), 5000 t.
 # Exit codes: 1 kit sha mismatch / pinned_runner missing, 9 host busy / OUT exists / bad stage, 15 disk floor, 18 a used tree named, 13 plain rc, 124 timeout, 2 / 4 / 5 the summary (a failed bar / a D7 STOP / no bar failed but a thin cell needs STAGE=widen), otherwise the spy's own (3 hash, 6 finding, 8 exception).
-# The caller runs `. /mnt/data2/rpg-measure/lib/busy_gate.sh; rpg_host_gate` as its OWN command first. Writes only under $OUT; nothing is deleted. LAUNCH_DRY_RUN=1 prints the cells and exits.
+# The caller runs `. /mnt/data2/rpg-measure/lib/busy_gate.sh; rpg_host_gate` as its OWN command first. Writes only under $OUT (the kernel's run dirs go to $OUT/runs, never into the frozen tree); nothing is deleted. LAUNCH_DRY_RUN=1 prints the cells and exits.
 set -u
 . /mnt/data2/rpg-measure/lib/busy_gate.sh
 py=${PY:-/mnt/data/venv-sync2/bin/python}
@@ -25,10 +25,10 @@ run() { # world seed ticks outjson mode [plainhash]
   local tmo; tmo=$($py -c "import math;print(math.ceil($3*0.7)+600)")
   local extra=""; [ -n "${6:-}" ] && extra="--plain-hash $6"
   SIM_OBS_MODE=OFF RPG_OBS_MODE=OFF PYTHONHASHSEED=0 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=$TREE systemd-run --user --scope -q -p MemoryMax=3G -p MemorySwapMax=0 timeout "$tmo" \
-    bash -c "cd $TREE && $py $KIT/tools/rpg_measure/death_closes_project_spy.py $1 $2 $3 $4 --mode $5 $extra" > "${4%.json}.log" 2>&1
+    bash -c "cd $TREE && $py $KIT/tools/rpg_measure/death_closes_project_spy.py $1 $2 $3 $4 --mode $5 --run-root $OUT/runs $extra" > "${4%.json}.log" 2>&1
 }
 if [ "${LAUNCH_DRY_RUN:-}" = 1 ]; then
-  for c in $CELLS; do IFS=: read w s t <<< "$c"; echo "CELL $ARM $w s$s ${t}t: $([ "$ARM" = fix ] && echo 'plain then ')spy (cwd=$TREE PYTHONPATH=$TREE) $py $KIT/tools/rpg_measure/death_closes_project_spy.py $w $s $t $OUT/${w}_s${s}_t${t}_{plain,spy}.json --mode {plain,spy}"; done
+  for c in $CELLS; do IFS=: read w s t <<< "$c"; echo "CELL $ARM $w s$s ${t}t: $([ "$ARM" = fix ] && echo 'plain then ')spy (cwd=$TREE PYTHONPATH=$TREE) $py $KIT/tools/rpg_measure/death_closes_project_spy.py $w $s $t $OUT/${w}_s${s}_t${t}_{plain,spy}.json --mode {plain,spy} --run-root $OUT/runs"; done
   exit 0
 fi
 [ -e "$OUT" ] && { echo "STOP: out dir exists: $OUT"; exit 9; }

@@ -33,6 +33,8 @@ def void_reasons(doc: Dict[str, Any], label: str) -> List[str]:
     out = []
     if doc.get("fatal") or doc.get("findings") or doc.get("spy_exceptions") or doc.get("logging_errors"):
         out.append(f"{label}: fatal / finding / spy exception / logging error")
+    if doc.get("replay_dirs_redirected", 0) < 1:
+        out.append(f"{label}: the run root was not redirected out of the tree (replay_dirs_redirected < 1)")
     return out
 
 

@@ -144,7 +144,7 @@ def test_the_living_projection_drops_only_a_dead_body_strategic_component():
 def cell_doc(**over):
     doc = {"final_hash": "h", "distinct_ticks": 5000, "dead_bodies": 30, "apply_calls": 5000, "dwl_sum": 400, "dwl_total_rows": 400, "dead_at_death_with_live": 20, "dwl_rows": [], "d2_violations": 0, "d2_rows": [], "d3_violations": 0, "d3_rows": [],
            "lag_total": 2, "lag_over_one_tick": 0, "lag_unjudged_at_run_end": 0, "ends_by": {"X": 3}, "ends_total": 3, "death_split": {}, "abandoned_by": {}, "quest_open_after_death_count": 0,
-           "living_by_tick": {"1": "a", "2": "b"}, "events_by_tick": {"1": "e", "2": "f"}, "phase_rows": {}}
+           "living_by_tick": {"1": "a", "2": "b"}, "events_by_tick": {"1": "e", "2": "f"}, "phase_rows": {}, "replay_dirs_redirected": 1}
     doc.update(over)
     return doc
 
@@ -273,3 +273,58 @@ def test_a_used_tree_is_refused_and_the_widen_stage_needs_its_worlds():
     assert used.returncode == 18
     widen = subprocess.run(["bash", str(KIT / "death_closes_project_launch.sh")], env={**base, "TREE": "/nonexistent/tree", "STAGE": "widen"}, capture_output=True, text=True)
     assert widen.returncode != 0
+
+
+def test_the_run_root_wrapper_sends_a_relative_run_dir_out_of_the_tree_and_leaves_others_alone(tmp_path):
+    from src.engine import replay_manager
+
+    spy_mod = load_from(KIT / "death_closes_project_spy.py", "_t_dcp_spy")
+    original = replay_manager.ReplayManager.__init__
+    try:
+        counts = spy_mod.redirect_run_root(str(tmp_path / "runs"))
+        replay_manager.ReplayManager(run_dir=Path("data") / "runs" / "dcp_unit_probe", profile_name="p")
+        replay_manager.ReplayManager(run_dir=tmp_path / "elsewhere" / "kept", profile_name="p")
+        assert counts == {"redirected": 1, "other": 1}
+        assert (tmp_path / "runs" / "dcp_unit_probe").is_dir() and (tmp_path / "elsewhere" / "kept").is_dir()
+        assert not (REPO / "data" / "runs" / "dcp_unit_probe").exists()                              # nothing was written into the tree
+    finally:
+        replay_manager.ReplayManager.__init__ = original
+
+
+def test_the_redirection_row_is_not_measured_with_its_reason():
+    spy_mod = load_from(KIT / "death_closes_project_spy.py", "_t_dcp_spy2")
+    assert spy_mod.REDIRECTION_NOT_MEASURED["status"] == "NOT MEASURED" and "never called" in spy_mod.REDIRECTION_NOT_MEASURED["reason"]
+    assert spy_mod.DeathSpy(None).phase_rows["redirection"]["status"] == "NOT MEASURED"
+
+
+def test_a_cell_whose_run_root_was_not_redirected_is_void(tmp_path):
+    base_dir, fix_dir = write_cells(tmp_path, fix_over={"replay_dirs_redirected": 0})
+    cell = summary.cell_summary(base_dir, fix_dir, "crowded_frontier", 42, 5000)
+    assert cell["problems"] and "not redirected" in cell["problems"][0]
+
+
+def test_mutant_m7_applies_the_identity_of_m1_and_undo_restores_it():
+    controls = load_from(KIT / "death_closes_project_controls.py", "_t_dcp_controls")
+    from src.systems.lifecycle_systems.lifecycle import LifecycleSystem
+
+    if "_end_projects_on_death" not in LifecycleSystem.__dict__:
+        pytest.skip("this tree has no _end_projects_on_death (it is the FIX head's code); the controls run on the FIX tree")
+    original = LifecycleSystem.__dict__["_end_projects_on_death"]
+    for mutant in ("m1", "m7"):
+        undo = controls.mutate(mutant)
+        try:
+            marker = object()
+            assert LifecycleSystem._end_projects_on_death(None, marker, 0) is marker                  # the identity: the update comes back untouched
+        finally:
+            undo()
+        assert LifecycleSystem.__dict__["_end_projects_on_death"].__func__ is original.__func__
+    undo = controls.mutate("m0")
+    try:
+        assert LifecycleSystem.__dict__["_end_projects_on_death"].__func__ is original.__func__     # m0 changes nothing
+    finally:
+        undo()
+
+
+def test_the_m7_wiring_is_the_identity_branch_of_m1_in_the_source():
+    source = (KIT / "death_closes_project_controls.py").read_text(encoding="utf-8")
+    assert 'if mutant in ("m1", "m7"):' in source and 'elif mutant in ("m0", "m7")' not in source and 'elif mutant == "m0":' in source

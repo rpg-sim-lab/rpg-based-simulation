@@ -6,7 +6,11 @@ ONE cell per process (cwd = the frozen tree, PYTHONPATH = that tree, recording O
 
 Per applied tick it records (see ``death_closes_project_logic``): D1-D5 counts and the first rows, the LIVING PROJECTION digest (the canonical state with every dead body's ``strategic`` dropped) and the LIVING EVENT STREAM digest (the update's FULL typed world
 event stream: the masked category set is empty in the run), both per tick, for the D7 comparison. ``--dump-tick N`` additionally writes that tick's living projection (canonical JSON) beside the output, for locating a divergence.
-Usage: python death_closes_project_spy.py <world> <seed> <ticks> <out.json> --mode plain|spy [--plain-hash <hex>] [--phase-rows on|off] [--dump-tick N]
+RUN ROOT: with recording OFF the kernel builds its default ``ReplayManager`` with the hard-coded relative run_dir ``data/runs/<run_id>`` (kernel.py:373), whose sink writes ``manifest.json`` INTO the frozen tree. This spy wraps
+``ReplayManager.__init__`` (kit side, no src change; the same pattern as ``person_attack_spy.inject_no_replay_if_recording_off``) to rewrite exactly that relative path to ``<--run-root>/<run_id>``, in plain and spy mode alike.
+The path is only where files go (never state), and the cell is VOID unless exactly that redirect happened (``replay_dirs_redirected`` >= 1).
+redirection: ``StrategicRedirectionSystem`` is never called in the pipeline (its logic was hoisted into ``StrategicIntelligenceSystem``, intelligence.py:518), so its row is NOT MEASURED, not wrapped.
+Usage: python death_closes_project_spy.py <world> <seed> <ticks> <out.json> --mode plain|spy [--plain-hash <hex>] [--phase-rows on|off] [--dump-tick N] [--run-root <dir, default <out dir>/runs>]
 """
 from __future__ import annotations
 
@@ -38,6 +42,35 @@ def load_sibling(name: str) -> Any:
     return module
 
 
+REDIRECTION_NOT_MEASURED = {"status": "NOT MEASURED", "reason": "StrategicRedirectionSystem.enforce is never called by the pipeline (no phase names it; its logic was hoisted into StrategicIntelligenceSystem, intelligence.py:518)"}
+
+
+def redirect_run_root(run_root: str) -> Dict[str, int]:
+    """Wrap ``ReplayManager.__init__`` so a relative ``data/runs/<id>`` run_dir becomes ``<run_root>/<id>``; any other run_dir is left alone. Returns the counter ``{"redirected": n, "other": m}``."""
+    from src.engine import replay_manager as module
+
+    original = module.ReplayManager.__init__
+    counts = {"redirected": 0, "other": 0}
+    root = Path(run_root).resolve()
+
+    def init(self, *args, **kwargs):
+        given = kwargs["run_dir"] if "run_dir" in kwargs else (args[0] if args else None)
+        path = Path(given) if given is not None else None
+        if path is not None and not path.is_absolute() and path.parent == Path("data") / "runs":
+            moved = root / path.name
+            counts["redirected"] += 1
+            if "run_dir" in kwargs:
+                kwargs["run_dir"] = moved
+            else:
+                args = (moved,) + tuple(args[1:])
+        else:
+            counts["other"] += 1
+        return original(self, *args, **kwargs)
+
+    module.ReplayManager.__init__ = init
+    return counts
+
+
 class DeathSpy:
     def __init__(self, hasher: Any, dump_tick: Optional[int] = None, dead_key: str = "death_record") -> None:
         self.logic = load_sibling("death_closes_project_logic")
@@ -47,7 +80,7 @@ class DeathSpy:
         self.dump: Optional[Dict[str, Any]] = None
         self.living_by_tick: Dict[int, str] = {}
         self.events_by_tick: Dict[int, str] = {}
-        self.phase_rows: Dict[str, Dict[str, Any]] = {}
+        self.phase_rows: Dict[str, Dict[str, Any]] = {"redirection": dict(REDIRECTION_NOT_MEASURED)}
         self.spy_exceptions: List[str] = []
         self._patched: List[tuple] = []
         self.apply_calls = 0
@@ -139,6 +172,7 @@ def main(argv: List[str]) -> int:
     phase_rows = (argv[argv.index("--phase-rows") + 1] if "--phase-rows" in argv else "on") == "on"
     dump_tick = int(argv[argv.index("--dump-tick") + 1]) if "--dump-tick" in argv else None
     world, seed, ticks, out = argv[0], int(argv[1]), int(argv[2]), argv[3]
+    run_root = argv[argv.index("--run-root") + 1] if "--run-root" in argv else str(Path(out).parent / "runs")
     if mode not in ("plain", "spy"):
         raise ValueError(f"--mode must be plain or spy, not {mode!r}")
     if ObservabilityConfig.get_mode() != ObservabilityMode.OFF:
@@ -147,6 +181,7 @@ def main(argv: List[str]) -> int:
     errors = pa.LoggingErrors()
     logging.getLogger().addHandler(errors)
     pa.inject_no_replay_if_recording_off()
+    redirected = redirect_run_root(run_root)
     arm_child = load_sibling("arm_child")
     pinned_runner = arm_child._pinned_runner()
     run_id = f"death_closes_project_{mode}_{world}_{seed}_{os.getpid()}"
@@ -154,7 +189,7 @@ def main(argv: List[str]) -> int:
     forced = {"audit_mode": getattr(kernel, "_audit_mode", None), "no_frame_pacing": getattr(kernel, "_no_frame_pacing", None), "no_replay": getattr(kernel, "_no_replay", None)}
     if forced["audit_mode"] is not True or forced["no_frame_pacing"] is not True:
         raise RuntimeError(f"build_kernel did not force audit_mode and no_frame_pacing: {forced}")
-    manifest_path = Path("data") / "runs" / run_id / "run_manifest.json"
+    manifest_path = Path(run_root) / run_id / "run_manifest.json"
     evidence = pinned_runner.read_manifest(manifest_path) if manifest_path.exists() else {"run_conditions": arm_child._derived_conditions(kernel)}
     pinned = pinned_runner.require_pinned(evidence, what="death_closes_project_spy build_kernel")
     spy: Optional[DeathSpy] = None
@@ -164,8 +199,7 @@ def main(argv: List[str]) -> int:
         phases: Dict[str, Any] = {}
         if phase_rows:
             from src.engine.pipeline_phases.capacity_enforcement import CapacityEnforcementPhase
-            from src.systems.strategic_systems.redirection import StrategicRedirectionSystem
-            phases = {"capacity_enforcement": CapacityEnforcementPhase, "redirection": StrategicRedirectionSystem}
+            phases = {"capacity_enforcement": CapacityEnforcementPhase}
         for label, cls in phases.items():
             if "enforce" not in cls.__dict__:
                 findings.append(f"tree's {label} has no enforce")
@@ -186,7 +220,7 @@ def main(argv: List[str]) -> int:
     kernel.shutdown()
     final_hash = CanonicalStateHasher.get_hash(final_state)
     doc: Dict[str, Any] = {"world": world, "seed": seed, "ticks": ticks, "mode": mode, "hashseed": os.environ.get("PYTHONHASHSEED"), "runner": pinned.verdict, "forced_flags": forced, "final_hash": final_hash,
-                           "final_tick": final_state.tick, "logging_errors": errors.rows, "fatal": fatal, "findings": findings, "phase_rows_on": phase_rows}
+                           "final_tick": final_state.tick, "logging_errors": errors.rows, "fatal": fatal, "findings": findings, "phase_rows_on": phase_rows, "run_root": str(Path(run_root).resolve()), "replay_dirs_redirected": redirected["redirected"], "replay_dirs_other": redirected["other"]}
     code = 0
     if spy is not None:
         doc.update(spy.report())
