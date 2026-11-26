@@ -29,6 +29,8 @@ This document records the current technical limitations, unsupported features, a
 - **Location-Only Leads**: Strategic leads are restricted to coordinate-based locations. Concept or person-based leads are not yet modeled in the supported slice.
 - **Unchecked Sense Profiles On Mid-Run Spawns**: bodies spawned mid-run by `EntityGenerator` (used by lairs, bosses and calamities) aren't yet checked for a usable sense profile at build. A body of a species without one isn't refused (PERC-02a, ch. 04); instead it perceives nothing, and the gate logs ERROR (`TCK-20261118-MID-RUN-SPAWNED-BODIES-SKIP-THE-SENSES-CHECK`). Campaign episode, scenario-runner and checkpoint-restored bodies are checked since #968.
 
+- **A Dead Body's Quest Project Ends While Its Quest Stays Open**: when a subject dies, every live project it holds ends `ABANDONED` with `ended_by` `ProjectEnd.DEATH` (divergence 2.226, STRAT-357), but a quest project's own `quest_status` is left as it was; the quest domain does not learn of the death through this path. No measured case: three gate worlds, s42, 5000 t, had 0 such quests still open (TCK-20261031-DEATH-CLOSES-NO-PROJECT). A passive HP death is also classified one tick after its `alive=False`, so its project end lags that tick (0 lag rows in the same run).
+
 ### 1.4 Commerce Limitations
 
 - **Reputation-based shop discounts** — Previously unsupported. **Now implemented** as of TCK-20260619-E33D-REP-DISCOUNTS. Formula and mechanics: see `docs/mechanics/03_economic_laws.md §4.1`. Faction-scoped discounts remain out of scope (no per-faction reputation dict on `SocialComponent` — DEV-001).

@@ -15,7 +15,7 @@ tags: []
 Death closes no project: a dead entity keeps ACTIVE and SUSPENDED project records
 
 ## Status
-INPROGRESS (dispatched by rpg-planner 2026-11-25; rulings a-d on #715 relay; code written, tests held for the host)
+INPROGRESS (dispatched by rpg-planner 2026-11-25; rulings a-d on #715 relay; own-job run executed and read WORKS 2026-11-26; unit tests and the domain gap held for the host)
 
 ## Tier
 standard
@@ -66,7 +66,9 @@ Phase 2: fix shape after rpg-designer reads Phase 1.
 Rulings (rpg-planner, 2026-11-25): (a) ABANDONED, `ProjectEnd.DEATH`; (b) staged in `LifecycleSystem.resolve_lifecycle`'s death block via a typed StrategicUpdate; the 1-tick passive-death lag is a limit line; (c) `quest_status` left alone (limit line; follow-up candidate, no ticket yet); (d) `current_project_id_set=""` in the same update. Divergence 2.226 (lane C's births branch takes 2.225). Phase 1 item 1 (readers) is in staging investigation.md; items 2 and 3 ride the measured step.
 
 ## Test Summary
-Written, NOT RUN (the host is held by another lane): tests/unit/strategic/test_death_ends_live_projects.py, tests/unit/strategic/test_project_end_record.py (enum-set pin gains DEATH).
+- EXECUTED (own-job run, S9 #715 7185997232; rpg-designer read WORKS, recorded as #715 7187444028): kit 18f7b53c7 (SHA256SUMS 05d688a9), BASE main 4af5ef2a3 against FIX f5a520daf, 3 gate worlds, s42, 5000 t; summary sha256 e83078e8. D1-D7 PASS in every cell. Dead bodies holding a live or current project: base 32 / 30 / 15 at death, fix 0 at every tick; DEATH ends 61 / 68 / 26 (ACTIVE 35 / 33 / 14, SUSPENDED 26 / 35 / 12), equal to the extra ended transitions; living state and event stream equal to base at every tick; quest-open-after-death 0; other ended_by counts identical. NOT MEASURED: redirection (never called by the pipeline), SimQ project_abandoned (recording off).
+- WRITTEN, NOT RUN (the host is held by another lane): tests/unit/strategic/test_death_ends_live_projects.py, tests/unit/strategic/test_project_end_record.py (enum-set pin gains DEATH). The domain gap (tests/unit, tests/architecture, tests/tools, code-health, mypy) runs on the planner's GO.
+- Kit unit tests (tests/tools/test_death_closes_project_kit.py): 30 passed, 1 skipped on the kit branch; the skip is the m7 wiring check, which needs the FIX tree.
 
 ## Files Changed
 
