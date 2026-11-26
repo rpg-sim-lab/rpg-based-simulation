@@ -3,7 +3,7 @@
 Usage: python death_closes_project_summary.py [--smoke] <BASE_OUT> <FIX_OUT>   (each dir holds <world>_s<seed>_t<ticks>_{plain,spy}.json; BASE has the spy only, FIX the spy and its plain twin)
 Per cell: D1 dead_with_live == 0 every tick (FIX); D2 DEATH ends are ABANDONED at the body's death tick on a dead body (FIX); D3 records kept (FIX); D4 non-vacuity (BASE: dead_with_live sum > 0 and >= 5 dead bodies with a live
 project at death; a thin cell is D4 NOT MEASURED, its D1 NOT MEASURED and the world is widened to s43-46: exit 5, not a failure); D5 lag rows resolved by T+1 (FIX); D6 FIX spied hash == FIX plain hash; D7 neutrality: the LIVING PROJECTION digest (the masked strategic hash) equal at every tick, the FULL event
-stream digest equal (no category is masked in the run: quest events stay visible, 2.226 leaves quest_status alone), and the state-diff ended count (DEATH ends == FIX minus BASE ended transitions); a cell with no death that held a live or current project must be FULL-hash equal. A D7 divergence is a STOP (exit 4) to the designer; it is never attributed here.
+stream digest equal (no category is masked in the run: quest events stay visible, 2.226 leaves quest_status alone), (the state-diff ended count, DEATH ends vs FIX minus BASE ended transitions, sits in the D7 dict and is REPORT-ONLY: on BASE another writer can end a dead body's project later, so a mismatch is printed, never a status); a cell with no death that held a live or current project must be FULL-hash equal. A D7 divergence is a STOP (exit 4) to the designer; it is never attributed here.
 REPORTED, never bars: the ACTIVE/SUSPENDED split, quest-open rows, the typed ABANDONED-by-ended_by figure (SimQ project_abandoned is NOT MEASURED: recording is off),
 and the capacity_enforcement / redirection writes on a dead-or-dying body that holds a live or current project. Exit: 0 no bar failed and nothing to widen, 2 a bar failed or a cell is void, 4 a D7 STOP, 5 no bar failed but a thin cell needs widening to s43-46. ``--smoke`` only checks that the pipeline observed the run.
 """
@@ -80,9 +80,6 @@ def cell_summary(base_dir: Path, fix_dir: Path, world: str, seed: int, ticks: in
     elif no_such_death and not full_equal:
         d7["status"] = FAIL
         d7["note"] = "a cell with no such death must be FULL-hash equal"
-    elif death_ends != extra:
-        d7["status"] = FAIL
-        d7["note"] = "the DEATH ends must equal the extra ended transitions (FIX minus BASE)"
     else:
         d7["status"] = PASS
     bars["D7"] = d7
@@ -120,6 +117,9 @@ def main(argv: List[str]) -> int:
     for c in cells:
         marks = " ".join(f"{k}={b['status']}" for k, b in sorted(c["bars"].items()))
         print(f"{c['cell']}: {marks}{' WIDEN to s43-46' if c['widen'] else ''} problems={c['problems']}")
+        ended = c["bars"].get("D7", {}).get("ended_count")
+        if ended and not ended["equal"]:
+            print(f"    ended_count MISMATCH (report-only): death_ends={ended['death_ends']} extra_ended_transitions_fix_minus_base={ended['extra_ended_transitions_fix_minus_base']}")
         if not smoke and c["reported"]:
             print(f"    reported: {json.dumps(c['reported'], sort_keys=True, default=str)}")
     return verdict(cells)

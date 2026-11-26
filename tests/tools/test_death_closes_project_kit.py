@@ -195,10 +195,13 @@ def test_a_remaining_dead_with_live_row_fails_d1_even_on_a_thin_cell(tmp_path):
     assert summary.verdict([cell]) == 2                                                      # a violation outranks the widening
 
 
-def test_a_death_end_count_that_differs_from_the_extra_ended_transitions_fails_d7(tmp_path):
-    base_dir, fix_dir = write_cells(tmp_path, fix_over={"ends_total": 30})                    # 20 DEATH ends against 27 extra transitions
+def test_a_death_end_count_that_differs_from_the_extra_ended_transitions_is_reported_and_never_a_status(tmp_path, capsys):
+    base_dir, fix_dir = write_cells(tmp_path, fix_over={"ends_total": 30})                    # 20 DEATH ends against 27 extra transitions (another writer can end a dead body's project on BASE)
     cell = summary.cell_summary(base_dir, fix_dir, "crowded_frontier", 42, 5000)
-    assert cell["bars"]["D7"]["status"] == "FAIL" and cell["bars"]["D7"]["ended_count"] == {"death_ends": 20, "extra_ended_transitions_fix_minus_base": 27, "equal": False}
+    assert cell["bars"]["D7"]["ended_count"] == {"death_ends": 20, "extra_ended_transitions_fix_minus_base": 27, "equal": False}
+    assert cell["bars"]["D7"]["status"] == "PASS" and cell["reported"]["death_ends_equal_extra"] is False
+    assert summary.main([str(base_dir), str(fix_dir)]) == 0
+    assert "ended_count MISMATCH (report-only): death_ends=20 extra_ended_transitions_fix_minus_base=27" in capsys.readouterr().out
 
 
 def test_a_living_projection_divergence_is_a_stop_with_its_first_tick(tmp_path):
