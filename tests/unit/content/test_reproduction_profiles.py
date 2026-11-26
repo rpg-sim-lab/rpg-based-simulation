@@ -211,12 +211,13 @@ def test_no_shipped_population_without_an_archetype_spawns_monsters_of_a_breedin
     assert seen > 0
 
 
-def test_the_assembly_refuses_an_archetype_less_population_that_spawns_monsters_of_a_breeding_species_and_allows_the_rest():
-    from src.worldassembly.resolver import CompileProfileResolver
-    repo = CatalogRepository("data/content")
-    repo.load_all()
-    resolver = CompileProfileResolver(repo)
+def test_the_spawn_refuses_an_archetype_less_population_that_spawns_monsters_of_a_breeding_species_and_allows_the_rest():
+    # SETUP: the refusal moved from the resolver to the legacy spawn path (it needs only the profile's legacy role and species); the assertions are unchanged in meaning.
+    from src.core.enums import EntityRole
+    from src.worldassembly.entity_spawner import WorldEntitySpawner
+    from src.worldassembly.models import ResolvedEntityProfile
+    profile = lambda role, species: ResolvedEntityProfile(legacy_role=int(role), legacy_faction=0, hp=1, max_hp=1, atk=1, **{"def": 1}, attack_range=1, readiness=1.0, species_id=species)
     with pytest.raises(ReproductionProfileError, match="newborn_role"):
-        resolver._refuse_legacy_monster_breeder("pop_x", "monster", "wolf")
-    resolver._refuse_legacy_monster_breeder("pop_x", "worker", "wolf")  # not MONSTER: the no-archetype default (CITIZEN) is today's outcome
-    resolver._refuse_legacy_monster_breeder("pop_x", "monster", None)  # no species named: nothing breeds
+        WorldEntitySpawner._refuse_monster_breeder(1, profile(EntityRole.MONSTER, "wolf"), "pop_x")
+    WorldEntitySpawner._refuse_monster_breeder(1, profile(EntityRole.WORKER, "wolf"), "pop_x")  # not MONSTER: the no-archetype default (CITIZEN) is today's outcome
+    WorldEntitySpawner._refuse_monster_breeder(1, profile(EntityRole.MONSTER, "undead"), "pop_x")  # a species that does not breed
