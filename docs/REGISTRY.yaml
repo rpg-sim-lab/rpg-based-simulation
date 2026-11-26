@@ -7996,6 +7996,18 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261126-RENAME-THE-TEST-PHASE-N-FILES-TO-NAMES-THAT-SAY-WHAT-THEY-TEST.md
+  ticket_id: TCK-20261126-RENAME-THE-TEST-PHASE-N-FILES-TO-NAMES-THAT-SAY-WHAT-THEY-TEST
+  title: Rename the `test_phase<N>_*` files (and the other bare-code file names) to
+    names that say what they test
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-26'
+  related_code_areas:
+  - tests/ and tools/ (file names only); tests/tools/test_file_names_carry_meaning.py
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261125-A-BODY-THAT-CANNOT-AFFORD-ITS-NEXT-MEAL-STARTS-EARNING-WHEN-ITS-COIN-DROPS-BELOW-A-MEAL-PRICE.md
   ticket_id: TCK-20261125-A-BODY-THAT-CANNOT-AFFORD-ITS-NEXT-MEAL-STARTS-EARNING-WHEN-ITS-COIN-DROPS-BELOW-A-MEAL-PRICE
   title: A body that cannot afford its next meal starts earning when its coin drops

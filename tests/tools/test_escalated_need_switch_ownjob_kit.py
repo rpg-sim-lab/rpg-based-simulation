@@ -1,4 +1,4 @@
-"""Unit controls for the K3 own-job kit (tools/rpg_measure/k3_switch_*): FIRES = rule True AND ordinary False, TAKEN = rule True, the pass-through, the guard list, the summary bars, the layout and the launcher.
+"""Unit controls for the K3 own-job kit (tools/rpg_measure/escalated_need_switch_ownjob_*): FIRES = rule True AND ordinary False, TAKEN = rule True, the pass-through, the guard list, the summary bars, the layout and the launcher.
 No simulation is run here (rpg-designer-k3-plan-rulings.md 972600b6...)."""
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[2]
 KIT = REPO / "tools" / "rpg_measure"
-KIT_FILES = ("arm_child.py", "person_attack_spy.py", "person_attack_summary.py", "k3_switch_spy.py", "k3_switch_summary.py", "k3_switch_launch.sh")
+KIT_FILES = ("arm_child.py", "person_attack_spy.py", "person_attack_summary.py", "escalated_need_switch_ownjob_spy.py", "escalated_need_switch_ownjob_summary.py", "escalated_need_switch_ownjob_launch.sh")
 
 
 def load_from(path, key):
@@ -26,8 +26,8 @@ def load_from(path, key):
     return module
 
 
-spy_mod = load_from(KIT / "k3_switch_spy.py", "_t_k3sw_spy")
-summary = load_from(KIT / "k3_switch_summary.py", "_t_k3sw_summary")
+spy_mod = load_from(KIT / "escalated_need_switch_ownjob_spy.py", "_t_k3sw_spy")
+summary = load_from(KIT / "escalated_need_switch_ownjob_summary.py", "_t_k3sw_summary")
 
 
 def project(pid="p", kind="town_return", score=50.0, lock=0, status="ACTIVE"):
@@ -177,13 +177,13 @@ def build_kit_layout(root, with_runner=True):
 
 def test_the_spy_resolves_the_pinned_runner_from_the_tool_checkout_layout(tmp_path):
     kit = build_kit_layout(tmp_path / "kit")
-    spy = load_from(kit / "tools" / "rpg_measure" / "k3_switch_spy.py", "_layout_k3sw_spy")
+    spy = load_from(kit / "tools" / "rpg_measure" / "escalated_need_switch_ownjob_spy.py", "_layout_k3sw_spy")
     assert hasattr(spy.load_sibling("arm_child")._pinned_runner(), "require_pinned")
 
 
 def _launch(kit, tmp_path, **env):
     full = {**os.environ, "ARM": "fix", "KIT": str(kit), "OUT": str(tmp_path / "out"), "TREE": str(tmp_path / "tree"), "LAUNCH_DRY_RUN": "1", **env}
-    return subprocess.run(["bash", str(kit / "tools" / "rpg_measure" / "k3_switch_launch.sh")], env=full, capture_output=True, text=True, timeout=60)
+    return subprocess.run(["bash", str(kit / "tools" / "rpg_measure" / "escalated_need_switch_ownjob_launch.sh")], env=full, capture_output=True, text=True, timeout=60)
 
 
 def test_the_launcher_prechecks_dry_runs_four_cells_per_arm_and_refuses_a_used_or_bad_arm(tmp_path):

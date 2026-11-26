@@ -1,6 +1,6 @@
-"""Summarize the K3 own-job cells (reads the JSONs of ``k3_switch_spy``; the designer's fixed counts, rpg-designer-k3-plan-rulings.md 972600b6...).
+"""Summarize the K3 own-job cells (reads the JSONs of ``escalated_need_switch_ownjob_spy``; the designer's fixed counts, rpg-designer-k3-plan-rulings.md 972600b6...).
 
-Usage: python k3_switch_summary.py <OUT dir> <base OUT dir with the base-head plain hashes: <cell>_base_plain.json>  -> prints the table, writes <OUT>/k3_switch_summary.json. Exit 0 only when every cell is valid and no bar fails.
+Usage: python escalated_need_switch_ownjob_summary.py <OUT dir> <base OUT dir with the base-head plain hashes: <cell>_base_plain.json>  -> prints the table, writes <OUT>/escalated_need_switch_ownjob_summary.json. Exit 0 only when every cell is valid and no bar fails.
 VOID: spy final_hash != plain final_hash, a fatal/finding/spy exception/logging error. (i) FIRES and TAKEN by need and current kind; (iii) TAKEN under a present threat must be 0 (FAIL otherwise);
 (iv) NEUTRALITY: a cell with TAKEN = 0 must hash EQUAL to the base head's plain hash (STOP otherwise); (v) report-only: ticks current after a fire, the suspended project's fate, hunger >= 95 / sleep_debt >= 98 subjects, the guard list.
 """
@@ -45,7 +45,7 @@ def cell_summary(out: Path, base: Path, world: str, seed: int, ticks: int) -> Di
 def main(argv: List[str]) -> int:
     out, base = Path(argv[0]), Path(argv[1])
     cells = [cell_summary(out, base, *c) for c in CELLS if load(out, *c, "plain") or load(out, *c, "spy")]
-    (out / "k3_switch_summary.json").write_text(json.dumps({"cells": cells}, sort_keys=True, indent=1, default=str), encoding="utf-8")
+    (out / "escalated_need_switch_ownjob_summary.json").write_text(json.dumps({"cells": cells}, sort_keys=True, indent=1, default=str), encoding="utf-8")
     bad = False
     for c in cells:
         failed = [k for k, b in c["bars"].items() if not b["ok"]]

@@ -1,4 +1,4 @@
-"""Unit controls for the K3 Phase 0 trace kit (tools/rpg_measure/k3_phase0_*): planted positives and negatives for every class the designer fixed (D1, D2, D3, the HARD flag), the pass-through, the summary rules, the layout, the launcher and a JSON round trip of
+"""Unit controls for the K3 Phase 0 trace kit (tools/rpg_measure/need_project_cleared_trace_*): planted positives and negatives for every class the designer fixed (D1, D2, D3, the HARD flag), the pass-through, the summary rules, the layout, the launcher and a JSON round trip of
 the exact report. No simulation is run here (rpg-designer-k3-plan-rulings.md 972600b672863882...)."""
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[2]
 KIT = REPO / "tools" / "rpg_measure"
-KIT_FILES = ("arm_child.py", "person_attack_spy.py", "person_attack_summary.py", "k3_phase0_spy.py", "k3_phase0_summary.py", "k3_phase0_launch.sh")
+KIT_FILES = ("arm_child.py", "person_attack_spy.py", "person_attack_summary.py", "need_project_cleared_trace_spy.py", "need_project_cleared_trace_summary.py", "need_project_cleared_trace_launch.sh")
 
 
 def load_from(path, key):
@@ -27,8 +27,8 @@ def load_from(path, key):
     return module
 
 
-spy_mod = load_from(KIT / "k3_phase0_spy.py", "_t_k3p0_spy")
-summary = load_from(KIT / "k3_phase0_summary.py", "_t_k3p0_summary")
+spy_mod = load_from(KIT / "need_project_cleared_trace_spy.py", "_t_k3p0_spy")
+summary = load_from(KIT / "need_project_cleared_trace_summary.py", "_t_k3p0_summary")
 
 
 def funcs(threat=False):
@@ -240,13 +240,13 @@ def build_kit_layout(root, with_pinned_runner=True):
 
 def test_the_spy_resolves_the_pinned_runner_from_the_tool_checkout_layout(tmp_path):
     kit = build_kit_layout(tmp_path / "kit")
-    spy = load_from(kit / "tools" / "rpg_measure" / "k3_phase0_spy.py", "_layout_k3p0_spy")
+    spy = load_from(kit / "tools" / "rpg_measure" / "need_project_cleared_trace_spy.py", "_layout_k3p0_spy")
     assert hasattr(spy, "main") and hasattr(spy.load_sibling("arm_child")._pinned_runner(), "require_pinned")
 
 
 def _launch(kit, tmp_path, **env):
     full = {**os.environ, "KIT": str(kit), "OUT": str(tmp_path / "out"), "TREE": str(tmp_path / "tree"), "LAUNCH_DRY_RUN": "1", **env}
-    return subprocess.run(["bash", str(kit / "tools" / "rpg_measure" / "k3_phase0_launch.sh")], env=full, capture_output=True, text=True, timeout=60)
+    return subprocess.run(["bash", str(kit / "tools" / "rpg_measure" / "need_project_cleared_trace_launch.sh")], env=full, capture_output=True, text=True, timeout=60)
 
 
 def test_the_launcher_prechecks_the_pinned_runner_refuses_a_used_tree_and_dry_runs_the_one_cell(tmp_path):
@@ -256,5 +256,5 @@ def test_the_launcher_prechecks_the_pinned_runner_refuses_a_used_tree_and_dry_ru
     kit = build_kit_layout(tmp_path / "kit2")
     done = _launch(kit, tmp_path)
     lines = [l for l in done.stdout.splitlines() if l.startswith("CELL ")]
-    assert done.returncode == 0 and len(lines) == 1 and "urban_political s42 2400t" in lines[0] and "2a6e74f04cd735a1" in lines[0] and f"{kit}/tools/rpg_measure/k3_phase0_spy.py" in lines[0]
+    assert done.returncode == 0 and len(lines) == 1 and "urban_political s42 2400t" in lines[0] and "2a6e74f04cd735a1" in lines[0] and f"{kit}/tools/rpg_measure/need_project_cleared_trace_spy.py" in lines[0]
     assert _launch(kit, tmp_path, TREE=str(tmp_path / "k2fix_tree_e39")).returncode == 18

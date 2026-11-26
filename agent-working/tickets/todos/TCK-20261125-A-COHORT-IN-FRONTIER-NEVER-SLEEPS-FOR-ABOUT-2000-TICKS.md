@@ -30,6 +30,7 @@ P2
 Filed by rpg-planner on 2026-11-25 as a BACKLOG item for the cognition-rework backlog. It is NOT HARD under roadmap §12.5 (rpg-designer's classification). Owner ruling #715 7165253893: "Merge K2 on this evidence". The K2 fix PR carries this as its BALANCE line and names this ticket.
 
 Evidence (rpg-designer, drafts/rpg-designer-k2fix-frontier-view.md, sha256 002091941ae74730…; executed from main's intact own-job v3 spy JSON, /mnt/data2/rpg-measure/k2fix_ownjob_v3_out/main/):
+- NAMES (rename of the measurement kits, owner direction #715 7181423761): the inn-refusal own-job spy is now tools/rpg_measure/inn_refusal_blocker_ownjob_* (was k2fix_ownjob_*); the evidence directories under /mnt/data2/rpg-measure (k2fix_ownjob_v3_out and the kit dirs) keep their old names.
 - On main d084b9248, frontier_living_world s42, 5,000 t: 25 subjects reach sleep_debt ≥ 98. Of those, 21 reach it at the SAME tick, t1961 (0.05 × 1961 from 0).
   - They never slept, were never lodged, and had gold 0.
   - They held stabilize, town_return or combat_engage projects.

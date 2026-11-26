@@ -1,6 +1,6 @@
-"""Summarize the K2 fix own-job cells (reads the JSONs of ``k2fix_ownjob_spy``; evidence plus the designer's fixed verdict rules, nothing else).
+"""Summarize the K2 fix own-job cells (reads the JSONs of ``inn_refusal_blocker_ownjob_spy``; evidence plus the designer's fixed verdict rules, nothing else).
 
-Usage: python k2fix_ownjob_summary.py <OUT dir>  ->  prints the table and writes <OUT>/k2fix_ownjob_summary.json. Exit 0 only when every cell is valid and no STOP/FAIL line applies.
+Usage: python inn_refusal_blocker_ownjob_summary.py <OUT dir>  ->  prints the table and writes <OUT>/inn_refusal_blocker_ownjob_summary.json. Exit 0 only when every cell is valid and no STOP/FAIL line applies.
 Layout: <OUT>/<arm>/<world>_s<seed>_t<ticks>_{plain,spy}.json for arm in main, fix.
 Rules (rpg-designer-k2-fix-plan-rulings.md a73bc655d487395b): A(i) WAY_CLOSED ends from the purse half; A(ii) report-only; B(i) blockers filed; B(ii) FALSE FIRES must be 0; B(iii) STILL LOOPING must be 0;
 (iv) NEUTRALITY: in a cell where A(i) (purse half) = 0 AND B(i) = 0 AND other_unresolved = 0 the fix's final hash must EQUAL main's, else STOP (with any other_unresolved the cell is NOT MEASURED for A, never neutral); a cell is VOID unless the spy final_hash equals its plain twin's on both arms.
@@ -78,7 +78,7 @@ def summarize(out: Path) -> Dict[str, Any]:
 def main(argv: List[str]) -> int:
     out = Path(argv[0])
     doc = summarize(out)
-    (out / "k2fix_ownjob_summary.json").write_text(json.dumps(doc, sort_keys=True, indent=1, default=str), encoding="utf-8")
+    (out / "inn_refusal_blocker_ownjob_summary.json").write_text(json.dumps(doc, sort_keys=True, indent=1, default=str), encoding="utf-8")
     for c in doc["cells"]:
         print(f"{c['cell']}: valid={c['valid']} A(i) purse_half={c['A_i_purse_half']} unresolved={c['A_i_unresolved']} (bed_half fix={c['A_i_bed_half_fix']} main={c['A_i_bed_half_main']}) B(i)={c['B_i']} {c['B_i_by_action']} "
               f"false_fires={c['B_ii_false_fires']} still_looping={c['B_iii_still_looping']} sleep98 main={c['sleep_debt_98_main']} fix={c['sleep_debt_98_fix']} hash_equal={c['hash_equal']} problems={c['problems']}")

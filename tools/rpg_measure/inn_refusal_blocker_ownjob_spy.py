@@ -17,7 +17,7 @@ B(iii)  STILL LOOPING (must be 0): the same (subject, action, building) EXECUTED
         (post-apply payload action REST, target b, outcome SUCCESS, or lodged_in == b: the bed was paid once) is not an undelivered execution. The router covers EAT and REST only: a filing for any other action makes B(iii)
         "not readable for <action>", never 0.
 (vi)    report-only: typed refusals appended per action and reason, blockers removed (quiet spell).
-Usage: python k2fix_ownjob_spy.py <world> <seed> <ticks> <out.json> --mode plain|spy [--plain-hash <hex>]
+Usage: python inn_refusal_blocker_ownjob_spy.py <world> <seed> <ticks> <out.json> --mode plain|spy [--plain-hash <hex>]
 """
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ SOURCE_KINDS = {"EAT": "TOWN_SERVICE", "REST": "TOWN_SERVICE"}
 
 def load_sibling(name: str) -> Any:
     """A kit module loaded by file path from THIS file's directory (never through the frozen tree on PYTHONPATH)."""
-    key = f"_k2fix_ownjob_{name}"
+    key = f"_inn_refusal_blocker_ownjob_{name}"
     if key in sys.modules:
         return sys.modules[key]
     spec = importlib.util.spec_from_file_location(key, Path(__file__).resolve().with_name(f"{name}.py"))
@@ -380,20 +380,20 @@ def main(argv: List[str]) -> int:
     if mode not in ("plain", "spy"):
         raise ValueError(f"--mode must be plain or spy, not {mode!r}")
     if ObservabilityConfig.get_mode() != ObservabilityMode.OFF:
-        raise RuntimeError("k2fix_ownjob_spy runs only with observability mode OFF (SIM_OBS_MODE=OFF)")
+        raise RuntimeError("inn_refusal_blocker_ownjob_spy runs only with observability mode OFF (SIM_OBS_MODE=OFF)")
     pa = load_sibling("person_attack_spy")
     errors = pa.LoggingErrors()
     logging.getLogger().addHandler(errors)
     pa.inject_no_replay_if_recording_off()
     arm_child = load_sibling("arm_child")
     pinned_runner = arm_child._pinned_runner()
-    kernel = build_kernel(world, seed, f"k2fix_ownjob_{mode}_{world}_{seed}_{os.getpid()}")
+    kernel = build_kernel(world, seed, f"inn_refusal_blocker_ownjob_{mode}_{world}_{seed}_{os.getpid()}")
     forced = {"audit_mode": getattr(kernel, "_audit_mode", None), "no_frame_pacing": getattr(kernel, "_no_frame_pacing", None), "no_replay": getattr(kernel, "_no_replay", None)}
     if forced["audit_mode"] is not True or forced["no_frame_pacing"] is not True:
         raise RuntimeError(f"this tree's build_kernel did not force audit_mode and no_frame_pacing: {forced}")
-    manifest_path = Path("data") / "runs" / f"k2fix_ownjob_{mode}_{world}_{seed}_{os.getpid()}" / "run_manifest.json"
+    manifest_path = Path("data") / "runs" / f"inn_refusal_blocker_ownjob_{mode}_{world}_{seed}_{os.getpid()}" / "run_manifest.json"
     evidence = pinned_runner.read_manifest(manifest_path) if manifest_path.exists() else {"run_conditions": arm_child._derived_conditions(kernel)}
-    pinned = pinned_runner.require_pinned(evidence, what="k2fix_ownjob_spy build_kernel")
+    pinned = pinned_runner.require_pinned(evidence, what="inn_refusal_blocker_ownjob_spy build_kernel")
     spy: Optional[OwnJobSpy] = None
     findings: List[str] = []
     if mode == "spy":

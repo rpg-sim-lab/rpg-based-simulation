@@ -1,6 +1,6 @@
 #!/bin/bash
 # NOT RUN by the author. K3 own-job driver (rpg-designer-k3-plan-rulings.md 972600b6...; S9 record on #715 required first).
-# Usage: ARM=base|fix OUT=<new dir on /mnt/data2> TREE=<fresh git-archive tree of the arm's head> KIT=<the kit dir> bash $KIT/tools/rpg_measure/k3_switch_launch.sh   [BASE_OUT=<the base arm's OUT dir>  (ARM=fix only: the summary)]
+# Usage: ARM=base|fix OUT=<new dir on /mnt/data2> TREE=<fresh git-archive tree of the arm's head> KIT=<the kit dir> bash $KIT/tools/rpg_measure/escalated_need_switch_ownjob_launch.sh   [BASE_OUT=<the base arm's OUT dir>  (ARM=fix only: the summary)]
 # KIT LAYOUT: a tool checkout inside the kit dir ($KIT/tools/rpg_measure/{files} and $KIT/tools/test_architecture/pinned_runner.py), SHA256SUMS at $KIT (relative paths).
 # Cells (ONE process at a time, each behind its own host gate): crowded_frontier s42 5000t, frontier_living_world s42 5000t, urban_political s42 5000t, urban_political s42 2400t.
 # ARM=base: the PLAIN twin only, on the base head (e39fe7873) tree: the neutrality references. ARM=fix: per cell the PLAIN twin, then the SPY with the twin's hash (spy hash != plain = VOID rc 3); the summary compares with BASE_OUT.
@@ -18,10 +18,10 @@ run() { # world seed ticks outjson mode [plainhash]
   local tmo; tmo=$($py -c "import math;print(math.ceil($3*0.5)+600)")
   local extra=""; [ -n "${6:-}" ] && extra="--plain-hash $6"
   SIM_OBS_MODE=OFF RPG_OBS_MODE=OFF PYTHONHASHSEED=0 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=$TREE systemd-run --user --scope -q -p MemoryMax=3G -p MemorySwapMax=0 timeout "$tmo" \
-    bash -c "cd $TREE && $py $KIT/tools/rpg_measure/k3_switch_spy.py $1 $2 $3 $4 --mode $5 $extra" > "${4%.json}.log" 2>&1
+    bash -c "cd $TREE && $py $KIT/tools/rpg_measure/escalated_need_switch_ownjob_spy.py $1 $2 $3 $4 --mode $5 $extra" > "${4%.json}.log" 2>&1
 }
 if [ "${LAUNCH_DRY_RUN:-}" = 1 ]; then
-  for c in $CELLS; do IFS=: read w s t <<< "$c"; echo "CELL $ARM $w s$s ${t}t: plain$([ "$ARM" = fix ] && echo ' then spy') (cwd=$TREE PYTHONPATH=$TREE) $py $KIT/tools/rpg_measure/k3_switch_spy.py $w $s $t $OUT/${w}_s${s}_t${t}_{plain,spy}.json --mode {plain,spy}"; done
+  for c in $CELLS; do IFS=: read w s t <<< "$c"; echo "CELL $ARM $w s$s ${t}t: plain$([ "$ARM" = fix ] && echo ' then spy') (cwd=$TREE PYTHONPATH=$TREE) $py $KIT/tools/rpg_measure/escalated_need_switch_ownjob_spy.py $w $s $t $OUT/${w}_s${s}_t${t}_{plain,spy}.json --mode {plain,spy}"; done
   exit 0
 fi
 [ -e "$OUT" ] && { echo "STOP: out dir exists: $OUT"; exit 9; }
@@ -36,4 +36,4 @@ for c in $CELLS; do
   [ "$ARM" = base ] && continue
   gate; run "$w" "$s" "$t" "${b}_spy.json" spy "$full"; rc=$?; echo "$w s$s ${t}t spy rc=$rc"; [ $rc -ne 0 ] && { echo "STOP: spy rc=$rc: 3 hash != plain (VOID), 6 finding, 8 spy exception, 124 timeout"; exit $rc; }
 done
-if [ "$ARM" = fix ]; then $py -I -B "$KIT/tools/rpg_measure/k3_switch_summary.py" "$OUT" "${BASE_OUT:?BASE_OUT is needed for ARM=fix}"; rc=$?; echo "driver_rc=$rc"; exit $rc; fi
+if [ "$ARM" = fix ]; then $py -I -B "$KIT/tools/rpg_measure/escalated_need_switch_ownjob_summary.py" "$OUT" "${BASE_OUT:?BASE_OUT is needed for ARM=fix}"; rc=$?; echo "driver_rc=$rc"; exit $rc; fi

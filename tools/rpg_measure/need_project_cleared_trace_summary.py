@@ -1,6 +1,6 @@
-"""Summarize the K3 Phase 0 cell (reads the JSONs of ``k3_phase0_spy``; evidence plus the designer's fixed rules, nothing else; rpg-designer-k3-plan-rulings.md 972600b672863882...).
+"""Summarize the K3 Phase 0 cell (reads the JSONs of ``need_project_cleared_trace_spy``; evidence plus the designer's fixed rules, nothing else; rpg-designer-k3-plan-rulings.md 972600b672863882...).
 
-Usage: python k3_phase0_summary.py <OUT dir>  ->  prints the class table and writes <OUT>/k3_phase0_summary.json. Exit 0 only when the cell is valid, the baseline hash matches and there is no HARD flag.
+Usage: python need_project_cleared_trace_summary.py <OUT dir>  ->  prints the class table and writes <OUT>/need_project_cleared_trace_summary.json. Exit 0 only when the cell is valid, the baseline hash matches and there is no HARD flag.
 Rules: VOID unless spy final_hash == plain final_hash and there is no exception or finding; BASELINE: the plain final_hash of urban_political s42 2,400 t at the K3 base head must equal 2a6e74f0 (282b25981's) for the 30-loss baseline to carry over, else
 "re-count K3 with kit v6 STAGE=neg first"; classes D1 (lawful end, the need met) leaves K3 (baseline 30 - n(D1)), D2 listed by reason (ruled per reason by the designer), D3 cleared without an end; HARD when a subject has 3+ consecutive D3 escalated decisions at hunger >= 95.
 """
@@ -47,7 +47,7 @@ def summarize(out: Path) -> Dict[str, Any]:
 def main(argv: List[str]) -> int:
     out = Path(argv[0])
     doc = summarize(out)
-    (out / "k3_phase0_summary.json").write_text(json.dumps(doc, sort_keys=True, indent=1, default=str), encoding="utf-8")
+    (out / "need_project_cleared_trace_summary.json").write_text(json.dumps(doc, sort_keys=True, indent=1, default=str), encoding="utf-8")
     print(f"{doc['cell']}: valid={doc['valid']} baseline_ok={doc['baseline_ok']} classes={doc['classes']} d2_by_reason={doc['d2_by_reason']} baseline_after_d1={doc['baseline_after_d1']} problems={doc['problems']}")
     for row in doc["rows"] or []:
         print(f"  subject {row['subject']} t{row['tick']} {row['need']} {row['class']}: project {row['before']['current_project_id']} -> current {row['after']['current_project_id']!r} status {(row['after']['project'] or {}).get('status')} ended_by {(row['after']['project'] or {}).get('ended_by')}")

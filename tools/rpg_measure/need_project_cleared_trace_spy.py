@@ -10,7 +10,7 @@ projects_add_or_update, whether projects_remove names it). The writer phase is "
 CLASSES (fixed by the designer before data): D1 a lawful end: the project ended COMPLETED with the need met (the need's value fell, or a service was delivered) at d+1; D2 a typed end: ended_by is set (or COMPLETED with the need NOT met), listed by
 reason; D3 cleared without an end: current_project_id set to "" while the project is still ACTIVE. Others: ``continues`` (still current, not counted), ``switched_away`` (SUSPENDED and another project current: an ordinary switch, a K3 L1 loss, reported),
 ``other`` (anything else, with the raw fields). HARD flag: a subject with 3 or more CONSECUTIVE escalated decisions that are D3 with hunger >= 95 (a pressing need that cannot stay current).
-Usage: python k3_phase0_spy.py <world> <seed> <ticks> <out.json> --mode plain|spy [--plain-hash <hex>]
+Usage: python need_project_cleared_trace_spy.py <world> <seed> <ticks> <out.json> --mode plain|spy [--plain-hash <hex>]
 """
 from __future__ import annotations
 
@@ -241,21 +241,21 @@ def main(argv: List[str]) -> int:
     if mode not in ("plain", "spy"):
         raise ValueError(f"--mode must be plain or spy, not {mode!r}")
     if ObservabilityConfig.get_mode() != ObservabilityMode.OFF:
-        raise RuntimeError("k3_phase0_spy runs only with observability mode OFF (SIM_OBS_MODE=OFF)")
+        raise RuntimeError("need_project_cleared_trace_spy runs only with observability mode OFF (SIM_OBS_MODE=OFF)")
     pa = load_sibling("person_attack_spy")
     errors = pa.LoggingErrors()
     logging.getLogger().addHandler(errors)
     pa.inject_no_replay_if_recording_off()
     arm_child = load_sibling("arm_child")
     pinned_runner = arm_child._pinned_runner()
-    run_id = f"k3_phase0_{mode}_{world}_{seed}_{os.getpid()}"
+    run_id = f"need_project_cleared_trace_{mode}_{world}_{seed}_{os.getpid()}"
     kernel = build_kernel(world, seed, run_id)
     forced = {"audit_mode": getattr(kernel, "_audit_mode", None), "no_frame_pacing": getattr(kernel, "_no_frame_pacing", None), "no_replay": getattr(kernel, "_no_replay", None)}
     if forced["audit_mode"] is not True or forced["no_frame_pacing"] is not True:
         raise RuntimeError(f"this tree's build_kernel did not force audit_mode and no_frame_pacing: {forced}")
     manifest_path = Path("data") / "runs" / run_id / "run_manifest.json"
     evidence = pinned_runner.read_manifest(manifest_path) if manifest_path.exists() else {"run_conditions": arm_child._derived_conditions(kernel)}
-    pinned = pinned_runner.require_pinned(evidence, what="k3_phase0_spy build_kernel")
+    pinned = pinned_runner.require_pinned(evidence, what="need_project_cleared_trace_spy build_kernel")
     spy: Optional[Phase0Spy] = None
     findings: List[str] = []
     if mode == "spy":

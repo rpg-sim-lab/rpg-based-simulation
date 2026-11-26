@@ -7,7 +7,7 @@ ONE cell per process (cwd = the frozen FIX tree, PYTHONPATH = that tree, recordi
  - ``ApplyPath.apply_generation`` (to follow each TAKEN: ticks the need project stays current, the suspended project's fate, the subject's hp for 50 ticks, hunger >= 95 and sleep_debt >= 98 subjects).
 ``--mode plain`` runs with no wrapper and writes the final hash. A cell is VOID unless spy final_hash == plain final_hash.
 Report-only guard (Q5): every TAKEN whose released current is ``combat_retreat`` or ``combat_engage``, with whether the subject lost hp within 50 ticks.
-Usage: python k3_switch_spy.py <world> <seed> <ticks> <out.json> --mode plain|spy [--plain-hash <hex>]
+Usage: python escalated_need_switch_ownjob_spy.py <world> <seed> <ticks> <out.json> --mode plain|spy [--plain-hash <hex>]
 """
 from __future__ import annotations
 
@@ -161,21 +161,21 @@ def main(argv: List[str]) -> int:
     if mode not in ("plain", "spy"):
         raise ValueError(f"--mode must be plain or spy, not {mode!r}")
     if ObservabilityConfig.get_mode() != ObservabilityMode.OFF:
-        raise RuntimeError("k3_switch_spy runs only with observability mode OFF (SIM_OBS_MODE=OFF)")
+        raise RuntimeError("escalated_need_switch_ownjob_spy runs only with observability mode OFF (SIM_OBS_MODE=OFF)")
     pa = load_sibling("person_attack_spy")
     errors = pa.LoggingErrors()
     logging.getLogger().addHandler(errors)
     pa.inject_no_replay_if_recording_off()
     arm_child = load_sibling("arm_child")
     pinned_runner = arm_child._pinned_runner()
-    run_id = f"k3_switch_{mode}_{world}_{seed}_{os.getpid()}"
+    run_id = f"escalated_need_switch_ownjob_{mode}_{world}_{seed}_{os.getpid()}"
     kernel = build_kernel(world, seed, run_id)
     forced = {"audit_mode": getattr(kernel, "_audit_mode", None), "no_frame_pacing": getattr(kernel, "_no_frame_pacing", None), "no_replay": getattr(kernel, "_no_replay", None)}
     if forced["audit_mode"] is not True or forced["no_frame_pacing"] is not True:
         raise RuntimeError(f"build_kernel did not force audit_mode and no_frame_pacing: {forced}")
     manifest_path = Path("data") / "runs" / run_id / "run_manifest.json"
     evidence = pinned_runner.read_manifest(manifest_path) if manifest_path.exists() else {"run_conditions": arm_child._derived_conditions(kernel)}
-    pinned = pinned_runner.require_pinned(evidence, what="k3_switch_spy build_kernel")
+    pinned = pinned_runner.require_pinned(evidence, what="escalated_need_switch_ownjob_spy build_kernel")
     spy: Optional[SwitchSpy] = None
     findings: List[str] = []
     if mode == "spy":
