@@ -3712,7 +3712,7 @@ mechanisms:
     state: partial
     implemented_by:
       - src/engine/risen.py::RisenService
-      - src/engine/risen.py::rise_triggers_phase
+      - src/engine/rise_trigger.py::rise_triggers_phase
       - src/entities/archetype_factory.py::ArchetypeEntityFactory::build_risen
       - src/core/spawn_source.py::SpawnSource
     verified:
