@@ -24,6 +24,7 @@ from src.core.models.world_records import CorpseState, GroundItemState, OwedReco
 from src.core.immutability import shallow_freeze
 from src.core.self_model import SelfModelBundle
 from src.core.cognition import CognitionModel
+from src.core.intent_result import IntentResult
 from src.core.pregnancy import PregnancyState
 from src.systems.lifecycle_systems.genetics import GeneticProfile
 from src.core.calendar import TICKS_PER_FANTASY_YEAR
@@ -824,15 +825,6 @@ class EquipmentComponent:
     durability: Dict[EquipSlot, float] = field(default_factory=dict)
 
 
-
-@dataclass(frozen=True, slots=True)
-class IntentResult:
-    """The outcome of a specific resource transfer intent."""
-    transaction_id: str | None
-    accepted: bool
-    reason: Any
-    source_kind: str
-    source_id: str | int
 
 def strategic_canonical_dict(strategic: "StrategicComponent") -> Dict[str, Any]:
     """The canonical dict of an entity's strategic stratum (moved verbatim out of `EntityState.to_canonical_dict`, TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK; the same value, so the digest is unchanged)."""
