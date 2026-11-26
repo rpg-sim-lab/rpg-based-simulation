@@ -23,7 +23,11 @@ from src.core.updates import (
 from src.domains.world_emergence.schema import WorldEvent, WorldEventCategory
 from src.engine.behavior_consumers import get_catalog
 from src.engine.spatial_query import SpatialQueryService
-from src.entities.archetype_factory import ArchetypeEntityFactory, NewbornBirth, declared_newborn_role
+from src.entities.archetype_factory import (
+    ArchetypeEntityFactory,
+    NewbornBirth,
+    declared_newborn_role,
+)
 from src.entities.contract_builder import resolved_archetype_to_contract
 from src.systems.lifecycle_systems.genetics import GeneticsSystem
 from src.systems.world_systems.generator import NoFreeSpawnTileError

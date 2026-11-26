@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace as dc_replace, field
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from src.core.enums import EntityRole
 from src.core.state import (
@@ -19,6 +19,10 @@ from src.content_semantics.personality import build_personality_for_entity, get_
 from src.entities.runtime_contract import ResolvedEntityRuntimeContract
 from src.content.common_knowledge_seed import default_self_model
 from src.content.species_senses import require_species_sense_profile
+
+
+if TYPE_CHECKING:
+    from src.content.repository import CatalogRepository
 
 
 @dataclass(frozen=True)
@@ -62,7 +66,7 @@ class NewbornBirth:
 NO_ARCHETYPE_DEFAULT_ROLE = EntityRole.CITIZEN  # a mother with no archetype_id (a legacy-guard body) or an archetype that declares no newborn_role
 
 
-def declared_newborn_role(catalog, mother: EntityState) -> tuple[EntityRole, str]:
+def declared_newborn_role(catalog: "CatalogRepository", mother: EntityState) -> tuple[EntityRole, str]:
     """(role, source) a newborn of `mother` is born with: the `newborn_role` her archetype declares (source "ARCHETYPE"), else the no-archetype default (source "NO_ARCHETYPE_DEFAULT"). Reads content only, never her role name."""
     archetype_id = (mother.identity.properties or {}).get("archetype_id")
     archetype = catalog.get_entity_archetype(archetype_id) if archetype_id else None
