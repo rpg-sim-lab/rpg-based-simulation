@@ -207,6 +207,7 @@ Default rates: `birth_rate = 0.02`, `mortality_rate = 0.01` → net +1% per 200 
 `LifecycleSystem.resolve_lifecycle()` (`src/systems/lifecycle_systems/lifecycle.py`). When an active
 entity dies (`OLD_AGE` or `COMBAT`) with `heir_entity_id is None`, a default heir is selected from
 the deceased's `SocialComponent.bonds` before the same-tick heirloom-transfer step runs.
+`resolve_lifecycle` decides who is dead; each death is then applied by `LifecycleSystem._apply_death` (called once per dead body, in this order: the death truth, the end of the body's live projects, divergence 2.226, then the heir and the estate), moved there unchanged by TCK-20261031-DEATH-CLOSES-NO-PROJECT.
 
 **Candidate filter:** every `target_id` in `deceased.social.bonds` where `target_id != deceased.id`,
 `state.entities.get(target_id)` exists, AND `target.lifecycle.active is True`. This filter is
@@ -247,7 +248,7 @@ cognition-layer use case with a different base score and a different chapter; no
 function is shared between the two.
 
 **Source:** `src/systems/lifecycle_systems/lifecycle.py` (`LifecycleSystem._select_default_heir`,
-`LifecycleSystem.resolve_lifecycle`) (TCK-20260824-DEFAULT-HEIR-ASSIGNMENT, 2026-08-26)
+`LifecycleSystem.resolve_lifecycle`, `LifecycleSystem._apply_death`) (TCK-20260824-DEFAULT-HEIR-ASSIGNMENT, 2026-08-26)
 
 ### Personal Dependents (Non-Parental) (TCK-20260902-PERSONAL-DEPENDENTS-ROUTE-BIAS)
 
