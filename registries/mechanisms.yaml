@@ -770,6 +770,7 @@ mechanisms:
     state: done
     implemented_by:
       - src/systems/lifecycle_systems/lifecycle.py::LifecycleSystem::resolve_lifecycle
+      - src/systems/lifecycle_systems/lifecycle.py::LifecycleSystem::_apply_death
       - src/ai/life_stage.py::LifeStageService
       - src/core/death_cause.py::DeathRecord
     verified:
