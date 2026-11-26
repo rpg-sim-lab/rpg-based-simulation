@@ -31,7 +31,9 @@ def _parent(entity_id: int, kind: str, role: int, **properties):
     )
 
 
-def _newborn(catalog, archetype_id="village_worker", entity_id=900, seed=42, mother_role=EntityRole.CITIZEN, **mother_props):
+def _newborn(catalog, archetype_id="village_worker", entity_id=900, seed=42, mother_role=EntityRole.CITIZEN, mother_archetype=None, **mother_props):
+    if mother_archetype is not None:  # the MOTHER's archetype (`archetype_id` above is the newborn's own archetype)
+        mother_props["archetype_id"] = mother_archetype
     contract = resolved_archetype_to_contract(EntityArchetypeResolver(catalog).resolve(archetype_id))
     mother = _parent(1, contract.species_id, mother_role, **mother_props)
     mate = _parent(2, contract.species_id, mother_role)
@@ -64,13 +66,13 @@ def test_newborn_birth_record_and_faction_follow_the_parents(catalog):
 
 def test_newborn_role_is_monster_only_for_a_monster_mother(catalog):
     # SETUP: the mothers now carry the archetype the role is read from (a MONSTER mother is a goblin_raider, a WORKER mother a village_worker); the claim and both assertions are unchanged.
-    assert _newborn(catalog, mother_role=EntityRole.MONSTER, archetype_id="goblin_raider")[3].identity.role == EntityRole.MONSTER
-    assert _newborn(catalog, mother_role=EntityRole.WORKER, archetype_id="village_worker")[3].identity.role == EntityRole.CITIZEN
+    assert _newborn(catalog, mother_role=EntityRole.MONSTER, mother_archetype="goblin_raider")[3].identity.role == EntityRole.MONSTER
+    assert _newborn(catalog, mother_role=EntityRole.WORKER, mother_archetype="village_worker")[3].identity.role == EntityRole.CITIZEN
 
 
 def test_the_newborn_role_is_the_mothers_archetype_declaration_whatever_her_own_role_is(catalog):
-    assert _newborn(catalog, mother_role=EntityRole.CITIZEN, archetype_id="goblin_raider")[3].identity.role == EntityRole.MONSTER
-    assert _newborn(catalog, mother_role=EntityRole.MONSTER, archetype_id="village_worker")[3].identity.role == EntityRole.CITIZEN
+    assert _newborn(catalog, mother_role=EntityRole.CITIZEN, mother_archetype="goblin_raider")[3].identity.role == EntityRole.MONSTER
+    assert _newborn(catalog, mother_role=EntityRole.MONSTER, mother_archetype="village_worker")[3].identity.role == EntityRole.CITIZEN
 
 
 def test_a_mother_with_no_archetype_or_an_unknown_one_gets_the_no_archetype_default_and_the_source_says_so(catalog):
