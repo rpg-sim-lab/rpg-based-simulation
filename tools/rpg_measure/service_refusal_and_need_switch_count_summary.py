@@ -1,9 +1,9 @@
-"""Summarize the K2/K3 re-count cells (reads the cell JSONs of ``k2k3_count_spy``; evidence only, no verdict about the sim beyond the designer's fixed close rules).
+"""Summarize the K2/K3 re-count cells (reads the cell JSONs of ``service_refusal_and_need_switch_count_spy``; evidence only, no verdict about the sim beyond the designer's fixed close rules).
 
-Usage: python k2k3_count_summary.py --neg <neg out dir> (the real-kernel negative control, lists every K2 run > 10 and STOPs on a lodged REST run)   |   python k2k3_count_summary.py <stage-1 out dir> [<stage-2 out dir>]  ->  prints the table and writes k2k3_summary.json into the last dir. Exit 0 only when every cell is valid.
+Usage: python service_refusal_and_need_switch_count_summary.py --neg <neg out dir> (the real-kernel negative control, lists every K2 run > 10 and STOPs on a lodged REST run)   |   python service_refusal_and_need_switch_count_summary.py <stage-1 out dir> [<stage-2 out dir>]  ->  prints the table and writes k2k3_summary.json into the last dir. Exit 0 only when every cell is valid.
 A cell is VOID unless: spy final_hash == plain final_hash, 0 probe errors / spy exceptions / logging errors, no field finding, and reach (>= 1 service dispatch AND >= 1 escalated-need decision).
 Close rules (the designer's, 992b7ce3 + Amendment 1 e6cc644c): K2 = 0 in the four stage-1 cells (three s42 + urban_political s46) AND no service action NOT MEASURED -> proposed for close; any K2 count > 0 -> stays HARD. K3: a nonzero s42 total stays HARD;
-a close needs K3 = 0 in all 7 cells (A3: the three s42 cells plus frontier_living_world s43-46, stage 2, run only when the s42 total is 0). `close_verdicts` (k2k3_count_logic) can never print a K3 close with fewer than 7 valid cells.
+a close needs K3 = 0 in all 7 cells (A3: the three s42 cells plus frontier_living_world s43-46, stage 2, run only when the s42 total is 0). `close_verdicts` (service_refusal_and_need_switch_count_logic) can never print a K3 close with fewer than 7 valid cells.
 """
 from __future__ import annotations
 
@@ -80,7 +80,7 @@ def summarize(out: Any) -> Dict[str, Any]:
 
 def load_logic() -> Any:
     import importlib.util
-    spec = importlib.util.spec_from_file_location("_k2k3_summary_logic", Path(__file__).resolve().with_name("k2k3_count_logic.py"))
+    spec = importlib.util.spec_from_file_location("_k2k3_summary_logic", Path(__file__).resolve().with_name("service_refusal_and_need_switch_count_logic.py"))
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module

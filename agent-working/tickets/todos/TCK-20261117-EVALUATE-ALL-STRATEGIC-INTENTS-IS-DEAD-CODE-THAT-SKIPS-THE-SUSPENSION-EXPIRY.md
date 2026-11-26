@@ -58,6 +58,7 @@ Found by rpg-implementer-3 during N10 (TCK-20261020-SUSPENDED-PROJECTS-ARE-NEVER
 - Line numbers are from N10's branch on 2026-11-17.
 
 ## Implementation Notes
+- MOVED OUT of systemic_foundation (M1) to the cognition-rework backlog, 2026-11-25. Owner ruling #715 7157496515 Q2 (only HARD K1-K5 repairs stay); rpg-designer's classification posted as #715 7157686023 and recorded by the lead as 7157730160. Reason: dead code, with no live path and no behaviour. It may ride along as a dead-code removal if a lane is already in that file.
 - Filed by rpg-planner.
 - Also dead in the same family (rpg-implementer-3, blocker-churn fix): StrategicIntelligenceSystem.resolve_blockers (intelligence.py ~:845) has no caller and still completes a resolve_blocker project untyped (ended_by None). Delete it, or type its end (ProjectEnd.BLOCKER_CLEARED), with this ticket (rpg-designer, 2026-11-17).
 

@@ -1,5 +1,5 @@
 """K2 / K3 re-count spy: ONE cell per process (cwd = the frozen tree, PYTHONPATH = that tree, recording OFF). READ-ONLY; it counts, it never judges.
-Definitions: the rpg-designer's, fixed before any data (rpg-designer-k2-k3-count-definitions.md, sha256 992b7ce37e1a...940cd5855); the pure logic is ``k2k3_count_logic``.
+Definitions: the rpg-designer's, fixed before any data (rpg-designer-k2-k3-count-definitions.md, sha256 992b7ce37e1a...940cd5855); the pure logic is ``service_refusal_and_need_switch_count_logic``.
 
 ``--mode plain``  the build with NO wrapper; writes the final hash.      ``--mode spy``  the same build with ONE wrapper on ``ApplyPath.apply_generation`` (K2 and the K3 outcome side, post-apply)
 and ONE pass-through on ``ScoreModifierSystem.apply_modifiers`` (the K3 decision side). Both return the ORIGINAL object untouched. The cell is VOID unless spy final_hash == plain final_hash (the launcher checks).
@@ -8,7 +8,7 @@ FIELD FINDINGS (a field the spec names that the tree does not expose is reported
 * ``IntentResult`` carries (transaction_id, accepted, reason, source_kind, source_id) and NO action/transfer kind, so an accepted TOWN_SERVICE result for building b cannot tell EAT from REST at the same inn;
   ``delivered`` is therefore the spec's own OR (accepted result for b with the action's source kind, or the action's own state change), and every channel that fired is counted.
 * a refusal reason lives in ``IntentResult.reason`` (typed enum, None, or absent when the apply gave no result for b); recorded as found.
-Usage: python k2k3_count_spy.py <world> <seed> <ticks> <out.json> --mode plain|spy [--plain-hash <hex>] [--neg]
+Usage: python service_refusal_and_need_switch_count_spy.py <world> <seed> <ticks> <out.json> --mode plain|spy [--plain-hash <hex>] [--neg]
 """
 from __future__ import annotations
 
@@ -137,7 +137,7 @@ def blockers_view(entity: Any) -> List[Dict[str, Any]]:
 
 class CountSpy:
     def __init__(self, k: int, service_actions: frozenset, same_kind: Any, need_is_pressing: Any, present_threat_to: Any, acting_threat_to: Any, live_statuses: Any, service_kinds: Any = None) -> None:
-        logic = load_sibling("k2k3_count_logic")
+        logic = load_sibling("service_refusal_and_need_switch_count_logic")
         self.logic = logic
         self.k2 = logic.K2Tracker(k)
         self.service_actions = service_actions
@@ -414,21 +414,21 @@ def main(argv: List[str]) -> int:
     if mode not in ("plain", "spy"):
         raise ValueError(f"--mode must be plain or spy, not {mode!r}")
     if ObservabilityConfig.get_mode() != ObservabilityMode.OFF:
-        raise RuntimeError("k2k3_count_spy runs only with observability mode OFF (SIM_OBS_MODE=OFF)")
+        raise RuntimeError("service_refusal_and_need_switch_count_spy runs only with observability mode OFF (SIM_OBS_MODE=OFF)")
     pa = load_sibling("person_attack_spy")
     errors = pa.LoggingErrors()
     logging.getLogger().addHandler(errors)
     pa.inject_no_replay_if_recording_off()
     arm_child = load_sibling("arm_child")
     pinned_runner = arm_child._pinned_runner()
-    run_id = f"k2k3_count_{mode}_{world}_{seed}_{os.getpid()}"
+    run_id = f"service_refusal_and_need_switch_count_{mode}_{world}_{seed}_{os.getpid()}"
     kernel = build_kernel(world, seed, run_id)
     forced = {"audit_mode": getattr(kernel, "_audit_mode", None), "no_frame_pacing": getattr(kernel, "_no_frame_pacing", None), "no_replay": getattr(kernel, "_no_replay", None)}
     if forced["audit_mode"] is not True or forced["no_frame_pacing"] is not True:
         raise RuntimeError(f"this tree's build_kernel did not force audit_mode and no_frame_pacing: {forced}")
     manifest_path = Path("data") / "runs" / run_id / "run_manifest.json"
     evidence = pinned_runner.read_manifest(manifest_path) if manifest_path.exists() else {"run_conditions": arm_child._derived_conditions(kernel)}
-    pinned = pinned_runner.require_pinned(evidence, what="k2k3_count_spy build_kernel")
+    pinned = pinned_runner.require_pinned(evidence, what="service_refusal_and_need_switch_count_spy build_kernel")
     spy: Optional[CountSpy] = None
     facts: Dict[str, Any] = {}
     if mode == "spy":

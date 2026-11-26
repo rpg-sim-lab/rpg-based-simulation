@@ -150,7 +150,8 @@ def test_a_different_target_candidate_that_loses_the_switch_changes_nothing_and_
     """The current project is locked and strong: the switch returns None, so no record is ended and no project is created (rule 5 as amended)."""
     stale = _project("stale", ProjectStatus.SUSPENDED, target=ELSEWHERE, created=1)
     current = _project("cur", ProjectStatus.ACTIVE, target="x", kind="travel", score=500.0, created=2, lock=10_000)
-    entity = _entity([current, stale], current="cur")
+    # TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH (STRAT-359, 2.228): escalated needs now take the switch (covered in test_escalated_need_takes_the_project_switch.py); this row tests a non-escalated loser.
+    entity = _entity([current, stale], current="cur", sleep_debt=50.0)
     update = _evaluate(entity)
     assert not update.projects_add_or_update
     assert all(p.ended_by is None for p in _apply(entity, update).values())
@@ -267,7 +268,8 @@ def test_an_orphan_that_loses_the_margin_leaves_the_current_project_unchanged():
     """An ACTIVE matching record that is not current, beside another live current project, goes through the switch check: a loss changes nothing."""
     other = _project("other", ProjectStatus.ACTIVE, target="x", kind="travel", score=100000.0, created=1)
     orphan = _project("orphan", ProjectStatus.ACTIVE, created=3)
-    entity = _entity([other, orphan], current="other")
+    # TCK-20261029-AN-ESCALATED-NEED-THAT-WINS-SCORING-LOSES-THE-PROJECT-SWITCH (STRAT-359, 2.228): escalated needs now take the switch (covered in test_escalated_need_takes_the_project_switch.py); this row tests a non-escalated loser.
+    entity = _entity([other, orphan], current="other", sleep_debt=50.0)
     update = _evaluate(entity)
     assert update.current_project_id_set is None
     assert not update.projects_add_or_update

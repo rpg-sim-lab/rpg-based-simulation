@@ -153,7 +153,7 @@ _TOOLS_PERF_BASENAME_MAP = {
 # tools/release/<basename>.py -> its real owning test directory, same survey method as
 # `_TOOLS_PERF_BASENAME_MAP`. Everything else under tools/release/ (release_gate.py,
 # generate_release_proof.py, behavior_observability_rollout_gate.py,
-# phase10_enhanced_rollout_gate.py, verify_production_profiles.py, ledger_validator.py) falls
+# rollout_report_gate.py, verify_production_profiles.py, ledger_validator.py) falls
 # through to the `tools/release/` default above (`tests/certification/`) — release_gate.py and
 # generate_release_proof.py are both directly exercised by tests/certification/test_final_gate.py,
 # and the rollout gates by their own tests/certification/test_phase*.py files, so the default is

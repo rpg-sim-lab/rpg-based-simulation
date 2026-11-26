@@ -60,6 +60,7 @@ rpg-designer ruled these OUT of the churn fix: with its merge, typed timeout and
 - Line numbers are from 67b507f8c.
 
 ## Implementation Notes
+- MOVED OUT of systemic_foundation (M1) to the cognition-rework backlog, 2026-11-25. Owner ruling #715 7157496515 Q2 (only HARD K1-K5 repairs stay); rpg-designer's classification posted as #715 7157686023 and recorded by the lead as 7157730160. Reason: bounded since the churn fix (typed timeout plus back-off); a real bug, but not liveness.
 - Filed by rpg-planner on rpg-designer's ruling (2026-11-17).
 
 ## Test Summary

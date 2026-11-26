@@ -65,6 +65,7 @@ The pre-ruling (rpg-planner and designer, 2026-10-21) said: if raider 37 starves
 - Does any other need pair (hunger and thirst, fatigue and safety) flip the same way?
 
 ## Implementation Notes
+- MOVED OUT of systemic_foundation (M1) to the cognition-rework backlog, 2026-11-25. Owner ruling #715 7157496515 Q2 (only HARD K1-K5 repairs stay); rpg-designer's classification posted as #715 7157686023 and recorded by the lead as 7157730160. Reason: measured: the subject eats (V3 0 in its cell); a new project id each time is churn, not a stuck state.
 
 ## Test Summary
 
