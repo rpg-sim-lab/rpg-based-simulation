@@ -76,7 +76,7 @@ class TriggerShim:
         self._swap(PhaseDependencyGraph, "should_run_phase", staticmethod(should_run_phase))
         self._swap(risen, "get_catalog", lambda: _RiseChanceCatalog(_real_catalog(), chance))
         if mode == "off":
-            self._swap(RisenService, "process_rises", staticmethod(lambda state, update, cadence=None: update))
+            self._swap(RisenService, "process_rises", staticmethod(lambda state, update, cadence=None, **_: update))
         return self
 
     def _swap(self, owner: Any, name: str, replacement: Any) -> None:

@@ -23,6 +23,7 @@ from src.engine.pipeline_phases.resources import ResourceTransactionPhase
 from src.engine.world_dynamics import _meat_decayed_events
 from src.observability.run_ledger import RunLedger
 from src.world import risen
+from src.systems.world_systems.generator import EntityGenerator
 from src.world.corpse_goods import corpse_remains
 from src.world.risen import RisenService, rise_triggers_phase
 
@@ -70,7 +71,7 @@ def _state(*, tick=TICK, corpses=None, entities=None):
 
 
 def _rise(state, update=None):
-    return RisenService.process_rises(state, update or StateUpdate(), SystemCadence())
+    return RisenService.process_rises(state, update or StateUpdate(), SystemCadence(), generator_for_state=EntityGenerator.for_state)
 
 
 def test_r1_a_rising_consumes_its_corpse_once_and_names_it_as_the_source(certain):
@@ -136,7 +137,7 @@ def test_a_corpse_rises_only_while_tick_plus_one_is_before_its_decay_tick(certai
 def test_chance_zero_and_an_off_beat_tick_change_nothing(never):
     update = StateUpdate()
     assert _rise(_state(), update) is update
-    assert RisenService.process_rises(_state(tick=TICK + 1), update, SystemCadence()) is update
+    assert RisenService.process_rises(_state(tick=TICK + 1), update, SystemCadence(), generator_for_state=EntityGenerator.for_state) is update
 
 
 def test_a_corpse_looted_on_its_rise_tick_gives_the_loot_and_no_body_purse_or_ground_items(certain):
@@ -170,7 +171,7 @@ def test_a_birth_and_a_rise_on_one_tick_get_distinct_ids_and_distinct_tiles(cert
 
 def test_the_phase_runs_the_rise_after_the_transfers_resolved(certain):
     state = _state()
-    out = ResourceTransactionPhase.resolve(state, StateUpdate(), SystemCadence())
+    out = ResourceTransactionPhase.resolve(state, StateUpdate(), SystemCadence(), generator_for_state=EntityGenerator.for_state)
     assert len(out.entities_add) == 1
 
 
@@ -259,5 +260,19 @@ def test_running_the_transaction_phase_with_nothing_pending_changes_nothing_so_t
     from src.engine.economy import ResourceTransactionSystem
     state, update = _state(), StateUpdate()
     assert ResourceTransactionSystem.resolve_all(state, update) == update
-    assert ResourceTransactionPhase.resolve(state, update, SystemCadence()) is not None
-    assert ResourceTransactionPhase.resolve(state, update, SystemCadence()) == update, "chance 0: the whole phase is a no-op on an idle tick"
+    assert ResourceTransactionPhase.resolve(state, update, SystemCadence(), generator_for_state=EntityGenerator.for_state) is not None
+    assert ResourceTransactionPhase.resolve(state, update, SystemCadence(), generator_for_state=EntityGenerator.for_state) == update, "chance 0: the whole phase is a no-op on an idle tick"
+
+
+def test_process_rises_without_a_generator_source_fails_loudly_and_the_pipeline_hands_it_EntityGenerator_for_state(monkeypatch):
+    with pytest.raises(TypeError, match="generator_for_state"):
+        RisenService.process_rises(_state(), StateUpdate(), SystemCadence())
+    from src.engine.pipeline import AuthoritativeApplyPipeline
+    seen = {}
+    real = RisenService.process_rises
+    def spy(state, update, cadence=None, *, generator_for_state):
+        seen["factory"] = generator_for_state
+        return real(state, update, cadence, generator_for_state=generator_for_state)
+    monkeypatch.setattr(RisenService, "process_rises", staticmethod(spy))
+    AuthoritativeApplyPipeline._resolve_resource_transactions(_state(), StateUpdate(), SystemCadence())
+    assert seen["factory"] == EntityGenerator.for_state, "the pipeline wires the very factory the rise step used before"

@@ -545,7 +545,7 @@ class AuthoritativeApplyPipeline:
     @staticmethod
     def _resolve_resource_transactions(state: AuthoritativeState, update: StateUpdate, cadence: SystemCadence | None = None) -> StateUpdate:
         from src.engine.pipeline_phases.resources import ResourceTransactionPhase
-        return ResourceTransactionPhase.resolve(state, update, cadence)
+        return ResourceTransactionPhase.resolve(state, update, cadence, generator_for_state=EntityGenerator.for_state)
 
     @staticmethod
     def _resolve_position_swaps(

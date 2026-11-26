@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from src.engine.economy import ResourceTransactionSystem
 from src.world.risen import RisenService
@@ -18,8 +18,8 @@ class ResourceTransactionPhase:
     """
 
     @staticmethod
-    def resolve(state: AuthoritativeState, update: StateUpdate, cadence: Optional[SystemCadence] = None) -> StateUpdate:
+    def resolve(state: AuthoritativeState, update: StateUpdate, cadence: Optional[SystemCadence] = None, *, generator_for_state: Callable[..., Any]) -> StateUpdate:
         """
         Resolve all resource transactions, then the rise sub-step: a corpse a loot or meal took or shrank this tick does not rise, so it runs on the outcome.
         """
-        return RisenService.process_rises(state, ResourceTransactionSystem.resolve_all(state, update), cadence)
+        return RisenService.process_rises(state, ResourceTransactionSystem.resolve_all(state, update), cadence, generator_for_state=generator_for_state)

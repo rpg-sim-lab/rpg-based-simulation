@@ -231,7 +231,7 @@ def _rise_run(monkeypatch, tamper=None):
     state = _rise_state()
     spy = BirthSpy().install()
     try:
-        update = risen.RisenService.process_rises(state, StateUpdate(), SystemCadence())
+        update = risen.RisenService.process_rises(state, StateUpdate(), SystemCadence(), generator_for_state=EntityGenerator.for_state)
         ApplyPath.apply_generation(state, update, 61, 61)
     finally:
         spy.restore()

@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 from src.content.resolver import EntityArchetypeResolver
 from src.core.enums import Domain
+from src.core.spawn_errors import NoFreeSpawnTileError
 from src.core.spawn_source import SpawnKind, SpawnSource
 from src.core.species import species_of
 from src.domains.world_emergence.schema import WorldEvent, WorldEventCategory
@@ -15,7 +16,6 @@ from src.engine.cadence import SystemCadence
 from src.engine.rise_trigger import rise_triggers_phase
 from src.entities.archetype_factory import ArchetypeEntityFactory
 from src.entities.contract_builder import resolved_archetype_to_contract
-from src.systems.world_systems.generator import EntityGenerator, NoFreeSpawnTileError
 from src.world.corpse_goods import corpse_remains
 
 if TYPE_CHECKING:
@@ -36,8 +36,8 @@ class RisenService:
     """
 
     @staticmethod
-    def process_rises(state: AuthoritativeState, update: StateUpdate, cadence: Optional[SystemCadence] = None) -> StateUpdate:
-        """`update` with this check's risings added (it is returned unchanged when none rise), run after the transfers resolved."""
+    def process_rises(state: AuthoritativeState, update: StateUpdate, cadence: Optional[SystemCadence] = None, *, generator_for_state: Callable[..., Any]) -> StateUpdate:
+        """`update` with this check's risings added (it is returned unchanged when none rise), run after the transfers resolved. `generator_for_state` is `EntityGenerator.for_state`, handed in by the engine's pipeline (the engine may not import the systems layer); it is called with the same (state, update) as before."""
         if not rise_triggers_phase("resource_transactions", state, cadence):
             return update
         catalog = get_catalog()
@@ -45,7 +45,7 @@ class RisenService:
         if not by_source:
             return update
         taken = set(update.corpses_remove) | {c.id for c in update.corpses_add_or_update}
-        generator = EntityGenerator.for_state(state, update)
+        generator = generator_for_state(state, update)
         generator.claim_tiles_of(state, update.entities_add)
         entity_spawn_sources: Dict[int, SpawnSource] = {}
         risings = _Risings(next_item_id=max(state.next_item_instance_id, update.next_item_instance_id_set or 0))
