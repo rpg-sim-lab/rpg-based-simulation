@@ -418,3 +418,25 @@ def test_the_reference_hash_report_passes_only_when_every_cell_matches_and_stops
     docs[("w", 43, "ref")] = {"final_hash": "c"}
     assert births_run.ref_hash_report(docs) == {"equal": {"w/42": True, "w/43": False}, "verdict": "STOP"}
     assert births_run.ref_hash_report({("w", 42, "plain"): {"final_hash": "a"}})["verdict"] == "STOP"
+
+
+# ---- designer kit review 5a5d40a7: the two HARD bars no test exercised --------------------------------------------------------------------------
+def test_k8_at_birth_a_child_of_another_species_than_its_mother_is_exactly_one_birth_row_and_a_same_species_child_is_none():
+    catalog = births.get_catalog()
+    mother = _with_pregnancy(_body(1, kind="wolf"), _preg(father=2))
+    row = {"tick": 30, "mother": 1}
+    other = BirthSpy()
+    other._check_term_children(_state(mother, _body(2, kind="wolf")), StateUpdate(), catalog, mother, [_body(3, kind="human")], row)
+    assert [(r["child"], r["at"]) for r in other.fails["K8"]] == [(3, "birth")]
+    same = BirthSpy()
+    same._check_term_children(_state(mother, _body(2, kind="wolf")), StateUpdate(), catalog, mother, [_body(4, kind="wolf")], row)
+    assert not same.fails["K8"]
+
+
+def test_w3_four_mid_run_adds_only_the_one_with_no_source_and_the_undeclared_one_are_rows():
+    spy = BirthSpy()
+    watch = TickWatch(spy, _state(_body(1), _body(2), tick=0))
+    with_parents = dataclasses.replace(_body(13), lifecycle=dataclasses.replace(_body(13).lifecycle, parent_a_entity_id=1, parent_b_entity_id=2))
+    spy.arrivals = {10: None, 11: "UNDECLARED_SOURCE", 12: "AUTHORED_ARRIVAL", 13: "BIRTH"}
+    watch.after_tick(_state(_body(1), _body(2), _body(10), _body(11), _body(12), with_parents, tick=5))
+    assert sorted((r["id"], r["source"]) for r in watch.fails["W3"]) == [(10, None), (11, "UNDECLARED_SOURCE")]
