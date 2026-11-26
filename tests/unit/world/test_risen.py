@@ -17,15 +17,15 @@ from src.core.spawn_source import SpawnKind, SpawnSource
 from src.core.state import AuthoritativeState
 from src.core.updates import StateUpdate
 from src.domains.world_emergence.schema import WorldEventCategory
+from src.engine import risen
 from src.engine.apply import ApplyPath
 from src.engine.cadence import SystemCadence
+from src.engine.corpse_goods import corpse_remains
 from src.engine.pipeline_phases.resources import ResourceTransactionPhase
+from src.engine.risen import RisenService, rise_triggers_phase
 from src.engine.world_dynamics import _meat_decayed_events
 from src.observability.run_ledger import RunLedger
-from src.world import risen
 from src.systems.world_systems.generator import EntityGenerator
-from src.world.corpse_goods import corpse_remains
-from src.world.risen import RisenService, rise_triggers_phase
 
 TICK = 60
 GOODS = [ItemStack(item_id="raw_meat", quantity=3), ItemStack(item_id="iron_sword", quantity=1), ItemStack(item_id="potion", quantity=2)]

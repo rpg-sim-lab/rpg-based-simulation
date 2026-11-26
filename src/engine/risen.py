@@ -13,10 +13,10 @@ from src.core.species import species_of
 from src.domains.world_emergence.schema import WorldEvent, WorldEventCategory
 from src.engine.behavior_consumers import get_catalog
 from src.engine.cadence import SystemCadence
+from src.engine.corpse_goods import corpse_remains
 from src.engine.rise_trigger import rise_triggers_phase
 from src.entities.archetype_factory import ArchetypeEntityFactory
 from src.entities.contract_builder import resolved_archetype_to_contract
-from src.world.corpse_goods import corpse_remains
 
 if TYPE_CHECKING:
     from src.content.schema import RisenProfileDefinition

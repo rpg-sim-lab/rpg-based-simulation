@@ -171,7 +171,7 @@ def test_the_tagged_birth_site_is_seen_and_needs_no_entry():
 
 
 def test_the_tagged_risen_site_is_seen_and_needs_no_entry():
-    assert ("src/world/risen.py", "process_rises", "build_risen", True) in find_spawn_sites(REPO)
+    assert ("src/engine/risen.py", "process_rises", "build_risen", True) in find_spawn_sites(REPO)
 
 
 def test_every_off_site_is_held_shut_by_a_registered_off_by_default_flag_no_gate_world_turns_on():

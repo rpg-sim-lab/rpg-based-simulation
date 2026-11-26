@@ -12,12 +12,13 @@ from src.core.spawn_source import SpawnKind, SpawnSource
 from src.core.state import AuthoritativeState, SocialBond
 from src.core.updates import EntityUpdate, LifecycleUpdate, StateUpdate
 from src.domains.world_emergence.schema import WorldEvent, WorldEventCategory
+from src.engine import risen
 from src.engine.apply import ApplyPath
 from src.engine.cadence import SystemCadence
 from src.engine.phase_graph import PhaseDependencyGraph
 from src.systems.lifecycle_systems.genetics import GeneticProfile
 from src.systems.world_systems.generator import EntityGenerator, NoFreeSpawnTileError
-from src.world import births, risen
+from src.world import births
 from tools.rpg_measure import births_run
 from tools.rpg_measure.births_spy import BirthSpy, TickWatch, _ReadCounter
 from tools.rpg_measure.births_trigger import TriggerShim

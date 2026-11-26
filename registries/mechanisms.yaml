@@ -3711,8 +3711,8 @@ mechanisms:
     depends_on: [corpse_goods_conservation]
     state: partial
     implemented_by:
-      - src/world/risen.py::RisenService
-      - src/world/risen.py::rise_triggers_phase
+      - src/engine/risen.py::RisenService
+      - src/engine/risen.py::rise_triggers_phase
       - src/entities/archetype_factory.py::ArchetypeEntityFactory::build_risen
       - src/core/spawn_source.py::SpawnSource
     verified:
@@ -3731,7 +3731,7 @@ mechanisms:
     depends_on: [inventory_trade_conservation]
     state: partial
     implemented_by:
-      - src/world/corpse_goods.py::corpse_remains
+      - src/engine/corpse_goods.py::corpse_remains
     verified:
       instrument: code_trace
       verdict: observed

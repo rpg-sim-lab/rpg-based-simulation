@@ -1,6 +1,6 @@
 """Child-side shims for the trigger-neutrality arms (M1 risen origin, rulings of 2026-11-18): count the rise trigger's firings, and in the OFF arm make it never fire.
 
-The ruled trigger is ``src.world.risen.rise_triggers_phase``; the name the scheduler actually CALLS is ``src.engine.phase_graph.rise_triggers_phase`` (imported there by name, called in
+The ruled trigger is ``src.engine.risen.rise_triggers_phase``; the name the scheduler actually CALLS is ``src.engine.phase_graph.rise_triggers_phase`` (imported there by name, called in
 ``PhaseDependencyGraph.should_run_phase``), so that attribute is the patch target. Nothing in src is edited: the shim is installed in the child process only and restored at exit.
 
 ``ON`` calls the real trigger, counts each True and counts an EXTRA phase run when the phase would not have run without that firing (evaluated by asking ``should_run_phase`` again
@@ -11,10 +11,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from src.engine import phase_graph
+from src.engine import phase_graph, risen
 from src.engine.phase_graph import PhaseDependencyGraph
-from src.world import risen
-from src.world.risen import RisenService
+from src.engine.risen import RisenService
 
 
 class _RiseChanceCatalog:

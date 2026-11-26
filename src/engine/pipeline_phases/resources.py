@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from src.engine.economy import ResourceTransactionSystem
-from src.world.risen import RisenService
+from src.engine.risen import RisenService
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState

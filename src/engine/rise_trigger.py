@@ -1,4 +1,4 @@
-"""When the resource_transactions phase also runs for a rise check: moved verbatim out of src/world/risen.py so the engine's phase graph can read it without importing the world layer
+"""When the resource_transactions phase also runs for a rise check: moved verbatim out of src/engine/risen.py so the engine's phase graph can read it without importing the world layer
 (import contract "Registry layer order"; TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND)."""
 from __future__ import annotations
 
