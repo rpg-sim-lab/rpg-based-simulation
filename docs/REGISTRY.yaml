@@ -8009,6 +8009,45 @@
   artifact_files: []
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261125-A-COHORT-IN-FRONTIER-NEVER-SLEEPS-FOR-ABOUT-2000-TICKS.md
+  ticket_id: TCK-20261125-A-COHORT-IN-FRONTIER-NEVER-SLEEPS-FOR-ABOUT-2000-TICKS
+  title: A cohort in frontier_living_world never sleeps for about 2,000 ticks, and
+    what refused bodies do after the K2 fix's WAY_CLOSED is unread.
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-25'
+  related_code_areas:
+  - src/ai/goals/scorers.py (SleepScorer), src/systems/strategic_systems/intelligence.py
+  artifact_files: []
+  tags:
+  - cognition
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261125-THE-STALEMATE-WANDER-FAMILY-LEFT-AFTER-996-COUNTS-TEST-AND-PAIRED-RUN.md
+  ticket_id: TCK-20261125-THE-STALEMATE-WANDER-FAMILY-LEFT-AFTER-996-COUNTS-TEST-AND-PAIRED-RUN
+  title: 'What F1 left unmeasured after #996: the stalemate/wander counts table, a
+    test for the s44 p1 shape, and an F1 paired run.'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-25'
+  related_code_areas:
+  - 'src/engine movement and nav (the oscillation replan ladder from #996)'
+  artifact_files: []
+  tags:
+  - cognition
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261125-TWO-INFER-BLOCKERS-BRANCHES-COMPARE-LOWERCASE-REASON-CODES-WITH-UPPERCASE-STRINGS.md
+  ticket_id: TCK-20261125-TWO-INFER-BLOCKERS-BRANCHES-COMPARE-LOWERCASE-REASON-CODES-WITH-UPPERCASE-STRINGS
+  title: 'Two infer_blockers branches can never fire: lowercase ReasonCode values
+    are compared with uppercase strings.'
+  tier: hotfix
+  ticket_type: bug
+  date: '2026-11-25'
+  related_code_areas:
+  - infer_blockers (src/systems/strategic_systems/), src/core ReasonCode
+  artifact_files: []
+  tags:
+  - cognition
+- type: ticket
   path: agent-working/tickets/done/TCK-20261124-A-WALL-CLOCK-TIMER-IN-THE-REPLAY-STREAM-MAKES-REPLAY-FILES-NON-REPRODUCIBLE.md
   ticket_id: TCK-20261124-A-WALL-CLOCK-TIMER-IN-THE-REPLAY-STREAM-MAKES-REPLAY-FILES-NON-REPRODUCIBLE
   title: A wall-clock timer inside every replay update makes replay files differ byte
@@ -8077,6 +8116,41 @@
   - agent-working/stored_artifacts/TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK/test_plan.md
   tags: []
 - type: ticket
+  path: agent-working/tickets/todos/TCK-20261124-A-CROWDED-PLACE-HAS-A-REAL-QUEUE.md
+  ticket_id: TCK-20261124-A-CROWDED-PLACE-HAS-A-REAL-QUEUE
+  title: 'A crowded place keeps a real queue: order and places in line, not only a
+    recheck'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-24'
+  related_code_areas:
+  - src/engine/movement.py, src/core/navigation_experience.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261124-A-WAITING-BODY-TRIES-ANOTHER-PLACE.md
+  ticket_id: TCK-20261124-A-WAITING-BODY-TRIES-ANOTHER-PLACE
+  title: A body waiting on an occupied place can try another place that serves the
+    same purpose
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-24'
+  related_code_areas:
+  - src/strategy/, src/systems/strategic_systems/intelligence.py
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261124-BUILDINGS-AND-FACTIONS-START-WITH-GOLD.md
+  ticket_id: TCK-20261124-BUILDINGS-AND-FACTIONS-START-WITH-GOLD
+  title: Wage-paying buildings and factions start with declared gold, so the money
+    loop does not run dry at the start
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-24'
+  related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261124-FRONTEND-LINT-IS-RED-ON-MAIN-AND-CI-DOES-NOT-RUN-IT.md
   ticket_id: TCK-20261124-FRONTEND-LINT-IS-RED-ON-MAIN-AND-CI-DOES-NOT-RUN-IT
   title: Frontend lint is red on main (17 errors, 4 warnings), and CI's Frontend job
@@ -8088,6 +8162,31 @@
   - frontend/src/components/GameCanvas.tsx, InspectPanel.tsx, Sidebar.tsx
   - frontend/src/hooks/useCanvas.ts, useSimulation.ts
   - .github/workflows/test.yml (Frontend job)
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261124-THE-STARVING-AND-SLEEP-NEED-LINES-COME-FROM-DATA.md
+  ticket_id: TCK-20261124-THE-STARVING-AND-SLEEP-NEED-LINES-COME-FROM-DATA
+  title: The starving line and the sleep line come from a data file, not from code
+    constants
+  tier: standard
+  ticket_type: refactor
+  date: '2026-11-24'
+  related_code_areas:
+  - 'src/core/need_lines.py (after #996), the StarvationTable defaults, src/strategy/experience_due.py
+    HUNGER_LINE, need_services_at'
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261124-THE-THREE-WITHHELD-995-CORPUS-RE-PINS.md
+  ticket_id: TCK-20261124-THE-THREE-WITHHELD-995-CORPUS-RE-PINS
+  title: 'The three corpus re-pins withheld from #995 (urban SOCIAL, hero COGNITION,
+    unit ECONOMY) are re-pinned once guard (ii) is clean'
+  tier: standard
+  ticket_type: chore
+  date: '2026-11-24'
+  related_code_areas:
+  - tests/ corpus diversity pins (exact ids recorded by lane A at planning)
   artifact_files: []
   tags: []
 - type: ticket
@@ -8198,6 +8297,20 @@
   ticket_type: feature
   date: '2026-11-23'
   related_code_areas: []
+  artifact_files: []
+  tags: []
+- type: ticket
+  path: agent-working/tickets/todos/TCK-20261123-A-LARGE-PLANT-EATER-AND-AN-OMNIVORE-JOIN-THE-WILD-KINDS-BY-PROPERTIES.md
+  ticket_id: TCK-20261123-A-LARGE-PLANT-EATER-AND-AN-OMNIVORE-JOIN-THE-WILD-KINDS-BY-PROPERTIES
+  title: A large generic plant-eater and a generic omnivore join the wild kinds, declared
+    by properties only
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-23'
+  related_code_areas:
+  - data/content/living/species.yaml (small_plant_eater, l.307), body_models.yaml,
+    items.yaml
+  - data/content/world/ecologies.yaml, data/content/entities/populations.yaml
   artifact_files: []
   tags: []
 - type: ticket
@@ -12106,6 +12219,20 @@
   - testing
   - regression
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD.md
+  ticket_id: TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD
+  title: '`kind` always means species, and occupation is a separate field'
+  tier: standard
+  ticket_type: feature
+  date: '2026-11-09'
+  related_code_areas:
+  - src/core/ (entity identity), content schemas
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD/investigation.md
+  - agent-working/stored_artifacts/TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD/plan.md
+  - agent-working/stored_artifacts/TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE.md
   ticket_id: TCK-20261109-M1-NO-NAME-CHECKS-PROBE-AND-CONTENT-ALONE-KIND-PROBE
   title: 'Milestone 1''s name-check probe: no role, kind or faction name switch left
@@ -12243,17 +12370,6 @@
   date: '2026-11-09'
   related_code_areas:
   - src/strategy/ and perception code, content schemas
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/inprogress/TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD.md
-  ticket_id: TCK-20261109-M1-KIND-ALWAYS-MEANS-SPECIES-AND-OCCUPATION-IS-ITS-OWN-FIELD
-  title: '`kind` always means species, and occupation is a separate field'
-  tier: standard
-  ticket_type: feature
-  date: '2026-11-09'
-  related_code_areas:
-  - src/core/ (entity identity), content schemas
   artifact_files: []
   tags: []
 - type: ticket
@@ -13931,6 +14047,23 @@
   - ai
   - process-improvement
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK.md
+  ticket_id: TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK
+  title: The stalemate breaker replaces a project's move with a one-tile wander every
+    tick on a move that reports no failure ("LEGAL", path length 0), so the subject
+    oscillates between two tiles and never reaches its target
+  tier: standard
+  ticket_type: bug
+  date: '2026-10-30'
+  related_code_areas:
+  - the stalemate breaker and its stall/oscillation counters, navigation last_failure_reason,
+    the tactical move path
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK/investigation.md
+  - agent-working/stored_artifacts/TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK/plan.md
+  - agent-working/stored_artifacts/TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK/test_plan.md
+  tags: []
+- type: ticket
   path: agent-working/tickets/done/TCK-20261030-WORLD-GENERATOR-RESOURCE-TYPE-PICK-FOLLOWS-PYTHONHASHSEED.md
   ticket_id: TCK-20261030-WORLD-GENERATOR-RESOURCE-TYPE-PICK-FOLLOWS-PYTHONHASHSEED
   title: The intent-driven world generator picks each node's resource type with the
@@ -13979,20 +14112,6 @@
   related_code_areas:
   - src/ai/goals/scorers.py (SleepScorer, EatScorer), src/engine/need_wake.py, the
     scheduler's hunger wake, src/engine/starvation.py, src/engine/sleep_debt.py
-  artifact_files: []
-  tags: []
-- type: ticket
-  path: agent-working/tickets/todos/TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK.md
-  ticket_id: TCK-20261030-STALEMATE-BREAK-OVERWRITES-A-PROJECT-MOVE-EVERY-TICK
-  title: The stalemate breaker replaces a project's move with a one-tile wander every
-    tick on a move that reports no failure ("LEGAL", path length 0), so the subject
-    oscillates between two tiles and never reaches its target
-  tier: standard
-  ticket_type: bug
-  date: '2026-10-30'
-  related_code_areas:
-  - the stalemate breaker and its stall/oscillation counters, navigation last_failure_reason,
-    the tactical move path
   artifact_files: []
   tags: []
 - type: ticket
