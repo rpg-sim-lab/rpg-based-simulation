@@ -3,9 +3,8 @@ from __future__ import annotations
 from typing import Dict, Optional, Tuple
 
 from src.content.common_knowledge_seed import default_self_model, warmed_catalog
-from src.content.repository import ReproductionProfileError
+from src.content.archetype_less_breeders import refuse_archetype_less_monster_breeder
 from src.content.species_senses import require_species_sense_profile
-from src.core.enums import EntityRole
 from src.core.species import SpeciesNotDeclaredError
 from src.core.state import EntityState
 from src.entities.archetype_factory import ArchetypeEntityFactory, EntitySpawnContext
@@ -120,11 +119,8 @@ class WorldEntitySpawner:
 
     @staticmethod
     def _refuse_monster_breeder(entity_id: int, profile: ResolvedEntityProfile, population_id: Optional[str]) -> None:
-        """A population with no archetype carries no `newborn_role` declaration, so its children are born with the no-archetype default (CITIZEN). One that spawns MONSTERS of a breeding species would change that outcome silently: refused here, at assembly, before tick 0 (M1 births)."""
-        species = warmed_catalog().species.get(profile.species_id)
-        if species is not None and species.reproduction_profile is not None and profile.legacy_role == EntityRole.MONSTER:
-            raise ReproductionProfileError(
-                f"population {population_id!r} (entity {entity_id}) names no archetype and spawns MONSTERs of species {profile.species_id!r}, which breeds: declare an archetype with a newborn_role, since a child of an archetype-less mother is born CITIZEN")
+        """The legacy (archetype-less) spawn path's call of the shared refusal, with the profile's legacy role (M1 births)."""
+        refuse_archetype_less_monster_breeder(population_id, profile.species_id, profile.legacy_role, warmed_catalog())
 
     def _spawn_legacy_guard(
         self,

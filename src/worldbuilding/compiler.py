@@ -9,7 +9,8 @@ from typing import Optional, Any, Dict, List, Set, Tuple
 
 from src.platform.rng import DeterministicRNG
 from src.core.enums import Domain
-from src.content.common_knowledge_seed import default_self_model
+from src.content.archetype_less_breeders import refuse_archetype_less_monster_breeder
+from src.content.common_knowledge_seed import default_self_model, warmed_catalog
 from src.core.state import (
     AuthoritativeState,
     RegionState,
@@ -770,6 +771,8 @@ class WorldCompiler:
                     ent_class_id = rng.choice(Domain.WORLD, 0, next_entity_id, class_pool, sub_id=14)
 
                     ent_properties, declared_species = _population_properties_and_species(spec, pop_key, pop_spec, context)
+                    if not ent_properties.get("archetype_id"):  # a population with no archetype has no newborn_role: refuse MONSTERs of a breeding species (the same refusal as the spawner path, with this path's own role_enum)
+                        refuse_archetype_less_monster_breeder(pop_key, declared_species, role_enum, warmed_catalog())
 
                     # M1 step 4: `kind` is the population's declared species when a context supplies one. A compile with NO context is the legacy path (kind = the role
                     # label, occupation equal to it), named here and pinned by a test; it is owned by TCK-20261020-TESTS-THAT-COMPILE-A-WORLD-WITHOUT-THE-CONTENT-CONTEXT-TRIAGE (stage 4b).
