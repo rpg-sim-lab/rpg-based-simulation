@@ -162,6 +162,8 @@ def _population_properties_and_species(spec: Any, pop_key: str, pop_spec: Any, c
         resolved = context.entities[pop_key]
         if hasattr(resolved, "faction_id") and resolved.faction_id:
             ent_properties["faction_id"] = resolved.faction_id
+        if getattr(resolved, "archetype_id", None):  # the spawner path (ArchetypeEntityFactory.build_entity) already writes this; the classic compile now carries the same identity (M1 births: a newborn's role is read from its mother's archetype)
+            ent_properties["archetype_id"] = resolved.archetype_id
         if hasattr(resolved, "species_id") and resolved.species_id:
             declared_species = resolved.species_id
         require_declared_population_species(spec.world_id, pop_key, pop_spec, declared_species)
