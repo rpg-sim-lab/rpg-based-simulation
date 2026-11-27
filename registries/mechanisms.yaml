@@ -770,6 +770,7 @@ mechanisms:
     state: done
     implemented_by:
       - src/systems/lifecycle_systems/lifecycle.py::LifecycleSystem::resolve_lifecycle
+      - src/systems/lifecycle_systems/lifecycle.py::LifecycleSystem::_apply_death
       - src/ai/life_stage.py::LifeStageService
       - src/core/death_cause.py::DeathRecord
     verified:
@@ -1620,7 +1621,7 @@ mechanisms:
         claim, not an accident of staging.
   - id: goal_hierarchy
     layer: entity
-    summary: "Creatures pursue goals in layers, from a standing direction down to projects, objectives and single actions. A creature that runs from danger keeps to its retreat until the threat has been gone for a while. A way that keeps refusing a body for payment becomes a blocker for it. An escalated need with no present threat takes the project switch from an ordinary goal."
+    summary: "Creatures pursue goals in layers, from a standing direction down to projects, objectives and single actions. A creature that runs from danger keeps to its retreat until the threat has been gone for a while. A way that keeps refusing a body for payment becomes a blocker for it. An escalated need with no present threat takes the project switch from an ordinary goal. A creature's live projects all end when it dies; the records are kept."
     systems: [cognition]
     depends_on: [belief_cycle]
     state: done
@@ -1644,6 +1645,8 @@ mechanisms:
       - src/core/strategic.py::restart_clear_window
       - src/core/service_refusals.py::consecutive_refusals
       - src/systems/strategic_systems/blocker_lifecycle.py::infer_blockers
+      - src/core/strategic.py::end_live_on_death
+      - src/systems/lifecycle_systems/lifecycle.py::LifecycleSystem::_end_projects_on_death
     verified:
       instrument: scenario
       verdict: observed

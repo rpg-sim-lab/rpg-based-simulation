@@ -43,6 +43,7 @@ class ProjectEnd(str, Enum):
       `BLOCKER_TIMEOUT` (ABANDONED): a resolve_blocker project that ran for the 50-tick window without its blocker resolving (divergence 2.214).
       `BLOCKER_CLEARED` (COMPLETED): a resolve_blocker project whose blocker was removed after a quiet spell (divergence 2.214).
       `DESTINATION_GIVEN_UP` (ABANDONED): the subject gave up reaching this project's destination ACCESS_GIVEUP_LIMIT times (give-up-filed ACCESS blocker, F2, divergence 2.220); every project kind.
+      `DEATH` (ABANDONED): the subject died while the project was live (ACTIVE or SUSPENDED); the lifecycle death block ends every live record of the dead body in the same update (divergence 2.226). The record is kept.
     A project ended for any other reason keeps `ended_by` None."""
     SUPERSEDED_BY_TARGET = "SUPERSEDED_BY_TARGET"
     THREAT_CLEARED = "THREAT_CLEARED"
@@ -51,6 +52,7 @@ class ProjectEnd(str, Enum):
     BLOCKER_TIMEOUT = "BLOCKER_TIMEOUT"
     BLOCKER_CLEARED = "BLOCKER_CLEARED"
     DESTINATION_GIVEN_UP = "DESTINATION_GIVEN_UP"
+    DEATH = "DEATH"
 
 
 class ObjectiveStatus(str, Enum):
@@ -565,6 +567,18 @@ def expire_suspended(projects: Mapping[str, ProjectState], tick: int) -> List[Pr
         elif tick - project.suspended_since >= SUSPENSION_TTL_TICKS:
             out.append(end_record(project, ProjectStatus.ABANDONED, ProjectEnd.SUSPENSION_EXPIRED, tick))
     return out
+
+
+def end_live_on_death(projects: Mapping[str, ProjectState], staged: Iterable[ProjectState], removed: Iterable[str], tick: int) -> List[ProjectState]:
+    """The records to write when the subject dies at ``tick`` (divergence 2.226): every LIVE project (ACTIVE or SUSPENDED) ends ABANDONED / `DEATH` through `end_record`. The projects are the stored ones overlaid
+    with the ones ``staged`` this tick (a staged record wins by id) minus the ids ``removed`` this tick, so a record this tick's strategic update already ended, or removes, is not ended again. A COMPLETED or ABANDONED record is a
+    record and yields nothing. Records are kept, never deleted. Reads only; the caller writes."""
+    effective = dict(projects)
+    for project in staged:
+        effective[project.id] = project
+    for project_id in removed:
+        effective.pop(project_id, None)
+    return [end_record(p, ProjectStatus.ABANDONED, ProjectEnd.DEATH, tick) for p in effective.values() if is_live_project(p) and p.ended_by is None]
 
 
 def supersede_record(project: ProjectState, tick: Optional[int] = None) -> ProjectState:

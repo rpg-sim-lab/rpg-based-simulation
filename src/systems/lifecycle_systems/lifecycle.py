@@ -1,7 +1,9 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 from dataclasses import replace
 from src.core.updates import StateUpdate, EntityUpdate, LifecycleUpdate, InventoryUpdate, IdentityUpdate
+from src.core.update_models.strategic import StrategicUpdate
+from src.core.strategic import end_live_on_death, ended_blocker_stamps
 from src.core.state import LifeStage
 from src.core.death_cause import DeathCause, DeathRecord, death_cause_of
 from src.core.enums import EntityRole
@@ -168,6 +170,71 @@ class LifecycleSystem:
         return candidates[0][2]
 
     @staticmethod
+    def _end_projects_on_death(entity: EntityState, ent_upd: EntityUpdate, tick: int) -> EntityUpdate:
+        """``ent_upd`` with the typed strategic writes of a death (divergence 2.226): every live project (ACTIVE or SUSPENDED, counting what this tick already staged) ends ABANDONED / `DEATH`, the blocker a
+        resolve_blocker end names is stamped as at any other end, and the current project and objective are cleared. A body with no live project and no current project gets the update unchanged."""
+        staged = ent_upd.strategic or StrategicUpdate()
+        written = end_live_on_death(entity.strategic.projects, staged.projects_add_or_update, staged.projects_remove, tick)
+        has_current = bool(entity.strategic.current_project_id) or bool(staged.current_project_id_set)
+        if not written and not has_current:
+            return ent_upd
+        return replace(ent_upd, strategic=replace(
+            staged,
+            projects_add_or_update=staged.projects_add_or_update + written,
+            blockers_add_or_update=staged.blockers_add_or_update + ended_blocker_stamps(entity.strategic.blockers, written),
+            current_project_id_set="",
+            current_objective_id_set="",
+        ))
+
+    @staticmethod
+    def _apply_death(state: AuthoritativeState, entity: EntityState, death_reason: Optional[str],
+                     refined_entity_updates: Dict[int, EntityUpdate], recent_deaths: List[EntityState]) -> None:
+        """One death, in the order `resolve_lifecycle` always applied it: the body is marked inactive with its death truth, its live projects end, then its heir and the estate are resolved.
+        Writes the death into ``refined_entity_updates`` (the caller's local copy of the update's entity updates, this body's entry and its heir's) and appends the body to ``recent_deaths``;
+        ``state`` is only read. The body's id is ``entity.id`` (the key of ``state.entities`` and of ``refined_entity_updates``) and its pending update is ``refined_entity_updates.get(entity.id)``: at the call the loop's own ``ent_upd`` is exactly that dict entry (every branch that rebinds it stores it back first). Extracted from the `if is_dead:` block of `resolve_lifecycle` (TCK-20261031-DEATH-CLOSES-NO-PROJECT, so the function stays within its length ceiling)."""
+        ent_upd = refined_entity_updates.get(entity.id) or EntityUpdate(entity_id=entity.id)
+        recent_deaths.append(entity)
+        # Mark as inactive and record death truth
+        life_upd = ent_upd.lifecycle or LifecycleUpdate()
+        refined_entity_updates[entity.id] = replace(ent_upd,
+            active=False,
+            lifecycle=replace(life_upd,
+                is_permadeath_set=True,
+                death_tick_set=state.tick,
+                death_reason_set=death_reason,
+                death_record_set=LifecycleSystem._death_record(state, entity, ent_upd, death_reason),
+            )
+        )
+        # Death ends every live project of the body (divergence 2.226): ABANDONED / DEATH through the typed strategic update, the record kept, the current project and objective cleared.
+        refined_entity_updates[entity.id] = LifecycleSystem._end_projects_on_death(entity, refined_entity_updates[entity.id], state.tick)
+        
+        # Process Succession / Heirlooms
+        heir_id = entity.lifecycle.heir_entity_id
+        if heir_id is None:
+            heir_id = LifecycleSystem._select_default_heir(state, entity)
+            if heir_id is not None:
+                life_upd2 = refined_entity_updates[entity.id].lifecycle or LifecycleUpdate()
+                refined_entity_updates[entity.id] = replace(refined_entity_updates[entity.id],
+                    lifecycle=replace(life_upd2, heir_entity_id_set=heir_id)
+                )
+        if heir_id is not None:
+            heir = state.entities.get(heir_id)
+            if heir:
+                heir_upd = refined_entity_updates.get(heir_id, EntityUpdate(entity_id=heir_id))
+
+                # On-death lineage dispatch (ideas 55+58): one dispatch point, two
+                # thin handlers, both firing here -- right after heir_id resolution,
+                # before the heirloom transfer below (TCK-20260904-LINEAGE-DEATH-
+                # DISPATCH).
+                heir_upd = LifecycleSystem._transfer_inherited_feud(entity, heir_upd)
+                heir_upd = LifecycleSystem._seed_dying_wish(entity, heir, heir_upd, state.tick)
+
+                # The estate: what the dead entity carries MOVES to the heir (INHERIT), and the named heirlooms arrive as before.
+                heir_upd = replace(heir_upd, resource_transfers=heir_upd.resource_transfers + LifecycleSystem._estate_transfers(entity))
+
+                refined_entity_updates[heir_id] = heir_upd
+
+    @staticmethod
     def resolve_lifecycle(state: AuthoritativeState, update: StateUpdate) -> StateUpdate:
         """
         Identify entities that have died and process succession/permadeath.
@@ -264,45 +331,7 @@ class LifecycleSystem:
                     death_reason = entity.lifecycle.passive_death_cause.value
 
             if is_dead:
-                ent_upd = ent_upd or EntityUpdate(entity_id=e_id)
-                recent_deaths.append(entity)
-                # Mark as inactive and record death truth
-                life_upd = ent_upd.lifecycle or LifecycleUpdate()
-                refined_entity_updates[e_id] = replace(ent_upd,
-                    active=False,
-                    lifecycle=replace(life_upd,
-                        is_permadeath_set=True,
-                        death_tick_set=state.tick,
-                        death_reason_set=death_reason,
-                        death_record_set=LifecycleSystem._death_record(state, entity, ent_upd, death_reason),
-                    )
-                )
-                
-                # Process Succession / Heirlooms
-                heir_id = entity.lifecycle.heir_entity_id
-                if heir_id is None:
-                    heir_id = LifecycleSystem._select_default_heir(state, entity)
-                    if heir_id is not None:
-                        life_upd2 = refined_entity_updates[e_id].lifecycle or LifecycleUpdate()
-                        refined_entity_updates[e_id] = replace(refined_entity_updates[e_id],
-                            lifecycle=replace(life_upd2, heir_entity_id_set=heir_id)
-                        )
-                if heir_id is not None:
-                    heir = state.entities.get(heir_id)
-                    if heir:
-                        heir_upd = refined_entity_updates.get(heir_id, EntityUpdate(entity_id=heir_id))
-
-                        # On-death lineage dispatch (ideas 55+58): one dispatch point, two
-                        # thin handlers, both firing here -- right after heir_id resolution,
-                        # before the heirloom transfer below (TCK-20260904-LINEAGE-DEATH-
-                        # DISPATCH).
-                        heir_upd = LifecycleSystem._transfer_inherited_feud(entity, heir_upd)
-                        heir_upd = LifecycleSystem._seed_dying_wish(entity, heir, heir_upd, state.tick)
-
-                        # The estate: what the dead entity carries MOVES to the heir (INHERIT), and the named heirlooms arrive as before.
-                        heir_upd = replace(heir_upd, resource_transfers=heir_upd.resource_transfers + LifecycleSystem._estate_transfers(entity))
-
-                        refined_entity_updates[heir_id] = heir_upd
+                LifecycleSystem._apply_death(state, entity, death_reason, refined_entity_updates, recent_deaths)
 
         # Apply Influence Shifts
         if recent_deaths:
