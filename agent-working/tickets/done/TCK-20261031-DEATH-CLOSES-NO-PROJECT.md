@@ -66,7 +66,7 @@ Phase 2: fix shape after rpg-designer reads Phase 1.
 Rulings (rpg-planner, 2026-11-25): (a) ABANDONED, `ProjectEnd.DEATH`; (b) staged in `LifecycleSystem.resolve_lifecycle`'s death block via a typed StrategicUpdate; the 1-tick passive-death lag is a limit line; (c) `quest_status` left alone (limit line; follow-up candidate, no ticket yet); (d) `current_project_id_set=""` in the same update. Divergence 2.226 (lane C's births branch takes 2.225). Phase 1 item 1 (readers) is in investigation.md; items 2 and 3 were answered by the measured run (investigation.md, "Run evidence", written at close).
 - Code: `ProjectEnd.DEATH` and the pure `end_live_on_death` (src/core/strategic.py); `LifecycleSystem._end_projects_on_death` stages the typed StrategicUpdate; the death block of `resolve_lifecycle` was extracted unchanged into `LifecycleSystem._apply_death` (03a459070) to keep `resolve_lifecycle` within its length ceiling (rpg-planner ruling, option (c): fix in code, no ceiling raise), then `_apply_death` took 5 parameters (f81047800; `e_id` and `ent_upd` are derived: invariant proof in the S10 packet).
 - PIN update: src/engine/access_audit/declarations.py:77, the lifecycle step's pinned static reads `('entities', 'tick')` -> `('entities',)`; cause 03a459070 (the scan is not transitive and `state.tick` is read in `_apply_death`), commit 1a4d01003, rpg-planner ruling option A.
-- Own-job kit `tools/rpg_measure/death_closes_project_*` (designer's definition df2ba4b5, approved kit 18f7b53c7, SUMS 05d688a9), merged into this branch by ba254f07e.
+- Own-job kit on `evidence/death-closes-project-kit @ 18f7b53c7, SUMS 05d688a9` (designer's definition df2ba4b5); not in main (owner ruling #715 7207747219: one-off kits stay on evidence branches), so this PR carries only the fix and its regression tests (the kit files merged by ba254f07e are deleted again in the commit after 26c0bf7c2).
 - Divergence 2.226, parity STRAT-357, Bible ch04 and ch05 (the `_apply_death` mention), `docs/engine/known_limitations.md` 1.3 (the quest_status limit), mechanisms.yaml `goal_hierarchy` (summary and two `implemented_by` entries).
 
 ## Test Summary
@@ -77,7 +77,7 @@ Rulings (rpg-planner, 2026-11-25): (a) ABANDONED, `ProjectEnd.DEATH`; (b) staged
 Known gap: a passive HP death is classified one tick after its `alive=False`, so its project end lags that tick (0 lag rows measured in the run).
 Known gap: a dead body's quest project ends ABANDONED while `quest_status` is unchanged (0 such cases measured; follow-up candidate, none filed).
 Known gap: NOT MEASURED: the redirection effect on the death tick (`StrategicRedirectionSystem` is never called by the pipeline) and SimQ `project_abandoned` (recording off).
-- Kit unit tests (tests/tools/test_death_closes_project_kit.py): 30 passed, 1 skipped on the kit branch; the skip is the m7 wiring check, which needs the FIX tree.
+- Kit unit tests (on `evidence/death-closes-project-kit @ 18f7b53c7, SUMS 05d688a9`, not in this PR): 30 passed, 1 skipped on the kit branch; the skip is the m7 wiring check, which needs the FIX tree (31 passed on this branch before the kit files were removed).
 
 ## Files Changed
 - `agent-working/stored_artifacts/TCK-20261031-DEATH-CLOSES-NO-PROJECT/investigation.md`
@@ -94,16 +94,9 @@ Known gap: NOT MEASURED: the redirection effect on the death tick (`StrategicRed
 - `src/core/strategic.py`
 - `src/engine/access_audit/declarations.py`
 - `src/systems/lifecycle_systems/lifecycle.py`
-- `tests/tools/test_death_closes_project_kit.py`
 - `tests/unit/strategic/test_death_ends_live_projects.py`
 - `tests/unit/strategic/test_project_end_record.py`
-- `tools/rpg_measure/death_closes_project_controls.py`
-- `tools/rpg_measure/death_closes_project_divergence_locate.py`
-- `tools/rpg_measure/death_closes_project_launch.sh`
-- `tools/rpg_measure/death_closes_project_logic.py`
-- `tools/rpg_measure/death_closes_project_spy.py`
-- `tools/rpg_measure/death_closes_project_summary.py`
-- `tools/rpg_measure/death_closes_project_tree_check.sh`
+- (not in this PR) the own-job kit: `evidence/death-closes-project-kit @ 18f7b53c7, SUMS 05d688a9`
 
 ## Completion Summary
 A dead body no longer keeps live projects: when a subject dies, `resolve_lifecycle`'s death path (`_apply_death`) ends every ACTIVE and SUSPENDED project it holds ABANDONED with `ended_by` DEATH through `end_record` in one typed StrategicUpdate, keeps the records and clears the current project and objective (divergence 2.226, STRAT-357).

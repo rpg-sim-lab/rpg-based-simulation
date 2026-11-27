@@ -4787,7 +4787,7 @@
   status: verified
   priority: P1
   legacy_evidence: null
-  v2_evidence: 'src/core/strategic.py (ProjectEnd.DEATH, end_live_on_death), src/systems/lifecycle_systems/lifecycle.py (_end_projects_on_death in the death block), docs/mechanics/04_strategic_cognition.md (Death Ends Every Live Project Of The Dead Body), docs/guidelines/intentional_divergences.md Section 2.226, tools/rpg_measure/death_closes_project_* (the own-job kit).'
+  v2_evidence: 'src/core/strategic.py (ProjectEnd.DEATH, end_live_on_death), src/systems/lifecycle_systems/lifecycle.py (_end_projects_on_death in the death block), docs/mechanics/04_strategic_cognition.md (Death Ends Every Live Project Of The Dead Body), docs/guidelines/intentional_divergences.md Section 2.226, evidence/death-closes-project-kit @ 18f7b53c7, SUMS 05d688a9 (the own-job kit; not in main).'
   proof_type: regression
   test_path: tests/unit/strategic/test_death_ends_live_projects.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.226.
