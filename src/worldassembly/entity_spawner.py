@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Dict, Optional, Tuple
 
-from src.content.common_knowledge_seed import default_self_model, warmed_catalog
 from src.content.archetype_less_breeders import refuse_archetype_less_monster_breeder
+from src.content.common_knowledge_seed import default_self_model, warmed_catalog
 from src.content.species_senses import require_species_sense_profile
 from src.core.species import SpeciesNotDeclaredError
 from src.core.state import EntityState
@@ -132,8 +132,11 @@ class WorldEntitySpawner:
         # LEGACY GUARD: no archetype_id available. Builds from the profile's stats. M1 step 4: the profile must declare its species (`kind` = species_id); there is no default.
         if not profile.species_id:
             raise SpeciesNotDeclaredError(f"profile of entity {entity_id} (population {spawn.population_id!r}) declares no species_id")
+        from src.content_semantics.personality import (
+            build_personality_for_entity,
+            get_action_style_for_bravery,
+        )
         from src.core.builder import V2EntityBuilder
-        from src.content_semantics.personality import build_personality_for_entity, get_action_style_for_bravery
         require_species_sense_profile(profile.species_id, f"spawn of entity {entity_id}")
         self._refuse_monster_breeder(entity_id, profile, spawn.population_id)
         personality = build_personality_for_entity(entity_id, profile.faction_id, seed)
