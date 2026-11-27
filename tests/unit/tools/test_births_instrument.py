@@ -412,12 +412,25 @@ def test_the_probe_stops_when_the_recording_on_plain_hash_differs_from_the_recor
     assert stop["verdict"] == "STOP" and stop["equal"] is False
 
 
-def test_the_reference_hash_report_passes_only_when_every_cell_matches_and_stops_on_a_difference_or_no_reference_arm():
-    docs = {("w", 42, "plain"): {"final_hash": "a"}, ("w", 42, "ref"): {"final_hash": "a"}, ("w", 43, "plain"): {"final_hash": "b"}, ("w", 43, "ref"): {"final_hash": "b"}}
+def test_the_reference_hash_report_compares_the_masked_hash_and_stops_on_a_difference_or_no_reference_arm():
+    cell = lambda h, m: {"final_hash": h, "masked_final_hash": m}
+    # the full hashes differ (the head carries the archetype stamp) while the MASKED ones are equal: PASS; a masked difference is a STOP
+    docs = {("w", 42, "plain"): cell("a", "m1"), ("w", 42, "ref"): cell("other", "m1"), ("w", 43, "plain"): cell("b", "m2"), ("w", 43, "ref"): cell("other", "m2")}
     assert births_run.ref_hash_report(docs) == {"equal": {"w/42": True, "w/43": True}, "verdict": "PASS"}
-    docs[("w", 43, "ref")] = {"final_hash": "c"}
+    docs[("w", 43, "ref")] = cell("b", "m3")
     assert births_run.ref_hash_report(docs) == {"equal": {"w/42": True, "w/43": False}, "verdict": "STOP"}
-    assert births_run.ref_hash_report({("w", 42, "plain"): {"final_hash": "a"}})["verdict"] == "STOP"
+    assert births_run.ref_hash_report({("w", 42, "plain"): cell("a", "m1")})["verdict"] == "STOP"
+
+
+def test_archetype_masked_hash_ignores_only_the_archetype_stamp():
+    from tools.rpg_measure.births_child import archetype_masked_hash
+    from src.engine.checkpoint import CanonicalStateHasher
+    stamped = V2EntityBuilder(1).kind("wolf").location(5.0, 5.0).identity(role=2, properties={"population_id": "p", "archetype_id": "hungry_wolf"}).build()
+    bare = V2EntityBuilder(1).kind("wolf").location(5.0, 5.0).identity(role=2, properties={"population_id": "p"}).build()
+    other = V2EntityBuilder(1).kind("wolf").location(5.0, 5.0).identity(role=2, properties={"population_id": "q"}).build()
+    assert CanonicalStateHasher.get_hash(_state(stamped)) != CanonicalStateHasher.get_hash(_state(bare)), "the stamp is in the canonical hash"
+    assert archetype_masked_hash(_state(stamped)) == archetype_masked_hash(_state(bare)) == CanonicalStateHasher.get_hash(_state(bare))
+    assert archetype_masked_hash(_state(other)) != archetype_masked_hash(_state(bare)), "any other property still counts"
 
 
 # ---- designer kit review 5a5d40a7: the two HARD bars no test exercised --------------------------------------------------------------------------
@@ -440,3 +453,17 @@ def test_w3_four_mid_run_adds_only_the_one_with_no_source_and_the_undeclared_one
     spy.arrivals = {10: None, 11: "UNDECLARED_SOURCE", 12: "AUTHORED_ARRIVAL", 13: "BIRTH"}
     watch.after_tick(_state(_body(1), _body(2), _body(10), _body(11), _body(12), with_parents, tick=5))
     assert sorted((r["id"], r["source"]) for r in watch.fails["W3"]) == [(10, None), (11, "UNDECLARED_SOURCE")]
+
+
+def test_t0_diff_passes_only_for_added_archetype_stamps_and_stops_on_anything_else():
+    from tools.rpg_measure import births_t0_diff as t0
+    ref = {"entities": {"1": {"identity": {"properties": {"population_id": "p"}, "role": 2}}, "2": {"identity": {"properties": {}, "role": 3}}}, "tick": 0}
+    head = {"entities": {"1": {"identity": {"properties": {"population_id": "p", "archetype_id": "a"}, "role": 2}}, "2": {"identity": {"properties": {"archetype_id": "b"}, "role": 3}}}, "tick": 0}
+    verdict = t0.t0_verdict(t0.diff_canonical(ref, head))
+    assert (verdict["verdict"], verdict["archetype_stamps_added"], verdict["other_count"]) == ("PASS", 2, 0)
+    head["entities"]["2"]["identity"]["role"] = 2  # a role change is not the stamp
+    assert t0.t0_verdict(t0.diff_canonical(ref, head))["verdict"] == "STOP"
+    head["entities"]["2"]["identity"]["role"] = 3
+    head["entities"]["2"]["identity"]["properties"]["extra"] = 1  # another added property is not the stamp
+    assert t0.t0_verdict(t0.diff_canonical(ref, head))["verdict"] == "STOP"
+    assert t0.t0_verdict(t0.diff_canonical(ref, ref))["verdict"] == "STOP", "no stamp at all (nothing to measure) is not a PASS"

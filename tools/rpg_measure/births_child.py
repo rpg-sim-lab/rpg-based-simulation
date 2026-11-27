@@ -18,6 +18,7 @@ import json
 import os
 import sys
 from collections import Counter
+from dataclasses import replace as dc_replace
 from pathlib import Path
 
 from src.engine.checkpoint import CanonicalStateHasher
@@ -83,6 +84,18 @@ def metrics_digest(metrics: dict) -> str:
     return hashlib.sha256(json.dumps(stable, sort_keys=True).encode()).hexdigest()
 
 
+def archetype_masked_hash(state) -> str:
+    """The canonical state hash with `identity.properties["archetype_id"]` removed from every entity (designer ruling 9b06026c): the head carries that one property per archetype-backed body and the reference tree does not,
+    so the reference bar compares THIS hash. Equal masked hashes mean the head and the reference trajectories are identical apart from that stamp."""
+    entities = {}
+    for entity_id, entity in state.entities.items():
+        props = entity.identity.properties or {}
+        if "archetype_id" in props:
+            entity = dc_replace(entity, identity=dc_replace(entity.identity, properties={k: v for k, v in props.items() if k != "archetype_id"}))
+        entities[entity_id] = entity
+    return CanonicalStateHasher.get_hash(dc_replace(state, entities=entities))
+
+
 def main(argv: list[str]) -> int:
     world, seed, ticks, mode, out = argv[0], int(argv[1]), int(argv[2]), argv[3], argv[4]
     if mode == "control":
@@ -141,7 +154,7 @@ def main(argv: list[str]) -> int:
     }
     doc = {
         "world": world, "seed": seed, "ticks": ticks, "mode": mode, "hashseed": os.environ.get("PYTHONHASHSEED"), "runner": pinned.verdict, "forced_flags": forced,
-        "final_hash": CanonicalStateHasher.get_hash(state), "final": final,
+        "final_hash": CanonicalStateHasher.get_hash(state), "masked_final_hash": archetype_masked_hash(state), "final": final,
         "births_by_kind": dict(Counter(e.kind for e in state.entities.values() if e.id not in start_state.entities and e.lifecycle.parent_a_entity_id is not None)),
         "max_entity_id": max(state.entities, default=0), "phase_costs": costs, "cost_stages": list(COST_STAGES), "host": host,
     }

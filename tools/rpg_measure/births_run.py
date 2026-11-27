@@ -366,8 +366,8 @@ def trigger_report(docs: Dict[Key, dict]) -> Dict[str, Any]:
 
 
 def ref_hash_report(docs: Dict[Key, dict]) -> Dict[str, Any]:
-    """Per cell, whether the reference tree's plain final hash equals the head's plain one; STOP when any differs or no reference arm ran."""
-    equal = {f"{w}/{s}": docs[(w, s, "ref")]["final_hash"] == docs[(w, s, "plain")]["final_hash"] for (w, s, m) in sorted(docs) if m == "ref"}
+    """Per cell, whether the reference tree's plain MASKED final hash (identity.properties.archetype_id removed from every entity, `births_child.archetype_masked_hash`) equals the head's plain one; STOP when any differs or no reference arm ran."""
+    equal = {f"{w}/{s}": docs[(w, s, "ref")]["masked_final_hash"] == docs[(w, s, "plain")]["masked_final_hash"] for (w, s, m) in sorted(docs) if m == "ref"}
     return {"equal": equal, "verdict": "PASS" if equal and all(equal.values()) else "STOP"}
 
 
