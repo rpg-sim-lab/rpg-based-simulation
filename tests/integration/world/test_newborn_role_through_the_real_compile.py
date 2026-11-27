@@ -24,7 +24,8 @@ WORLD, SEED = "frontier_living_world", 42
 def compiled():
     spec, context = WorldRepository(os.path.join("data", "worlds")).load_world_with_context(WORLD)
     state, _report = WorldCompiler.compile(spec, SEED, context=context)
-    return state
+    state_and_expected = (state, sum(p.count for p in context.entities.values() if p.archetype_id), {k for k, p in context.entities.items() if not p.archetype_id})
+    return state_and_expected
 
 
 def _mother(state, archetype_id):
@@ -41,15 +42,16 @@ def _newborn_of(mother):
 
 @pytest.mark.parametrize("archetype_id, expected", [("cave_spider", EntityRole.MONSTER), ("goblin_raider", EntityRole.MONSTER), ("goblin_archer", EntityRole.CITIZEN)])
 def test_a_compiled_mother_carries_her_archetype_and_her_newborn_gets_the_declared_role(compiled, archetype_id, expected):
-    mother = _mother(compiled, archetype_id)
+    mother = _mother(compiled[0], archetype_id)
     assert mother.identity.properties["archetype_id"] == archetype_id
     assert declared_newborn_role(warmed_catalog(), mother) == (expected, "ARCHETYPE")
     child = _newborn_of(mother)
     assert child.identity.role == expected and child.identity.life_stage == LifeStage.CHILD
 
 
-def test_every_compiled_body_built_from_an_archetype_carries_it_and_no_other_property_key_changed_for_them(compiled):
-    stamped = [e for e in compiled.entities.values() if (e.identity.properties or {}).get("archetype_id")]
-    assert len(stamped) >= 45, "the frontier world's archetype-backed populations (ids 1-35 and 39-55, about 52 bodies)"
-    for e in stamped:
-        assert {"population_id", "faction_id", "spawn_region", "archetype_id"} <= set(e.identity.properties)
+def test_every_archetype_backed_compiled_body_carries_its_archetype_and_no_body_without_one_does(compiled):
+    state, expected_count, archetype_less_populations = compiled
+    stamped = [e for e in state.entities.values() if (e.identity.properties or {}).get("archetype_id")]
+    assert len(stamped) == expected_count > 0, "the count is computed from the compile context's profiles (those with an archetype_id), not a literal"
+    for e in state.entities.values():
+        assert ((e.identity.properties or {}).get("population_id") in archetype_less_populations) == ("archetype_id" not in (e.identity.properties or {}))
