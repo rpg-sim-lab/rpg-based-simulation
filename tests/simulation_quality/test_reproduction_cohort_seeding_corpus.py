@@ -12,7 +12,7 @@ against the real function, not a bare range check.
 """
 from __future__ import annotations
 
-from dataclasses import replace
+import pytest
 
 from tools.calibrate_simq import _load_world_state
 from src.config.profiles import PROD_SMALL
@@ -21,27 +21,23 @@ from src.engine.kernel import Kernel
 from src.platform.rng import DeterministicRNG
 from src.systems.lifecycle_systems.genetics import GeneticsSystem
 
-# ENABLE_REPRODUCTION_HUMANOID_PATH is OFF by default in frontier_living_world's own registered
-# profile (config/simulation_quality/profiles/frontier_living_world.yaml only turns on
-# ENABLE_BELIEF_ASSIMILATION/ENABLE_SOCIAL_COOPERATION) -- confirmed via a real Kernel run that
-# reproduction never fires without it. Flags live on AuthoritativeState.feature_flags (read by
-# src/engine/world_dynamics.py:213), NOT the Kernel(flags=...) constructor arg (that's a distinct,
-# kernel-runtime flag set). Explicitly enabled here since this ticket's own scope is proving the
-# real reproduction mechanism works, not reproducing the shipped profile's own flag defaults.
-_RUN_TICKS = 250
+# Births are unflagged (M1): the run needs no flag, only enough ticks for a pair at the friend line to conceive and carry to term.
+# 250 -> 3000 (owner #715 7158923490): a birth is its pregnancy's due tick, 2400 ticks after the conception; measured on this world and seed (42), the first
+# birth is at tick 2161 (conceived at 961).
+_RUN_TICKS = 3000
 
 
 def test_migration_threshold_default_is_the_real_scarcity_gate():
     assert PopulationCohort(bracket="adult").migration_threshold == 0.7, (
         "PopulationCohort's real default migration_threshold must stay 0.7 (E52B) -- "
-        "src/world/camp.py and src/world/reproduction_humanoid.py both fall back to this exact value"
+        "the cohort default every reader of population_cohorts relies on"
     )
 
 
+@pytest.mark.extra_slow  # about 3.5 minutes for the 3000-tick run
 def test_a_real_birth_produces_a_correctly_blended_genetic_profile_within_range():
     state, report = _load_world_state("frontier_living_world", seed=42)
     assert state is not None, "frontier_living_world must be a real, compilable corpus world"
-    state = replace(state, feature_flags={"ENABLE_REPRODUCTION_HUMANOID_PATH": "ON"})
     starting_ids = set(state.entities.keys())
 
     kernel = Kernel(profile=PROD_SMALL, state=state, rng=DeterministicRNG(42), flags={"no_frame_pacing": True})

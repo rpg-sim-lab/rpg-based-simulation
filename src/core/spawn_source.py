@@ -11,21 +11,24 @@ from typing import Optional, Tuple
 
 
 class SpawnKind(str, Enum):
-    """The three honest ways an entity enters the world."""
+    """The honest ways an entity enters the world."""
 
     INITIAL = "INITIAL"  # part of the world as assembled (no producer tags it yet: world assembly does not go through entities_add)
     BIRTH = "BIRTH"  # born of two parents
     AUTHORED_ARRIVAL = "AUTHORED_ARRIVAL"  # arrives by an authored content rule (rule_kind, rule_id)
+    RISEN = "RISEN"  # a new subject made from a corpse (source_corpse_id, original_entity_id); the dead body stays dead (STR-02)
 
 
 @dataclass(frozen=True, slots=True)
 class SpawnSource:
-    """One add's declared source: ``parent_ids`` only for BIRTH, ``rule_kind``/``rule_id`` required for AUTHORED_ARRIVAL."""
+    """One add's declared source: ``parent_ids`` only for BIRTH, ``rule_kind``/``rule_id`` required for AUTHORED_ARRIVAL, ``source_corpse_id``/``original_entity_id`` required for RISEN."""
 
     kind: SpawnKind
     parent_ids: Tuple[int, ...] = ()
     rule_kind: Optional[str] = None
     rule_id: Optional[str] = None
+    source_corpse_id: Optional[int] = None
+    original_entity_id: Optional[int] = None
 
     def __post_init__(self) -> None:
         if self.kind is SpawnKind.BIRTH and not self.parent_ids:
@@ -34,3 +37,7 @@ class SpawnSource:
             raise ValueError("only a BIRTH source has parent_ids")
         if self.kind is SpawnKind.AUTHORED_ARRIVAL and not (self.rule_kind and self.rule_id):
             raise ValueError("an AUTHORED_ARRIVAL source names its rule (rule_kind and rule_id)")
+        if self.kind is SpawnKind.RISEN and (self.source_corpse_id is None or self.original_entity_id is None):
+            raise ValueError("a RISEN source names its corpse and the body it was (source_corpse_id and original_entity_id)")
+        if self.kind is not SpawnKind.RISEN and (self.source_corpse_id is not None or self.original_entity_id is not None):
+            raise ValueError("only a RISEN source has source_corpse_id or original_entity_id")

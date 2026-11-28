@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Optional, Any, Dict, List, Literal, Tuple
+from enum import Enum
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 from src.core.enums import ReasonCode
 
@@ -77,6 +78,36 @@ FERTILITY_BANDS = ("low", "medium", "high")  # coarse land fertility (decision 5
 class NeedProfileDefinition(CatalogBaseDefinition):
     """Schema for entity drives and survival needs weights."""
     needs: Dict[str, str] = Field(default_factory=dict, description="Motivation/need values (e.g. high, medium)")
+
+
+class SentimentThreshold(str, Enum):
+    """The named sentiment lines a mate gate may reference (a value in content, never a copied number); each maps to its constant in code."""
+
+    FRIEND = "friend"  # RelationshipService.FRIEND_SENTIMENT_THRESHOLD
+
+
+# The births check interval in ticks (SystemCadence.births default); a gestation is a multiple of it so a birth falls on a check tick.
+BIRTH_CHECK_INTERVAL_TICKS = 30
+
+
+class ReproductionProfileDefinition(CatalogBaseDefinition):
+    """How a kind that eats has young (M1 births): a chance per 30-tick check for a fed adult with a mate of its kind nearby. A kind with no profile has no births."""
+    birth_chance_per_check: float = Field(..., ge=0.0, le=1.0, description="Chance an eligible mother births at one check")
+    min_birth_interval_ticks: int = Field(..., ge=1, description="Ticks both parents stay ineligible after a birth")
+    gestation_ticks: int = Field(..., ge=1, description="Ticks from conception to the birth; a positive multiple of the births check interval (checked at load)")
+    litter_weights: Dict[int, float] = Field(..., description="Litter size -> weight; one size is drawn at conception (each size >= 1, each weight > 0, checked at load)")
+    mate_radius_tiles: float = Field(..., gt=0.0, description="Chebyshev radius in tiles within which a same-kind adult counts as a mate")
+    fed_line: float = Field(..., ge=0.0, le=100.0, description="Highest mother hunger (0 fed to 100 starving) that still counts as well fed")
+    birth_hunger_cost: float = Field(..., gt=0.0, le=100.0, description="Hunger the mother gains at a birth")
+    mate_gate: Literal["none", "bond"] = Field("none", description="none reads no social state; bond needs an accepted marriage or both directed sentiments at min_mutual_sentiment")
+    min_mutual_sentiment: Optional[SentimentThreshold] = Field(None, description="The named sentiment line a bond gate needs (required with bond, absent with none)")
+
+
+class RisenProfileDefinition(CatalogBaseDefinition):
+    """How a kind that does not eat arises from a corpse (M1 risen origin): a chance per births-cadence check for each corpse of a listed species. The rise is a new subject (STR-02)."""
+    source_species: List[str] = Field(..., min_length=1, description="Species whose corpses can rise as this kind")
+    rise_chance_per_check: float = Field(..., ge=0.0, le=1.0, description="Chance an eligible corpse rises at one check")
+    risen_archetype: str = Field(..., min_length=1, description="Referenced EntityArchetypeDefinition ID whose body the risen subject is built from")
 
 
 class SenseProfileDefinition(CatalogBaseDefinition):
@@ -201,6 +232,9 @@ class SpeciesDefinition(CatalogBaseDefinition):
     renamed from RaceDefinition, part of the race->species terminology migration)."""
     body_model: str = Field(..., description="Referenced BodyModelDefinition ID")
     need_profile: str = Field(..., description="Referenced NeedProfileDefinition ID")
+    reproduction_profile: Optional[str] = Field(None, min_length=1, description="Optional. Referenced ReproductionProfileDefinition ID; absent means the kind has no births and the species loads exactly as before. A species that sets it must also set newborn_archetype, and its need profile must declare hunger")
+    risen_profile: Optional[str] = Field(None, min_length=1, description="Optional. Referenced RisenProfileDefinition ID; absent means no corpse rises as this kind")
+    newborn_archetype: Optional[str] = Field(None, min_length=1, description="Optional, and applies only to a species with a reproduction_profile. Referenced EntityArchetypeDefinition ID whose body (stats, attributes, body model) a newborn of this species takes, with no role, occupation, equipment, inventory or job traits. Required when reproduction_profile is set, refused when it is not; absent otherwise. The archetype must belong to this species")
     sense_profile: str = Field(..., description="Referenced SenseProfileDefinition ID")
     cognition_profile: str = Field(..., description="Referenced CognitionProfileDefinition ID")
     drive_profile: str = Field(..., description="Referenced DriveProfileDefinition ID")
@@ -313,6 +347,10 @@ class EntityArchetypeDefinition(CatalogBaseDefinition):
     skill_profile: Optional[str] = Field(None, description="Referenced SkillProfileDefinition ID")
     traits: List[str] = Field(default_factory=list)
     themes: List[str] = Field(default_factory=list)
+    newborn_role: Optional[Literal["MONSTER", "CITIZEN"]] = Field(
+        None,
+        description="M1 births: the role a child of a mother built from this archetype is born with (a child has no job, so a job role is refused here). Required when the species has a reproduction profile (checked at load); absent otherwise",
+    )
 
 
 class PopulationRecipeDefinition(CatalogBaseDefinition):

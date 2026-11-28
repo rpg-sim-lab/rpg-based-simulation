@@ -3813,9 +3813,9 @@
     build_parent_bond_updates_for_birth() helper produces the parents'' reciprocal
     EntityUpdates at the same 0.8/0.8 values for a caller to apply through the standard
     SocialUpdate.bond_updates path. This is schema + builder plumbing only -- no reproduction
-    trigger logic, no genetics wiring, and explicitly no marriage/contract precondition
-    anywhere in the schema or its write path (Reproduction, idea 32, is decoupled
-    from Marriage, idea 33, per the 2026-08-29 build-order decision).'
+    trigger logic, no genetics wiring, and no marriage/contract field in the schema or its
+    write path. Whether a pair may conceive is the births mate gate''s decision (SOC-281),
+    which reverses the 2026-08-29 decoupling of idea 32 from idea 33 (divergence 2.225).'
   status: verified
   priority: P2
   legacy_evidence: null
@@ -4368,3 +4368,18 @@
   test_path: tests/unit/social/test_rejection_counts_kept.py::test_a_trust_only_update_leaves_the_rejection_counts_intact; tests/unit/core/test_social_counts.py
   divergence_note: 'The update and merge behaviour is real and unit-tested, but _appraise_recruitment, which reads the count, is not reached by recruitment in play: acceptance runs on cooperation''s minimal accept (services.py find_pending_incoming_offer -> phase.py:190 accept_contract, D-09), and execute_recruit, the only caller that appraises a RECRUITMENT contract, has no issuer (action_router.py:63-64). So the recruitment social-fatigue penalty this row''s text describes has no in-play effect today. See docs/guidelines/intentional_divergences.md Section 2.205 and TCK-20261111-NO-RECRUITMENT-APPRAISAL-RUNS-IN-ANY-CORPUS-WORLD.'
   support_boundary: null
+- id: SOC-281
+  text: 'Reproduction mate gate (M1 births): a reproduction profile declares mate_gate none|bond.
+    With none, conception reads no social state. With bond, a pair passes only if, at the conception
+    tick, an ACCEPTED MarriageState joins the two (held by either party), or both directed
+    SocialBond.sentiment values are >= the profile''s min_mutual_sentiment; the humanoid value
+    references RelationshipService.FRIEND_SENTIMENT_THRESHOLD. Role, kind and occupation are never
+    read. Nothing in play writes a MarriageState, so the marriage arm is unreached in play.'
+  status: verified
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: src/world/mate_gate.py (passes_mate_gate); src/content/schema.py (ReproductionProfileDefinition.mate_gate, min_mutual_sentiment, SentimentThreshold); src/world/births.py (_find_mate takes the gate); data/content/living/reproduction_profiles.yaml
+  proof_type: regression
+  test_path: tests/unit/world/test_mate_gate.py::test_both_directed_sentiments_at_the_line_pass_and_one_below_or_missing_fails; tests/unit/world/test_mate_gate.py::test_an_accepted_marriage_held_by_either_party_passes_and_a_proposed_one_or_a_stranger_does_not; tests/unit/world/test_mate_gate.py::test_a_none_gate_reads_no_social_state
+  divergence_note: 'Reverses the 2026-08-29 decoupling of Reproduction (idea 32) from Marriage (idea 33); divergence 2.225.'
+  support_boundary: 'The marriage arm is not reachable in play: nothing issues PROPOSE_MARRIAGE (TCK-20261113-FIVE-SOCIAL-ACTION-KINDS-MAY-HAVE-NO-ISSUER-IN-PLAY).'

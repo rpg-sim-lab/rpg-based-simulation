@@ -211,10 +211,7 @@ def test_camp_kind_place_compiles_to_companion_campstate():
 
 
 def test_nest_kind_place_compiles_to_companion_campstate():
-    """A NEST-kind PlaceSpec with a Nest-classified race carries through end-to-end,
-    preserving CampService.NEST_RACE_KINDS membership."""
-    from src.world.camp import CampService
-
+    """A NEST-kind PlaceSpec carries its creature kind through to the companion CampState end-to-end."""
     spec = _minimal_spec([
         RegionSpec(
             id="r1", type="wilderness", bounds=(0, 0, 10, 10),
@@ -225,7 +222,7 @@ def test_nest_kind_place_compiles_to_companion_campstate():
     state, _ = WorldCompiler.compile(spec, seed=42)
 
     assert state.places["p1"].kind == PlaceKind.NEST
-    assert state.camps["p1"].kind in CampService.NEST_RACE_KINDS
+    assert state.camps["p1"].kind == "wolf"
 
 
 def test_non_camp_nest_place_kinds_do_not_construct_campstate():

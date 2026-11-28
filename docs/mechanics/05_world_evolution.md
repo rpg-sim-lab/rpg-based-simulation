@@ -578,10 +578,17 @@ firing after the birth), and the already-shipped `build_parent_bond_updates_for_
 parent's reciprocal `SocialBond` toward the child at `familiarity=0.8`/`sentiment=0.8`, applied
 through the normal authoritative apply path — never a direct mutation.
 
-**Not marriage-gated:** per the 2026-08-29 build-order decoupling of Marriage (idea 33) from
-Reproduction (idea 32), this eligibility path never reads or checks any marriage-contract state
-(`ContractKind.MARRIAGE`/`MarriageState`) — verified by an architecture-guard test
-(`tests/unit/world/test_reproduction_humanoid_cadence.py`).
+**Mate gate:** each reproduction profile declares `mate_gate`. With `none` (every non-humanoid
+profile in M1), no social state is read. With `bond` (the humanoid profile), a pair passes only if,
+at the conception tick, an ACCEPTED `MarriageState` joins the two (held by either party), or both
+directed `SocialBond.sentiment` values (mother to mate and mate to mother) are at or above the
+profile's `min_mutual_sentiment`. The humanoid value references
+`RelationshipService.FRIEND_SENTIMENT_THRESHOLD`, not a copied number. These two reads are the
+only social reads in births (Q18 is lifted for them alone); role, kind and occupation are never
+read. **Current play:** nothing in play issues PROPOSE_MARRIAGE (07, Contract Kinds, Current
+play), so the marriage arm is never reached and the sentiment arm decides. This reverses the
+2026-08-29 decoupling of Marriage (idea 33) from Reproduction (idea 32); see
+`docs/guidelines/intentional_divergences.md` 2.225.
 
 **Closes the population-pressure feedback loop:** on a successful pairing, this path also nudges
 the birth region's `young`-bracket count by `+1` via `WorldUpdate.population_young_births_delta` —

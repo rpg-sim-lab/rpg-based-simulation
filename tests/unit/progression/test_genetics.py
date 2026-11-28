@@ -217,4 +217,5 @@ def test_genetics_system_has_real_non_test_non_shim_caller():
 
     import src.core.builder as builder_module
     birth_record_source = inspect.getsource(builder_module.V2EntityBuilder.birth_record)
-    assert "GeneticsSystem.combine_profiles" in birth_record_source
+    assert "_combined_genetics(" in birth_record_source
+    assert "GeneticsSystem.combine_profiles" in inspect.getsource(builder_module._combined_genetics)

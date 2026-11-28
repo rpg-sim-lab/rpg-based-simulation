@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass, replace as dc_replace, field
+from typing import Optional, Protocol
 
+from src.core.enums import EntityRole
 from src.core.state import (
+    GeneticProfile,
+    LifeStage,
     EntityState,
     IdentityComponent,
     CombatComponent,
@@ -15,6 +18,7 @@ from src.core.builder import V2EntityBuilder
 from src.content_semantics.personality import build_personality_for_entity, get_action_style_for_bravery
 from src.entities.runtime_contract import ResolvedEntityRuntimeContract
 from src.content.common_knowledge_seed import default_self_model
+from src.content.schema import EntityArchetypeDefinition
 from src.content.species_senses import require_species_sense_profile
 
 
@@ -35,6 +39,44 @@ def require_archetype_senses(contract: ResolvedEntityRuntimeContract) -> None:
     """PERC-02: an archetype body's senses are derived from its species at every perception check, so a species that is not in content or has no usable sense profile is a
     content error here (``SenseProfileError``), at build, instead of a silent baseline in the gate. The same resolver the gate calls."""
     require_species_sense_profile(contract.species_id, f"archetype {contract.archetype_id!r}")
+
+
+# Held: whether a newborn copies its mother's home anchor and leash is unresolved between the leads; flipping this one value restores the copy.
+_COPY_MOTHER_ANCHORS = False
+
+
+@dataclass(frozen=True)
+class NewbornBirth:
+    """The birth event a newborn is built for: its two parents (and their genetic profiles, resolved by the caller because birth_record() combines genetics only when a profile is supplied and first-generation parents carry none), and where, when and under which world seed it is born."""
+
+    mother: EntityState
+    mate: EntityState
+    position: tuple[float, float]
+    tick: int
+    seed: int
+    mother_genetics: GeneticProfile
+    mate_genetics: GeneticProfile
+    home_region_id: Optional[str] = None
+    newborn_role: EntityRole = EntityRole.CITIZEN  # the mother's archetype declaration (`declared_newborn_role`); a mother with none gets the no-archetype default
+
+
+NO_ARCHETYPE_DEFAULT_ROLE = EntityRole.CITIZEN  # a mother with no archetype_id (a legacy-guard body) or an archetype that declares no newborn_role
+
+
+class ArchetypeLookup(Protocol):
+    """The one catalog method `declared_newborn_role` reads (`CatalogRepository` satisfies it structurally, so the factory imports no repository)."""
+
+    def get_entity_archetype(self, def_id: str) -> Optional[EntityArchetypeDefinition]:
+        """The archetype with this id, or None."""
+
+
+def declared_newborn_role(catalog: ArchetypeLookup, mother: EntityState) -> tuple[EntityRole, str]:
+    """(role, source) a newborn of `mother` is born with: the `newborn_role` her archetype declares (source "ARCHETYPE"), else the no-archetype default (source "NO_ARCHETYPE_DEFAULT"). Reads content only, never her role name."""
+    archetype_id = (mother.identity.properties or {}).get("archetype_id")
+    archetype = catalog.get_entity_archetype(archetype_id) if archetype_id else None
+    if archetype is None or archetype.newborn_role is None:
+        return NO_ARCHETYPE_DEFAULT_ROLE, "NO_ARCHETYPE_DEFAULT"
+    return EntityRole[archetype.newborn_role], "ARCHETYPE"
 
 
 class ArchetypeEntityFactory:
@@ -139,6 +181,79 @@ class ArchetypeEntityFactory:
             entity = _replace_lifecycle(entity, active=False)
 
         return entity
+
+    def build_risen(self, entity_id: int, contract: ResolvedEntityRuntimeContract, position: tuple[float, float], tick: int, seed: int) -> EntityState:
+        """A risen subject (M1 risen origin, STR-02): the species' risen archetype built as an ADULT with no occupation and no parents. Nothing of the dead
+        body passes on; its faction is the archetype's. `birth_tick` holds the arrival tick (SpawnSource RISEN tells it apart from a birth)."""
+        body = self.build_entity(entity_id, contract, EntitySpawnContext(position=position, current_tick=tick), seed)
+        return dc_replace(body, identity=dc_replace(body.identity, occupation=None), lifecycle=dc_replace(body.lifecycle, birth_tick=tick))
+
+    def build_newborn(
+        self,
+        entity_id: int,
+        contract: ResolvedEntityRuntimeContract,
+        birth: NewbornBirth,
+    ) -> EntityState:
+        """A newborn of `birth.mother` and `birth.mate`: the BODY of the species' newborn archetype (stats, body model,
+        personality draw keyed by (world seed, newborn id)) at life stage CHILD, and nothing of its job. Role, occupation,
+        equipment, inventory and job traits are not taken from the archetype: the role is `birth.newborn_role`, the mother's archetype declaration
+        (the caller reads it with `declared_newborn_role`; no role name is compared), gold is 0 and traits are the species' own declared traits (M1 births, rulings v2.2 D3).
+        population_id and spawn_region are the mother's (omitted when she has none): on a newborn, spawn_region names its
+        population's declared region, not where it was born; home_region_id = mother's, else the birth region (omitted when neither exists), and the mother's home anchor and leash are copied (omitted when she has none). In campaign mode, a surviving newborn can receive its
+        population's pending information responses and self-model events in a later episode (resolve_pending_information), but
+        only when no member of that population that entered the carried-forward roster before it survives. The resolver takes
+        the first match in roster insertion order, with no id rule. Every t0 body enters the roster before any newborn."""
+        require_archetype_senses(contract)  # PERC-02: the second line of defence behind the load-time check of every newborn_archetype
+        mother, mate = birth.mother, birth.mate
+        # A builder argument left None keeps the default, so each value is omitted when the mother has none (never written as None).
+        anchor = mother.navigation.home_position if _COPY_MOTHER_ANCHORS else None
+        leash = mother.navigation.leash_radius if anchor is not None else None
+        properties = _newborn_properties(contract, mother)
+        personality = build_personality_for_entity(entity_id, properties.get("faction_id"), birth.seed)
+        role = birth.newborn_role
+
+        return (
+            V2EntityBuilder(entity_id)
+            .kind(contract.kind)
+            .location(*birth.position)
+            .identity(
+                role=role, faction=mother.identity.faction, traits=set(contract.species_trait_ids), properties=properties,
+                personality=personality, life_stage=LifeStage.CHILD, occupation=None,
+            )
+            .combat(
+                hp=contract.hp, max_hp=contract.max_hp, atk=contract.atk, def_stat=contract.def_stat,
+                attack_range=contract.attack_range, readiness=contract.readiness,
+                action_style=get_action_style_for_bravery(personality.bravery),
+            )
+            .navigation(home_position=anchor, leash_radius=leash)
+            .strategic(home_region_id=birth.home_region_id)
+            .birth_record(
+                parent_a_entity_id=mother.id, parent_b_entity_id=mate.id, birth_tick=birth.tick,
+                parent_a_genetic_profile=birth.mother_genetics, parent_b_genetic_profile=birth.mate_genetics,
+                parent_a_role=mother.identity.role, parent_b_role=mate.identity.role, world_seed=birth.seed,
+            )
+            .spawn_combat_stats_are_final()
+            .replace_self_model(default_self_model())
+            .build()
+        )
+
+
+def _newborn_properties(contract: ResolvedEntityRuntimeContract, mother: EntityState) -> dict:
+    """The mother's faction and population keys (a key is omitted when she has none, never written as None) and the body's profile ids; no job ids."""
+    properties: dict = {}
+    for key in ("faction_id", "population_id", "spawn_region"):
+        inherited = mother.identity.properties.get(key)
+        if inherited is not None:
+            properties[key] = inherited
+    for key, value in (
+        ("need_profile_id", contract.need_profile_id),
+        ("sense_profile_id", contract.sense_profile_id),
+        ("cognition_profile_id", contract.cognition_profile_id),
+        ("drive_profile_id", contract.drive_profile_id),
+    ):
+        if value is not None:
+            properties[key] = value
+    return properties
 
 
 def _replace_inventory(entity: EntityState, inv: InventoryComponent) -> EntityState:

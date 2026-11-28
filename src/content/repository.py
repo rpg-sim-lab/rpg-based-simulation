@@ -10,6 +10,14 @@ from typing import Dict, Iterator, List, Optional, Any, Type, TypeVar, Union
 from pydantic import BaseModel
 
 
+class RisenProfileError(ValueError):
+    """A species declares a risen profile it cannot have: it does not exist, names an undeclared source species or archetype, sits on a kind that eats or breeds, or has a body of another species."""
+
+
+class ReproductionProfileError(ValueError):
+    """A species declares a reproduction profile it cannot have: the profile does not exist, or the kind's need profile has no hunger, so "well fed" is undefined."""
+
+
 class ContentHotPathViolation(RuntimeError):
     """Raised when CatalogRepository.load_all() is called while a kernel tick is active.
 
@@ -22,7 +30,9 @@ class ContentHotPathViolation(RuntimeError):
 # CatalogRepository.load_all() checks this to enforce WORLD-CAT-004.
 _tick_context_active: threading.local = threading.local()
 
+from src.content.profile_lookups import ProfileLookups
 from src.content.schema import (
+    BIRTH_CHECK_INTERVAL_TICKS,
     CatalogBaseDefinition,
     MaterialDefinition,
     TraitDefinition,
@@ -31,6 +41,8 @@ from src.content.schema import (
     AttributeDefinition,
     ElementDefinition,
     NeedProfileDefinition,
+    ReproductionProfileDefinition,
+    RisenProfileDefinition,
     SenseProfileDefinition,
     BodyModelDefinition,
     DriveProfileDefinition,
@@ -104,6 +116,8 @@ CANONICAL_FAMILIES: List[ContentFamilySpec] = [
     # 2. Living
     ContentFamilySpec("living.species", "living/species.yaml", SpeciesDefinition, "species"),
     ContentFamilySpec("living.need_profiles", "living/need_profiles.yaml", NeedProfileDefinition, "need_profiles"),
+    ContentFamilySpec("living.reproduction_profiles", "living/reproduction_profiles.yaml", ReproductionProfileDefinition, "reproduction_profiles", required=False),
+    ContentFamilySpec("living.risen_profiles", "living/risen_profiles.yaml", RisenProfileDefinition, "risen_profiles", required=False),
     ContentFamilySpec("living.sense_profiles", "living/sense_profiles.yaml", SenseProfileDefinition, "sense_profiles"),
     ContentFamilySpec("living.body_models", "living/body_models.yaml", BodyModelDefinition, "body_models"),
     ContentFamilySpec("living.drive_profiles", "living/drive_profiles.yaml", DriveProfileDefinition, "drive_profiles"),
@@ -159,6 +173,8 @@ def _schema_error_text(family: str, item: dict, err: Exception) -> str:
     return str(err)
 
 
+from src.content.sense_resolution import species_sense_profile
+
 # Directories inside data/content/ that are managed by loaders other than CatalogRepository
 # (WorldModuleRepository, ScenarioLabOrchestrator). Files in these
 # directories must not be reported as "ignored" by strict mode.
@@ -178,7 +194,92 @@ NON_CATALOG_FILES: frozenset = frozenset({
 })
 
 
-class CatalogRepository:
+def check_reproduction_profiles(repo: "CatalogRepository") -> None:
+    """Births are only for kinds that eat (owner B2): refuse, typed, a profile that is missing or sits on a species whose need profile declares no hunger, and a newborn_archetype that is missing, unknown or another species'."""
+    for profile_id, profile in repo.reproduction_profiles.items():
+        _check_gestation_and_litter(profile_id, profile)
+    for species_id, species in repo.species.items():
+        declared_profile = species.reproduction_profile
+        if declared_profile is None:
+            if species.newborn_archetype is not None:
+                raise ReproductionProfileError(f"species {species_id!r} declares newborn_archetype {species.newborn_archetype!r} but no reproduction_profile")
+            continue
+        if declared_profile not in repo.reproduction_profiles:
+            raise ReproductionProfileError(f"species {species_id!r} names reproduction profile {declared_profile!r}, which is not declared")
+        need_profile = repo.need_profiles.get(species.need_profile)
+        if need_profile is not None and need_profile.needs.get("hunger") == "none":
+            raise ReproductionProfileError(f"species {species_id!r} declares reproduction profile {declared_profile!r} but its need profile {species.need_profile!r} has hunger 'none': a kind that does not eat has no births")
+        _check_newborn_archetype(repo, species_id, species)
+    _check_newborn_roles(repo)
+
+
+def _check_newborn_roles(repo: "CatalogRepository") -> None:
+    """An archetype whose species breeds declares `newborn_role` (MONSTER or CITIZEN; the schema refuses a job role): a mother's child is born with it, read from the archetype and never from her role name."""
+    for archetype_id, archetype in repo.entity_archetypes.items():
+        species = repo.species.get(archetype.species)
+        if species is not None and species.reproduction_profile is not None and archetype.newborn_role is None:
+            raise ReproductionProfileError(
+                f"archetype {archetype_id!r} has species {archetype.species!r}, which breeds, but declares no newborn_role (MONSTER or CITIZEN)")
+
+
+def check_risen_profiles(repo: "CatalogRepository") -> None:
+    """Risen is for kinds that do not eat or breed: refuse, typed, a profile that is missing, names an undeclared source species or archetype, sits on a kind that has hunger or a reproduction profile, or whose archetype belongs to another species."""
+    for species_id, species in repo.species.items():
+        if species.risen_profile is None:
+            continue
+        profile = repo.risen_profiles.get(species.risen_profile)
+        if profile is None:
+            raise RisenProfileError(f"species {species_id!r} names risen profile {species.risen_profile!r}, which is not declared")
+        _check_risen_kind(repo, species_id, species)
+        _check_risen_profile(repo, species.risen_profile, profile, species_id)
+
+
+def _check_risen_kind(repo: "CatalogRepository", species_id: str, species: SpeciesDefinition) -> None:
+    if species.reproduction_profile is not None:
+        raise RisenProfileError(f"species {species_id!r} declares both a risen profile and a reproduction profile: one origin per species in M1")
+    need_profile = repo.need_profiles.get(species.need_profile)
+    if need_profile is not None and need_profile.needs.get("hunger") != "none":
+        raise RisenProfileError(f"species {species_id!r} declares risen profile {species.risen_profile!r} but its need profile {species.need_profile!r} has hunger: risen is for kinds that do not eat")
+
+
+def _check_risen_profile(repo: "CatalogRepository", profile_id: str, profile: RisenProfileDefinition, species_id: str) -> None:
+    for source in profile.source_species:
+        if source not in repo.species:
+            raise RisenProfileError(f"risen profile {profile_id!r} names source species {source!r}, which is not declared")
+    archetype = repo.entity_archetypes.get(profile.risen_archetype)
+    if archetype is None:
+        raise RisenProfileError(f"risen profile {profile_id!r} names risen_archetype {profile.risen_archetype!r}, which is not declared")
+    if archetype.species != species_id:
+        raise RisenProfileError(f"risen profile {profile_id!r} names risen_archetype {profile.risen_archetype!r}, which belongs to species {archetype.species!r}, not {species_id!r}")
+
+
+def _check_gestation_and_litter(profile_id: str, profile: "ReproductionProfileDefinition") -> None:
+    """A gestation that is not a positive multiple of the births check interval would give a birth tick no check visits; a litter table must be non-empty with sizes >= 1 and weights > 0."""
+    if profile.gestation_ticks <= 0 or profile.gestation_ticks % BIRTH_CHECK_INTERVAL_TICKS != 0:
+        raise ReproductionProfileError(
+            f"reproduction profile {profile_id!r} declares gestation_ticks {profile.gestation_ticks}, which is not a positive multiple of {BIRTH_CHECK_INTERVAL_TICKS}")
+    if (profile.mate_gate == "bond") != (profile.min_mutual_sentiment is not None):
+        raise ReproductionProfileError(f"reproduction profile {profile_id!r}: mate_gate {profile.mate_gate!r} and min_mutual_sentiment {profile.min_mutual_sentiment!r} disagree (bond needs it, none has none)")
+    if not profile.litter_weights:
+        raise ReproductionProfileError(f"reproduction profile {profile_id!r} declares an empty litter_weights table")
+    for size, weight in profile.litter_weights.items():
+        if size < 1 or not weight > 0:
+            raise ReproductionProfileError(f"reproduction profile {profile_id!r} litter_weights entry {size}: {weight} needs a size >= 1 and a weight > 0")
+
+
+def _check_newborn_archetype(repo: "CatalogRepository", species_id: str, species: SpeciesDefinition) -> None:
+    archetype_id = species.newborn_archetype
+    if archetype_id is None:
+        raise ReproductionProfileError(f"species {species_id!r} declares a reproduction profile but no newborn_archetype")
+    archetype = repo.entity_archetypes.get(archetype_id)
+    if archetype is None:
+        raise ReproductionProfileError(f"species {species_id!r} names newborn_archetype {archetype_id!r}, which is not declared")
+    if archetype.species != species_id:
+        raise ReproductionProfileError(f"species {species_id!r} names newborn_archetype {archetype_id!r}, which belongs to species {archetype.species!r}")
+    species_sense_profile(repo, species_id)  # PERC-02: a species that bears newborns resolves a usable sense profile at load (SenseProfileError), before tick 0 in every process
+
+
+class CatalogRepository(ProfileLookups):
     """
     Thread-safe repository loader that coordinates static catalog schema configuration loading
     from data/content/**/*.yaml. Exposes clean lookup operations.
@@ -199,6 +300,8 @@ class CatalogRepository:
         # Living Profiles
         self.species: Dict[str, SpeciesDefinition] = {}
         self.need_profiles: Dict[str, NeedProfileDefinition] = {}
+        self.reproduction_profiles: Dict[str, ReproductionProfileDefinition] = {}
+        self.risen_profiles: Dict[str, RisenProfileDefinition] = {}
         self.sense_profiles: Dict[str, SenseProfileDefinition] = {}
         self.body_models: Dict[str, BodyModelDefinition] = {}
         self.drive_profiles: Dict[str, DriveProfileDefinition] = {}
@@ -391,6 +494,9 @@ class CatalogRepository:
                     setattr(self, spec.repository_index, results)
                 record_counts[spec.family] = len(results)
 
+        check_reproduction_profiles(self)
+        check_risen_profiles(self)
+
         # Detect ignored files
         ignored_files = self._find_ignored_files()
 
@@ -463,32 +569,8 @@ class CatalogRepository:
     def get_species(self, def_id: str) -> Optional[SpeciesDefinition]:
         return self.species.get(def_id)
 
-    def get_need_profile(self, def_id: str) -> Optional[NeedProfileDefinition]:
-        return self.need_profiles.get(def_id)
-
-    def get_sense_profile(self, def_id: str) -> Optional[SenseProfileDefinition]:
-        return self.sense_profiles.get(def_id)
-
     def get_body_model(self, def_id: str) -> Optional[BodyModelDefinition]:
         return self.body_models.get(def_id)
-
-    def get_drive_profile(self, def_id: str) -> Optional[DriveProfileDefinition]:
-        return self.drive_profiles.get(def_id)
-
-    def get_cognition_profile(self, def_id: str) -> Optional[CognitionProfileDefinition]:
-        return self.cognition_profiles.get(def_id)
-
-    def get_stats_profile(self, def_id: str) -> Optional[StatsProfileDefinition]:
-        return self.stats_profiles.get(def_id)
-
-    def get_combat_profile(self, def_id: str) -> Optional[CombatProfileDefinition]:
-        return self.combat_profiles.get(def_id)
-
-    def get_inventory_profile(self, def_id: str) -> Optional[InventoryProfileDefinition]:
-        return self.inventory_profiles.get(def_id)
-
-    def get_skill_profile(self, def_id: str) -> Optional[SkillProfileDefinition]:
-        return self.skill_profiles.get(def_id)
 
     def get_population_recipe(self, def_id: str) -> Optional[PopulationRecipeDefinition]:
         return self.populations.get(def_id)
@@ -561,6 +643,8 @@ class CatalogRepository:
             "element": self.elements,
             "species": self.species,
             "need_profile": self.need_profiles,
+            "reproduction_profile": self.reproduction_profiles,
+            "risen_profile": self.risen_profiles,
             "sense_profile": self.sense_profiles,
             "body_model": self.body_models,
             "drive_profile": self.drive_profiles,
@@ -605,6 +689,8 @@ class CatalogRepository:
             ("element", self.elements),
             ("species", self.species),
             ("need_profile", self.need_profiles),
+            ("reproduction_profile", self.reproduction_profiles),
+            ("risen_profile", self.risen_profiles),
             ("sense_profile", self.sense_profiles),
             ("body_model", self.body_models),
             ("drive_profile", self.drive_profiles),

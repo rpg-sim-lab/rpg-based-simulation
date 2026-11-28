@@ -65,6 +65,11 @@ def get_kind_properties(species_id: Optional[str]) -> Tuple[Any, Any]:
     return species, (catalog.get_body_model(species.body_model) if species else None)
 
 
+def get_catalog() -> Any:
+    """The warmed catalog singleton (auto-initialising), for readers that need more than one definition of it."""
+    return _seeding_catalog()
+
+
 def get_role_definition(role_id: str):
     """Return the named RoleDefinition via the warmed catalog singleton."""
     global _catalog

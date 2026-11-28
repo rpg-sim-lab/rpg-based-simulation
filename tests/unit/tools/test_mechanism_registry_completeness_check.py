@@ -313,8 +313,13 @@ def test_wider_scope_numbers_pinned():
     # 384 -> 385 on 2026-11-24 (S8 #715 7123495747): +src/core/need_lines.py, the one source of the starving and sleep lines (TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON, item 2 CI fix, owner #715 7122168466); a new file counted, none removed
     # 385 -> 386 on 2026-11-24 (S8, the lead's record on #715 after 7128579145): +src/core/arrival.py, the structural arrival rule (TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON, "arrived never fails", owner #715 7128509663); a new file counted, none removed
     # 386 -> 387 on 2026-11-24 (S8, the lead's record on #715 after 7137525427, from the check's own output): +src/core/navigation_component.py (NavigationComponent moved out of state.py, TCK-20261124-NAVIGATION-STATE-MOVES-OUT-OF-STATE-PY, owner #715 after 7135893456); unbound, as it was inside state.py
+    # 387 -> 391 on 2026-11-25 (TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND rebased onto main; its reproduction scope: 2026-11-18 372 -> 376): +src/core/pregnancy.py, +src/world/mate_gate.py, +src/world/corpse_goods.py, +src/world/risen.py, each bound (pregnancy_gestation, humanoid_reproduction, corpse_goods_conservation, corpse_rising).  Confirmed from the check's own output (392).
+    # 391 -> 392 on 2026-11-25 (the same ticket, senses (A'), 2026-11-18 378 -> 379): +src/content/sense_resolution.py (the pure species_sense_profile resolver moved out of species_senses.py to break the load-time import cycle), cited under `sense_gated_detection`.
     # 387 -> 388 on 2026-11-25 (TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER, rpg-planner ruling, from the check's own output): +src/core/service_refusals.py (the typed ServiceRefusal record and its streak count, K2 fix B), unbound
-    assert wider["scope_files"] == 388
+    # 392 -> 393 on 2026-11-26 (merge of main 0ba291224 into the births branch; sum of both sides, to be confirmed from the check's own output)
+    # 393 -> 397 on 2026-11-26 (TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND, the four code-health blocker moves; a PIN update for the S10, rpg-planner ruling, from the check's own output): +src/core/spawn_errors.py, +src/core/intent_result.py, +src/content/profile_lookups.py, +src/engine/rise_trigger.py (risen.py and corpse_goods.py only moved, so they add none)
+    # 397 -> 398 on 2026-11-27 (TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND, from the check's own output; a PIN update for the S10, rpg-planner ruling): +src/content/archetype_less_breeders.py (the shared archetype-less MONSTER-breeder refusal, called by both build paths)
+    assert wider["scope_files"] == 398
     # 233 -> 227 on 2026-10-05: the world-building split names six more files (worldmodules/normalizer,
     # worldassembly/resolve_io, worldbuilding/repository and validator, worldgeneration/generator and scorer).
     # Then +1 for the unbound entity_target_objective.py module (TCK-20261002-COMBAT-OBJECTIVE-TARGETS-...).
@@ -390,8 +395,12 @@ def test_wider_scope_numbers_pinned():
     # 270 -> 271 on 2026-11-24 (S8 #715 7123495747): the same file, src/core/need_lines.py, is unbound
     # 271 -> 272 on 2026-11-24 (the same S8): src/core/arrival.py is unbound
     # 272 -> 273 on 2026-11-24 (the same S8): +src/core/navigation_component.py, unbound
+    # 273 -> 272 on 2026-11-25 (TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND rebased onto main, rpg-planner ok in the slot message): the check's own output; the branch's four new modules are bound and its senses (A') step carried its own 264 -> 263 drop. The provisional sum 273 was wrong by one; scope_files 392 matched the check.
     # 273 -> 274 -> 273 on 2026-11-25 (TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER, rpg-planner ruling, from the check's own output): the new src/core/service_refusals.py first counted as unbound and is now bound under `goal_hierarchy`, so the number is unchanged
-    assert wider["unbound_files"] == 273
+    # 272 on 2026-11-26 (merge of main 0ba291224: K2's net change is 0, births' is 272; confirm from the check's own output)
+    # 272 -> 275 on 2026-11-26 (the same four moves, from the check's own output): spawn_errors.py, intent_result.py and profile_lookups.py are unbound (no mechanism owns them); rise_trigger.py is bound under `corpse_rising`
+    # 275 -> 276 on 2026-11-27 (the same module, from the check's own output): a shared validator, bound to no mechanism
+    assert wider["unbound_files"] == 276
     # 73 -> 72 on 2026-10-07 (row 7 (b) pass): src/quests/generator.py::QuestGenerator is now bound under `guilds`.
     # 72 -> 71 on 2026-10-11 (#500, D57): src/engine/rpg_depth.py::LeashService is cited under `tactical_decision` (it became wired when
     # the hunger and fatigue goals started calling `way_in_range`), so it is no longer an unbound candidate.

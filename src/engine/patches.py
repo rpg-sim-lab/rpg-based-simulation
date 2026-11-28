@@ -95,10 +95,12 @@ class LifecyclePatch(ComponentPatch):
                 birth_tick=u_life.birth_tick_set if u_life.birth_tick_set is not None else new_lifecycle.birth_tick,
                 birth_city_id=u_life.birth_city_id_set if u_life.birth_city_id_set is not None else new_lifecycle.birth_city_id,
                 reproduction_cooldowns=(
-                    {**new_lifecycle.reproduction_cooldowns, **u_life.reproduction_cooldowns_add}
-                    if u_life.reproduction_cooldowns_add else new_lifecycle.reproduction_cooldowns
+                    {**{k: v for k, v in new_lifecycle.reproduction_cooldowns.items() if k not in u_life.reproduction_cooldowns_remove},
+                     **u_life.reproduction_cooldowns_add}
+                    if u_life.reproduction_cooldowns_add or u_life.reproduction_cooldowns_remove else new_lifecycle.reproduction_cooldowns
                 ),
                 genetic_profile=u_life.genetic_profile_set if u_life.genetic_profile_set is not None else new_lifecycle.genetic_profile,
+                pregnancy=None if u_life.pregnancy_clear else (u_life.pregnancy_set if u_life.pregnancy_set is not None else new_lifecycle.pregnancy),
             )
             # A passive cause is only meaningful while no other death is recorded: once a different
             # death_reason lands (e.g. COMBAT on the same tick the passive write fired), the stale

@@ -24,6 +24,8 @@ from src.core.models.world_records import CorpseState, GroundItemState, OwedReco
 from src.core.immutability import shallow_freeze
 from src.core.self_model import SelfModelBundle
 from src.core.cognition import CognitionModel
+from src.core.intent_result import IntentResult
+from src.core.pregnancy import PregnancyState
 from src.systems.lifecycle_systems.genetics import GeneticProfile
 from src.core.calendar import TICKS_PER_FANTASY_YEAR
 
@@ -184,10 +186,14 @@ class LifecycleComponent:
     dependent_entity_ids: list[int] = field(default_factory=list)
     birth_tick: int = 0
     birth_city_id: Optional[int] = None
-    reproduction_cooldowns: Dict[int, int] = field(default_factory=dict)  # partner_entity_id -> cooldown_expiry_tick
+    # The birth interval: partner_entity_id -> the tick before which this body cannot birth with that partner. A body is eligible when its largest expiry is at or
+    # before the tick; the births system drops expired entries through LifecycleUpdate.reproduction_cooldowns_remove, so the map stays bounded.
+    reproduction_cooldowns: Dict[int, int] = field(default_factory=dict)
     active: bool = True
     genetic_profile: Optional[GeneticProfile] = None
     _canonical_cache: Any = field(default=None, init=False, repr=False, compare=False)
+    # Appended LAST (checkpoint_fields.FIELD_RULES fills an older checkpoint); omitted from the canonical dict while None.
+    pregnancy: Optional[PregnancyState] = None
 
     def to_canonical_dict(self) -> Dict[str, Any]:
         if self._canonical_cache is not None:
@@ -212,6 +218,8 @@ class LifecycleComponent:
             "active": self.active,
             "genetic_profile": asdict(self.genetic_profile) if self.genetic_profile else None
         }
+        if self.pregnancy is not None:
+            res["pregnancy"] = self.pregnancy.to_canonical_dict()
         object.__setattr__(self, "_canonical_cache", res)
         return res
 
@@ -817,15 +825,6 @@ class EquipmentComponent:
     durability: Dict[EquipSlot, float] = field(default_factory=dict)
 
 
-
-@dataclass(frozen=True, slots=True)
-class IntentResult:
-    """The outcome of a specific resource transfer intent."""
-    transaction_id: str | None
-    accepted: bool
-    reason: Any
-    source_kind: str
-    source_id: str | int
 
 def strategic_canonical_dict(strategic: "StrategicComponent") -> Dict[str, Any]:
     """The canonical dict of an entity's strategic stratum (moved verbatim out of `EntityState.to_canonical_dict`, TCK-20261124-THE-PER-TICK-REPLAY-DIGEST-WALKS-THE-WHOLE-STATE-EVERY-TICK; the same value, so the digest is unchanged)."""

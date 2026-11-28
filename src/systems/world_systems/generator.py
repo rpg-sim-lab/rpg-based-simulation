@@ -13,11 +13,11 @@ from src.core.state import (
 )
 from src.content.hero_species import hero_species_id
 from src.core.enums import EntityRole, Faction, ActionType, Domain
+from src.core.spawn_errors import NoFreeSpawnTileError
 from src.platform.rng import DeterministicRNG
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState
-    from src.systems.lifecycle_systems.genetics import GeneticProfile
 
 # TCK-20261005-SPAWN-MONSTER-STRIPS-CATALOG-FACTION: runtime-spawned kinds whose catalog faction is declared in
 # content (entity_archetypes.yaml `faction`, factions.yaml `common_species`) or ruled by the owner (2026-10-06:
@@ -97,6 +97,12 @@ class EntityGenerator:
         generator._last_id = taken
         return generator
 
+    def claim_tiles_of(self, state: AuthoritativeState, spawned: "List[EntityState]") -> None:
+        """Mark the tiles of bodies another site already spawned this tick as taken, so a site on a fresh generator cannot stack on them (the claimed set lives on the instance)."""
+        if self._claimed_tiles[0] != state.tick:
+            self._claimed_tiles = (state.tick, set())
+        self._claimed_tiles[1].update((int(e.navigation.position[0]), int(e.navigation.position[1])) for e in spawned)
+
     def free_spawn_position(self, pos: tuple[float, float], state: AuthoritativeState | None) -> tuple[float, float]:
         """LAW-OCCUPANCY-COLLISION: `pos` itself when its tile is clear, else the nearest clear tile (ring order,
         then y, then x: deterministic, no RNG). A tile is clear when no live entity is within `_SPAWN_REACH` tiles and no spawn
@@ -114,7 +120,7 @@ class EntityGenerator:
             if (bx + dx, by + dy) not in blocked:
                 claimed.add((bx + dx, by + dy))
                 return pos if (dx, dy) == (0, 0) else (float(bx + dx), float(by + dy))
-        raise RuntimeError(f"no clear spawn tile within {_SPAWN_FREE_TILE_RADIUS} of {pos} at tick {state.tick}")
+        raise NoFreeSpawnTileError(f"no clear spawn tile within {_SPAWN_FREE_TILE_RADIUS} of {pos} at tick {state.tick}")
 
     def get_next_id(self) -> int:
         self._last_id += 1
@@ -173,48 +179,6 @@ class EntityGenerator:
             .spawn_combat_stats_are_final()
             .build())
 
-    def spawn_natural_creature_offspring(
-        self, pos: tuple[float, float], state: AuthoritativeState | None = None,
-        *, species: str, occupation: Optional[str], difficulty_tier: int = 1, birth_tick: int = 0,
-    ) -> EntityState:
-        """Spawn a parentless same-species offspring already aged near the CHILD->ADULT
-        boundary with birth-record fields populated via the parentless
-        V2EntityBuilder.birth_record() path (both parent ids None)."""
-        entity_id = self.get_next_id()
-
-        from src.world.spawn_config import DIFFICULTY_TIERS
-        mults = DIFFICULTY_TIERS.get(difficulty_tier, DIFFICULTY_TIERS[1])
-
-        tick = state.tick if state else 0
-        evolution_level = self.rng.get_int(Domain.SPAWN, tick, entity_id, mults.level_min, mults.level_max)
-
-        base_hp = 50 * mults.hp
-        base_atk = 10 * mults.atk
-        base_def = 5 * mults.def_stat
-        base_gold = 10 * mults.gold
-
-        from src.core.builder import V2EntityBuilder
-        from src.core.state import LifeStage
-        from src.world.camp import CampService
-        from src.domains.demographics.cohort import YOUNG_ADULT_BOUNDARY_TICKS
-        # TCK-20260904-TEMPORAL-FANTASY-YEAR-AGING-MIGRATION: spawns just shy of the real
-        # CHILD->ADULT boundary (was a raw 3000-tick literal), so the offspring matures to
-        # ADULT after roughly one CAMP_SPAWN_INTERVAL of ticks.
-        short_clock_age = YOUNG_ADULT_BOUNDARY_TICKS - CampService.CAMP_SPAWN_INTERVAL
-
-        return (V2EntityBuilder(entity_id)
-            .kind(species)
-            .location(*pos)
-            .identity(role=EntityRole.MONSTER, faction=Faction.MONSTER_HORDE,
-                      evolution_level=evolution_level, life_stage=LifeStage.CHILD, occupation=occupation)
-            .navigation(home_position=pos, leash_radius=10.0)
-            .combat(hp=int(base_hp), max_hp=int(base_hp), atk=int(base_atk), def_stat=int(base_def), readiness=100.0)
-            .inventory(gold=int(base_gold))
-            .lifecycle(age_ticks=short_clock_age)
-            .birth_record(parent_a_entity_id=None, parent_b_entity_id=None, birth_tick=birth_tick, birth_city_id=None)
-            .spawn_combat_stats_are_final()
-            .build())
-
     def spawn_magical_demonic_entity(
         self, pos: tuple[float, float], state: AuthoritativeState | None = None,
         kind: str = "magical_demonic_entity", difficulty_tier: int = 4, birth_tick: int = 0,
@@ -245,60 +209,6 @@ class EntityGenerator:
             .combat(hp=int(base_hp), max_hp=int(base_hp), atk=int(base_atk), def_stat=int(base_def), readiness=100.0)
             .inventory(gold=int(base_gold))
             .birth_record(parent_a_entity_id=None, parent_b_entity_id=None, birth_tick=birth_tick, birth_city_id=None)
-            .spawn_combat_stats_are_final()
-            .build())
-
-    def spawn_humanoid_offspring(
-        self, pos: tuple[float, float], state: AuthoritativeState, kind: str,
-        parent_a_id: int, parent_b_id: int, birth_tick: int, birth_city_id: Optional[int],
-        parent_a_genetic_profile: Optional[GeneticProfile], parent_b_genetic_profile: Optional[GeneticProfile],
-        parent_a_role: int, parent_b_role: int, difficulty_tier: int = 1,
-        parent_a_public_reputation: Optional[float] = None, parent_b_public_reputation: Optional[float] = None,
-        home_region_id: Optional[str] = None,
-    ) -> EntityState:
-        """Spawn a real newborn humanoid offspring with tracked parent ids, an inherited
-        GeneticProfile, and CHILD life stage at age_ticks=0 -- unlike
-        spawn_natural_creature_offspring()'s fast-forwarded maturation clock, this path has no
-        analogous "must appear battle-ready soon" requirement.
-
-        home_region_id (idea 59, "Home, Exile & Return"): the region the birth position resolves
-        to, resolved by the caller -- this module (src/systems/) must not import src/engine/
-        (region resolution lives in LegalityServiceV2/SpatialQueryService, both engine-only), so
-        the caller (src/world/reproduction_humanoid.py, which already resolves the birth region
-        for its own population_cohorts nudge) passes the plain string down instead."""
-        entity_id = self.get_next_id()
-
-        from src.world.spawn_config import DIFFICULTY_TIERS
-        mults = DIFFICULTY_TIERS.get(difficulty_tier, DIFFICULTY_TIERS[1])
-
-        tick = state.tick if state else 0
-        evolution_level = self.rng.get_int(Domain.SPAWN, tick, entity_id, mults.level_min, mults.level_max)
-
-        base_hp = 50 * mults.hp
-        base_atk = 10 * mults.atk
-        base_def = 5 * mults.def_stat
-        base_gold = 10 * mults.gold
-
-        from src.core.builder import V2EntityBuilder
-        from src.core.state import LifeStage
-
-        return (V2EntityBuilder(entity_id)
-            .kind(kind)
-            .location(*pos)
-            .identity(role=EntityRole.CITIZEN, faction=Faction.TOWN_COUNCIL,
-                      evolution_level=evolution_level, life_stage=LifeStage.CHILD, occupation=None)
-            .combat(hp=int(base_hp), max_hp=int(base_hp), atk=int(base_atk), def_stat=int(base_def), readiness=100.0)
-            .inventory(gold=int(base_gold))
-            .strategic(home_region_id=home_region_id)
-            .birth_record(
-                parent_a_entity_id=parent_a_id, parent_b_entity_id=parent_b_id,
-                birth_tick=birth_tick, birth_city_id=birth_city_id,
-                parent_a_genetic_profile=parent_a_genetic_profile,
-                parent_b_genetic_profile=parent_b_genetic_profile,
-                parent_a_role=parent_a_role, parent_b_role=parent_b_role,
-                parent_a_public_reputation=parent_a_public_reputation,
-                parent_b_public_reputation=parent_b_public_reputation,
-            )
             .spawn_combat_stats_are_final()
             .build())
 
