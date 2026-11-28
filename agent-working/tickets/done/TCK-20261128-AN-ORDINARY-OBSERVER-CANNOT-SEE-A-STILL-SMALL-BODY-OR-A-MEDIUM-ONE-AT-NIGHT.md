@@ -80,6 +80,8 @@ Perception calibration (Option C), 3 gate worlds × s42 × 1000 t, BASE ac759e0b
 - NOT MEASURED: bodies_hit (a kit off-by-one);
 - PERF flag 1.13 and 1.12 (frontier_living_world, urban_political), crowded 1.02.
 
+CI-red fixes after #1020 (owner #715 7241514335): tests/unit/combat/test_capability_driven_targeting.py::test_target_score_reflects_capability_estimate_for_differentiated_enemy_kinds now asserts goblin(10), was dragon(20), plus a night row (the goblin is unseen at night, so the dragon is picked); tests/fixtures/event_extractor_characterization/kernel_runs.jsonl lifecycle_full_coverage_world:42 repinned (247 outputs over calls 125-199, as_built only calls 144/192; dungeon_crawl and unit_corpus byte-identical; cause INFERRED (perception gate), not traced).
+
 Gap on bbce8de04 (executed, scoped; not the full suite): tools chunks 0-7 all green (774, 782, 777, 647, 695, 1367, 724, 720 passed); unit content 324, worldbuilding 436, world 679, tactical 119, engine 1441 passed; tests/architecture 261; mechanism registry 155; code health OK (no new or worse blocking), import contracts 17 kept 0 broken, packages 0 problems, mypy clean. New: tests/unit/world/test_perception_calibration.py (table test of the ACs, validation, size order, data loading).
 
 ## Files Changed
