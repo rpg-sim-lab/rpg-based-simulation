@@ -323,10 +323,11 @@ def test_a_still_medium_body_two_tiles_away_at_night_is_still_not_perceived(cata
 
 def test_touch_adds_no_score_to_a_by_day_vision_pair(catalog):
     gate = PerceptionGate(catalog)
+    fall = perception_settings(catalog).distance_falloff_per_tile  # the fall-off is data (PERC 3a), not a literal
     far = gate.can_perceive(_body("not_in_content_kind"), STILL_MEDIUM, {"distance": 2.0, "reach": 2.0})
-    assert far.signals_used == ["visibility"] and far.confidence == pytest.approx(0.6 * 0.6 * (1 - 0.02 * 2) * 0.75)
+    assert far.signals_used == ["visibility"] and far.confidence == pytest.approx(0.6 * 0.6 * (1 - fall * 2) * 0.75)
     near = gate.can_perceive(_body("not_in_content_kind"), STILL_MEDIUM, {"distance": 1.0, "reach": 1.0})
-    assert near.signals_used == ["visibility", "touch"] and near.confidence == pytest.approx(0.6 * 0.6 * (1 - 0.02) * 0.75)
+    assert near.signals_used == ["visibility", "touch"] and near.confidence == pytest.approx(0.6 * 0.6 * (1 - fall) * 0.75)
 
 
 def test_touch_is_felt_by_every_content_species(catalog):
@@ -351,7 +352,8 @@ def test_the_callers_hand_the_gate_the_chebyshev_reach():
 
     me = at(1, 0, 0)
     assert perceives(me, at(2, 1, 1), night=True, tick=None)  # the diagonal neighbour is touched
-    assert not perceives(me, at(3, 2, 0), night=True, tick=None)
+    # PERC 3a changed expectation (divergence 2.229, AC2): a still body two tiles away is now SEEN at night, so "not touched" is asserted beyond what the night gate reaches (a still medium body: 6 tiles)
+    assert not perceives(me, at(3, 8, 0), night=True, tick=None)
 
 
 def test_the_gate_error_path_is_unchanged_by_touch(catalog, caplog):
@@ -379,7 +381,7 @@ def test_a_context_without_reach_gets_no_touch_and_the_old_score(catalog):
     still_small = gate.can_perceive(_body("not_in_content_kind"), STILL_SMALL, {"distance": 1.0, "night": True})
     assert not still_small.perceived and still_small.signals_used == [] and still_small.confidence == 0.0
     medium_day = gate.can_perceive(_body("not_in_content_kind"), STILL_MEDIUM, {"distance": 1.0})
-    assert medium_day.signals_used == ["visibility"] and medium_day.confidence == pytest.approx(0.6 * 0.6 * (1 - 0.02) * 0.75)
+    assert medium_day.signals_used == ["visibility"] and medium_day.confidence == pytest.approx(0.6 * 0.6 * (1 - perception_settings(catalog).distance_falloff_per_tile) * 0.75)
     assert gate.can_perceive(_body("not_in_content_kind"), STILL_SMALL, {}).signals_used == []  # the default distance of 1.0 gives no touch either
 
 
