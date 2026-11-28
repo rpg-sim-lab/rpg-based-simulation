@@ -9,6 +9,13 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 
+def _perception_settings_record():
+    """The shipped calibration record, for a mock catalog (the gate built by warmup reads it)."""
+    from src.content.schema import PerceptionSettingsDefinition
+    return {"perception_settings": PerceptionSettingsDefinition(id="perception_settings", perception_threshold=0.15, distance_falloff_per_tile=0.04, distance_factor_min=0.05,
+                                                              night_vision_steps=2, size_visibility={"small": "medium_high", "medium": "high", "large": "very_high"})}
+
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -49,6 +56,7 @@ class TestContentWarmupService:
 
         mock_repo = MagicMock(spec=CatalogRepository)
         mock_repo.terrain = {}  # an instance attribute set in __init__, so the class spec lacks it; warmup installs the terrain catalog
+        mock_repo.perception_settings = _perception_settings_record()  # likewise an instance attribute: the gate built by warmup reads the calibration record (PERC 3a)
         ContentWarmupService.warmup(repo=mock_repo)
 
         assert faction_mod._semantics_service_cache is not None
@@ -64,6 +72,7 @@ class TestContentWarmupService:
 
         mock_repo = MagicMock(spec=CatalogRepository)
         mock_repo.terrain = {}  # an instance attribute set in __init__, so the class spec lacks it; warmup installs the terrain catalog
+        mock_repo.perception_settings = _perception_settings_record()  # likewise an instance attribute: the gate built by warmup reads the calibration record (PERC 3a)
         ContentWarmupService.warmup(repo=mock_repo)
         assert ContentWarmupService.is_warm() is True
 
@@ -74,6 +83,7 @@ class TestContentWarmupService:
 
         mock_repo = MagicMock(spec=CatalogRepository)
         mock_repo.terrain = {}  # an instance attribute set in __init__, so the class spec lacks it; warmup installs the terrain catalog
+        mock_repo.perception_settings = _perception_settings_record()  # likewise an instance attribute: the gate built by warmup reads the calibration record (PERC 3a)
         ContentWarmupService.warmup(repo=mock_repo)
         assert ContentWarmupService.is_warm() is True
 
@@ -169,6 +179,7 @@ class TestNoContentLoadInTickHotPath:
 
         mock_repo = MagicMock(spec=CatalogRepository)
         mock_repo.terrain = {}  # an instance attribute set in __init__, so the class spec lacks it; warmup installs the terrain catalog
+        mock_repo.perception_settings = _perception_settings_record()  # likewise an instance attribute: the gate built by warmup reads the calibration record (PERC 3a)
         ContentWarmupService.warmup(repo=mock_repo)
 
         # Now simulate what tick_once does with the context flag
