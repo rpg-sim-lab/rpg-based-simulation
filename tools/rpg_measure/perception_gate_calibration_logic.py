@@ -7,7 +7,7 @@ Definitions (per cell, one arm):
  - ``vision_still_small_day`` / ``vision_still_medium_night`` (the NON-VACUITY rows): a perception through the vision channel ALONE of a still body (noise level low or very_low) whose visibility is the arm's
    SMALL size level (by day) or MEDIUM size level (by night). They are the ticket's own rows: base gives 0 for the first at any distance and only touch for the second; fix must give > 0.
  - ``hunts_started`` / ``engagements_started``: a body's current objective changes to one that names a body (``target_entity_id``) and belongs to a hunger project (a hunt) or is a defeat-enemy objective (an engagement).
- - ``hits_landed``: bodies whose ``last_hit_tick`` equals the applied tick.
+ - ``bodies_hit`` (REPORTED only): bodies STRUCK on the applied tick (``last_hit_tick`` equals it); the engagement STOP stays on the objective-based count.
 """
 from __future__ import annotations
 
@@ -42,11 +42,20 @@ def objective_started(prior_objective_id: Optional[str], objective: Optional[Map
     """``'hunt'``, ``'engagement'`` or None for a body whose current objective just changed: ``objective`` = {id, kind, project_kind, target_entity_id}."""
     if objective is None or objective.get("id") == prior_objective_id or objective.get("target_entity_id") is None:
         return None
-    kind = str(objective.get("kind", "")).lower()
-    if "defeat" in kind:
-        return "engagement"
+    # A hunger project's hunt objective names its prey with the kind REACH_LOCATION (ac759e0ba: intelligence.py:1500 `kind=best_candidate.metadata.get("obj_kind") or ObjectiveKind.REACH_LOCATION`; the
+    # HUNGER GoalScore, scorers.py:118-120, carries no obj_kind), and an engagement is the combat scorer's DEFEAT_ENEMY (scorers.py:214). The project kind is tested FIRST: whatever its objective kind,
+    # a hunger project's body-naming objective is a hunt, so the hunt STOP can never be starved by a DEFEAT_ENEMY hunt.
     if str(objective.get("project_kind", "")).lower() == "hunger":
         return "hunt"
+    if "defeat" in str(objective.get("kind", "")).lower():
+        return "engagement"
+    return None
+
+
+def settings_finding(arm: Optional[str], gate_calls: int, settings_seen: int) -> Optional[str]:
+    """A FINDING (the spy exits rc 6) when ARM=fix but no gate call saw a calibration record: the spy would then silently read the 02a size map and the non-vacuity rows would read 0 as NOT MEASURED."""
+    if arm == "fix" and gate_calls > 0 and settings_seen == 0:
+        return "ARM=fix but no gate call saw a calibration record (PerceptionGate.settings): the arm tree is not the calibration head, or the gate is reached without it"
     return None
 
 
@@ -64,7 +73,7 @@ class Counters:
         self.perceived_hostile_true = 0
         self.hunts_started = 0
         self.engagements_started = 0
-        self.hits_landed = 0
+        self.bodies_hit = 0
         self.apply_calls = 0
 
     def gate(self, row: Mapping[str, Any]) -> None:
@@ -91,4 +100,4 @@ class Counters:
         return {"gate_calls": self.gate_calls, "perceived": self.perceived, "by_channel": dict(sorted(self.by_channel.items())), "by_night": dict(self.by_night),
                 "vision_still_small_day": self.vision_still_small_day, "vision_still_medium_night": self.vision_still_medium_night,
                 "perceived_hostile_calls": self.perceived_hostile_calls, "perceived_hostile_true": self.perceived_hostile_true,
-                "hunts_started": self.hunts_started, "engagements_started": self.engagements_started, "hits_landed": self.hits_landed, "apply_calls": self.apply_calls}
+                "hunts_started": self.hunts_started, "engagements_started": self.engagements_started, "bodies_hit": self.bodies_hit, "apply_calls": self.apply_calls}

@@ -8,7 +8,7 @@ It runs on BOTH arms (BASE main ac759e0ba, FIX the calibration head): every tree
 unless its final_hash equals the plain twin's (rc 3). Wall per tick is recorded on both modes for the PERF FLAG (the summary compares the two PLAIN cells).
 RUN ROOT: with recording OFF the kernel writes ``data/runs/<run_id>`` into the frozen tree; ``ReplayManager.__init__`` is wrapped (kit side, no src change) to rewrite exactly that relative path to ``<--run-root>/<run_id>``; the
 cell is VOID unless a redirect happened.
-Usage: python perception_gate_calibration_spy.py <world> <seed> <ticks> <out.json> --mode plain|spy [--plain-hash <hex>] [--run-root <dir, default <out dir>/runs>]
+Usage: python perception_gate_calibration_spy.py <world> <seed> <ticks> <out.json> --mode plain|spy --arm base|fix [--plain-hash <hex>] [--run-root <dir, default <out dir>/runs>]
 """
 from __future__ import annotations
 
@@ -92,6 +92,8 @@ class CalibrationSpy:
         self.levels: Dict[str, str] = logic.size_levels(None)
         self.objective_before: Dict[int, Optional[str]] = {}
         self.sampled = {"samples": 0, "hostile_pairs": 0, "prey_pairs": 0}
+        self._sampling = False  # set around sample(): the spy's own queries go through the wrapped can_perceive and must not be counted
+        self.settings_seen = 0  # gate calls whose gate carried a calibration record (the fix arm must see > 0)
         self.spy_exceptions: List[str] = []
         self._patched: List[tuple] = []
 
@@ -128,7 +130,10 @@ class CalibrationSpy:
             raise
 
     def record_gate(self, gate: Any, target_signals: Any, context: Any, result: Any) -> None:
-        settings = getattr(gate, "settings", None)  # the fix arm's calibration record; the base arm has none
+        if self._sampling:
+            return
+        settings = getattr(gate, "settings", None)  # the fix arm's calibration record; the base arm has none (a fix arm that never sees one is a FINDING in main)
+        self.settings_seen += int(settings is not None)
         self.levels = self.logic.size_levels(getattr(settings, "size_visibility", None))
         signals = target_signals if isinstance(target_signals, dict) else {k: getattr(target_signals, k, None) for k in ("visibility", "noise")}
         row = self.logic.classify_perception(bool(result.perceived), result.signals_used, signals, bool((context or {}).get("night", False)), self.levels)
@@ -144,35 +149,37 @@ class CalibrationSpy:
             cur = current_objective(ent)
             self.objective_before[eid] = None if cur is None else cur["id"]
             if getattr(ent.combat, "last_hit_tick", None) == tick:
-                self.counters.hits_landed += 1
+                self.counters.bodies_hit += 1
         if tick % SAMPLE_EVERY == 0:
             self.sample(state)
 
     def sample(self, state: Any) -> None:
         """Perceived hostile and prey pairs at this tick: each living body against the bodies in its 10-tile view, through ``appraisal.perceives`` (day or night as the state's clock says)."""
-        from src.content_semantics.faction import are_entities_hostile
-        from src.content_semantics.relation import RelationContext
         from src.core.calendar import is_night
-        from src.engine.appraisal import can_eat, perceives
+        from src.engine.appraisal import Relation
         from src.engine.domain_logic import SimulationDomainLogic
+        from src.engine.hostility import perceived_hostile, relation
 
         self.sampled["samples"] += 1
         night = is_night(state.world_time)
-        for ent in state.entities.values():
-            if not ent.combat.alive:
-                continue
-            for _, other in SimulationDomainLogic.get_neighbor_view(state, ent, radius=RADIUS):
-                if not other.combat.alive or not perceives(ent, other, night=night, tick=state.tick):
+        self._sampling = True  # the decision path's own tests (perceived_hostile, relation) reach the wrapped gate; their calls are not the run's perceptions
+        try:
+            for ent in state.entities.values():
+                if not ent.combat.alive:
                     continue
-                dist = abs(other.navigation.position[0] - ent.navigation.position[0]) + abs(other.navigation.position[1] - ent.navigation.position[1])
-                if are_entities_hostile(ent, other, RelationContext(distance=dist, combat_engaged=True)):
-                    self.sampled["hostile_pairs"] += 1
-                if can_eat(ent, other):
-                    self.sampled["prey_pairs"] += 1
+                for _, other in SimulationDomainLogic.get_neighbor_view(state, ent, radius=RADIUS):
+                    if not other.combat.alive:
+                        continue
+                    if perceived_hostile(ent, other, night=night, tick=state.tick):  # the decision path's own hostility test (faction verdict, appraisal, the gate)
+                        self.sampled["hostile_pairs"] += 1
+                    if relation(ent, other, night=night, tick=state.tick) is Relation.PREDATION:  # prey: the subject perceives and appraises it as PREDATION
+                        self.sampled["prey_pairs"] += 1
+        finally:
+            self._sampling = False
 
     def report(self) -> Dict[str, Any]:
         doc = self.counters.report()
-        doc.update({"sampled": dict(self.sampled), "size_levels": dict(self.levels), "spy_exceptions": self.spy_exceptions})
+        doc.update({"sampled": dict(self.sampled), "size_levels": dict(self.levels), "settings_seen": self.settings_seen, "spy_exceptions": self.spy_exceptions})
         return doc
 
 
@@ -183,6 +190,7 @@ def main(argv: List[str]) -> int:
 
     mode = argv[argv.index("--mode") + 1] if "--mode" in argv else "spy"
     plain_hash = argv[argv.index("--plain-hash") + 1] if "--plain-hash" in argv else None
+    arm = argv[argv.index("--arm") + 1] if "--arm" in argv else None
     world, seed, ticks, out = argv[0], int(argv[1]), int(argv[2]), argv[3]
     run_root = argv[argv.index("--run-root") + 1] if "--run-root" in argv else str(Path(out).parent / "runs")
     if mode not in ("plain", "spy"):
@@ -231,8 +239,12 @@ def main(argv: List[str]) -> int:
     code = 0
     if spy is not None:
         doc.update(spy.report())
+        doc["arm"] = arm
+        finding = logic.settings_finding(arm, spy.counters.gate_calls, spy.settings_seen)
+        if finding:
+            doc["findings"].append(finding)
         doc["hash_equals_plain"] = None if plain_hash is None else final_hash == plain_hash
-        code = EXIT_SPY_EXCEPTION if (fatal is not None or spy.spy_exceptions) else (EXIT_HASH_MISMATCH if plain_hash is not None and final_hash != plain_hash else 0)
+        code = EXIT_SPY_EXCEPTION if (fatal is not None or spy.spy_exceptions) else (EXIT_HASH_MISMATCH if plain_hash is not None and final_hash != plain_hash else (EXIT_FINDING if doc["findings"] else 0))
     elif fatal is not None:
         code = EXIT_SPY_EXCEPTION
     if redirected["redirected"] < 1 and code == 0:

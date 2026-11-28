@@ -23,7 +23,7 @@ run() { # world seed ticks outjson mode [plainhash]
   local tmo; tmo=$($py -c "import math;print(math.ceil($3*0.7)+600)")
   local extra=""; [ -n "${6:-}" ] && extra="--plain-hash $6"
   SIM_OBS_MODE=OFF RPG_OBS_MODE=OFF PYTHONHASHSEED=0 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=$TREE systemd-run --user --scope -q -p MemoryMax=3G -p MemorySwapMax=0 timeout "$tmo" \
-    bash -c "cd $TREE && $py $KIT/tools/rpg_measure/perception_gate_calibration_spy.py $1 $2 $3 $4 --mode $5 --run-root $OUT/runs $extra" > "${4%.json}.log" 2>&1
+    bash -c "cd $TREE && $py $KIT/tools/rpg_measure/perception_gate_calibration_spy.py $1 $2 $3 $4 --mode $5 --arm $ARM --run-root $OUT/runs $extra" > "${4%.json}.log" 2>&1
 }
 if [ "${LAUNCH_DRY_RUN:-}" = 1 ]; then
   for c in $CELLS; do IFS=: read w s t <<< "$c"; echo "CELL $ARM $w s$s ${t}t: plain then spy (cwd=$TREE PYTHONPATH=$TREE) $py $KIT/tools/rpg_measure/perception_gate_calibration_spy.py $w $s $t $OUT/${w}_s${s}_t${t}_{plain,spy}.json"; done

@@ -4,19 +4,19 @@
  "files": [
   {
    "path": "tools/rpg_measure/perception_gate_calibration_spy.py",
-   "sha256": "f4602045635190e6add78bf6a29ea2ba75d361b1fadd4bd4988475033def2e23"
+   "sha256": "f8347ae1ce3c80351017ad0289e9bcfd812e2239397074371e3344ad10bf1540"
   },
   {
    "path": "tools/rpg_measure/perception_gate_calibration_logic.py",
-   "sha256": "604edf74cafeb1d08609f6067bc8fc75dd422a266a87287584549bb8cd2396fd"
+   "sha256": "5ae3fee5b0f37bd1e2e735c0ee8fc430280e90f30223d1ee883a076f9ab7b754"
   },
   {
    "path": "tools/rpg_measure/perception_gate_calibration_summary.py",
-   "sha256": "318348da5ac7cbe12d78ed5a90fba6bcc889d5fef3662417ca02e8eae4386405"
+   "sha256": "8f591f1620b79638de87fe639a60945325f7cfc976220742da5fe823c765196b"
   },
   {
    "path": "tools/rpg_measure/perception_gate_calibration_launch.sh",
-   "sha256": "7827170ed97495c52748c075524620c7bc2149c4fff839ebe54db74a136f8ff7",
+   "sha256": "c3c40962e73e8fd3d1e1671188a0e4c5f266f37a361e974ff3bf1a99bf8fc2b6",
    "role": "runner"
   }
  ],
@@ -32,7 +32,9 @@
     "{ticks}",
     "{out}",
     "--mode",
-    "spy"
+    "spy",
+    "--arm",
+    "base"
    ],
    "env": {
     "PYTHONHASHSEED": "0",

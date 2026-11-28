@@ -31,6 +31,10 @@ def load_cells(out_dir: Path) -> Dict[str, Dict[str, Dict[str, Any]]]:
     return cells
 
 
+FIX_LEVELS = {"small": "medium_high", "medium": "high"}
+BASE_LEVELS = {"small": "low", "medium": "medium"}
+
+
 def hard_failures(arm: str, cells: Dict[str, Dict[str, Dict[str, Any]]]) -> List[str]:
     out: List[str] = []
     for cell, modes in cells.items():
@@ -45,6 +49,9 @@ def hard_failures(arm: str, cells: Dict[str, Dict[str, Dict[str, Any]]]) -> List
                 out.append(f"{arm} {cell} {mode}: not exit-clean (fatal {bool(doc.get('fatal'))}, logging_errors {len(doc.get('logging_errors') or [])}, findings {doc.get('findings')})")
             if (doc.get("replay_dirs_redirected") or 0) < 1:
                 out.append(f"{arm} {cell} {mode}: no replay dir redirected")
+        expected = FIX_LEVELS if arm == "fix" else BASE_LEVELS
+        if spy.get("size_levels") != expected:
+            out.append(f"{arm} {cell}: size_levels {spy.get('size_levels')} != the {arm} arm's record {expected} (the spy read the wrong calibration)")
     return out
 
 
@@ -82,18 +89,24 @@ def render(base_cells: Dict[str, Any], fix_cells: Dict[str, Any]) -> Tuple[List[
     lines.append("| cell | measure | base | fix |")
     lines.append("|---|---|---|---|")
     stops: List[str] = []
+    nv_small = nv_medium = 0
     for cell in sorted(set(base_cells) & set(fix_cells)):
         b, f = base_cells[cell].get("spy") or {}, fix_cells[cell].get("spy") or {}
-        for key in ("perceived", "hunts_started", "engagements_started", "hits_landed", "vision_still_small_day", "vision_still_medium_night"):
+        for key in ("perceived", "hunts_started", "engagements_started", "bodies_hit", "vision_still_small_day", "vision_still_medium_night"):
             lines.append(f"| {cell} | {key} | {b.get(key)} | {f.get(key)} |")
         for key in SAMPLED:
             lines.append(f"| {cell} | sampled.{key} | {(b.get('sampled') or {}).get(key)} | {(f.get('sampled') or {}).get(key)} |")
         lines.append(f"| {cell} | by_channel | {b.get('by_channel')} | {f.get('by_channel')} |")
         for row in collapse_stops(b, f):
             stops.append(f"{cell} {row}")
-        nv = (f.get("vision_still_small_day") or 0) + (f.get("vision_still_medium_night") or 0)
-        if nv == 0:
-            lines.append(f"NOT MEASURED: {cell}: the fix arm has 0 vision perceptions of a still small body by day or a still medium body at night (non-vacuity row empty)")
+        lines.append(f"| {cell} | size_levels | {b.get('size_levels')} | {f.get('size_levels')} |")
+        nv_small += f.get("vision_still_small_day") or 0
+        nv_medium += f.get("vision_still_medium_night") or 0
+        if (f.get("vision_still_small_day") or 0) + (f.get("vision_still_medium_night") or 0) == 0:
+            lines.append(f"(info) {cell}: 0 non-vacuity perceptions in this cell")
+    lines.append(f"NON-VACUITY total (fix, all cells): vision_still_small_day {nv_small}, vision_still_medium_night {nv_medium}")
+    if nv_small + nv_medium == 0:
+        lines.append("NOT MEASURED: the fix arm has 0 vision perceptions of a still small body by day and of a still medium body at night in EVERY cell (the ticket's own rows never occurred)")
     for row in stops:
         lines.append(f"STOP (collapse to 0): {row}")
     if stops and code == 0:
