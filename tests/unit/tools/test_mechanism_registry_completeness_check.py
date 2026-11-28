@@ -314,7 +314,8 @@ def test_wider_scope_numbers_pinned():
     # 385 -> 386 on 2026-11-24 (S8, the lead's record on #715 after 7128579145): +src/core/arrival.py, the structural arrival rule (TCK-20261123-A-SUBJECT-REMEMBERS-WHY-A-PLACE-FAILED-AND-RECONSIDERS-IT-BY-THAT-REASON, "arrived never fails", owner #715 7128509663); a new file counted, none removed
     # 386 -> 387 on 2026-11-24 (S8, the lead's record on #715 after 7137525427, from the check's own output): +src/core/navigation_component.py (NavigationComponent moved out of state.py, TCK-20261124-NAVIGATION-STATE-MOVES-OUT-OF-STATE-PY, owner #715 after 7135893456); unbound, as it was inside state.py
     # 387 -> 388 on 2026-11-25 (TCK-20261029-A-SERVICE-DISPATCH-THAT-FAILS-EVERY-TICK-NEVER-BECOMES-A-BLOCKER, rpg-planner ruling, from the check's own output): +src/core/service_refusals.py (the typed ServiceRefusal record and its streak count, K2 fix B), unbound
-    assert wider["scope_files"] == 388
+    # 388 -> 389 on 2026-11-28 (TCK-20261128-AN-ORDINARY-OBSERVER-CANNOT-SEE-A-STILL-SMALL-BODY-OR-A-MEDIUM-ONE-AT-NIGHT, rpg-planner ruling, from the check's own output): +src/content/perception_settings.py (the gate's calibration accessor, bound to sense_gated_detection); none removed
+    assert wider["scope_files"] == 389
     # 233 -> 227 on 2026-10-05: the world-building split names six more files (worldmodules/normalizer,
     # worldassembly/resolve_io, worldbuilding/repository and validator, worldgeneration/generator and scorer).
     # Then +1 for the unbound entity_target_objective.py module (TCK-20261002-COMBAT-OBJECTIVE-TARGETS-...).
