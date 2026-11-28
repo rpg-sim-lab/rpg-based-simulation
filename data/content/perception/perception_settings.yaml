@@ -1,0 +1,23 @@
+# data/content/perception/perception_settings.yaml
+# The perception gate's calibration, balance values not law (TCK-20261128-AN-ORDINARY-OBSERVER-CANNOT-SEE-A-STILL-SMALL-BODY-OR-A-MEDIUM-ONE-AT-NIGHT, PERC 3a; designer ruling, Option C,
+# drafts/rpg-designer-perc-calibration-values-ruling.md 9c42fb88). A one-record catalog family like engagement_settings.yaml, so the values are part of the catalog fingerprint (the run's identity);
+# read through the warmed catalog by src/content/perception_settings.py, never from the file at tick time. Loaded and validated at PerceptionGate construction (src/world/perception/gate.py).
+#
+# score = sense x signal x max(distance_factor_min, 1 - distance_falloff_per_tile x d) x terrain x (0.5 + 0.5 x alertness, default 0.5 = 0.75); a channel is perceived when score >= perception_threshold.
+# perception_threshold: must stay STRICTLY ABOVE the still-body ceiling (a still body's noise/vibration low and scent medium against a baseline observer's hearing medium and smell low, at the default
+#   alertness: 0.6 x 0.3 x 0.75 = 0.135); the gate refuses a lower value at load. 0.15 leaves a 10% margin that holds only at alertness 0.5: whoever passes `alertness` re-checks it.
+# distance_falloff_per_tile: the linear fall-off of a channel's score per tile; distance_factor_min is the floor of that factor and must not admit by itself (floor x 1.0 < threshold).
+# night_vision_steps: ladder rungs vision drops at night unless the profile declares night_vision (owner Q2(a), #715 6937049127: 2, unchanged).
+# size_visibility: the visibility a body of each size gives off (small / medium / large); a body with no declared size gives off the medium entry. One rung above the 02a values.
+- id: "perception_settings"
+  display_name: "Perception settings"
+  description: "The perception gate's threshold, fall-off, night steps and size visibility"
+  schema_version: "perceptionsettings.v1"
+  perception_threshold: 0.15
+  distance_falloff_per_tile: 0.04
+  distance_factor_min: 0.05
+  night_vision_steps: 2
+  size_visibility:
+    small: "medium_high"
+    medium: "high"
+    large: "very_high"

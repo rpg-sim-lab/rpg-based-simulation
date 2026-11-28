@@ -56,6 +56,7 @@ from src.content.schema import (
     ClassTableDefinition,
     BlockerSettingsDefinition,
     NavigationExperienceSettingsDefinition,
+    PerceptionSettingsDefinition,
     WayroundSettingsDefinition,
     DefaultCompileProfile,
     ItemDefinition,
@@ -139,6 +140,7 @@ CANONICAL_FAMILIES: List[ContentFamilySpec] = [
     ContentFamilySpec("defaults", "defaults.yaml", DefaultCompileProfile, "defaults", required=False),
     ContentFamilySpec("movement.wayround_settings", "movement/wayround_settings.yaml", WayroundSettingsDefinition, "wayround_settings", required=False),  # F1/F2: a one-record family, so its values are in the catalog fingerprint
     ContentFamilySpec("strategy.blocker_settings", "strategy/blocker_settings.yaml", BlockerSettingsDefinition, "blocker_settings", required=False),  # F2: a one-record family, so its value is in the catalog fingerprint
+    ContentFamilySpec("perception.perception_settings", "perception/perception_settings.yaml", PerceptionSettingsDefinition, "perception_settings", required=False),  # PERC 3a: a one-record family, so its values are in the catalog fingerprint
     ContentFamilySpec("strategy.navigation_experience_settings", "strategy/navigation_experience_settings.yaml", NavigationExperienceSettingsDefinition, "navigation_experience_settings", required=False),  # the #996 rework: a one-record family, so its values are in the catalog fingerprint
     ContentFamilySpec("spawn_tables", "spawn_tables.yaml", SpawnTableDefinition, "spawn_tables", required=False,
                       schema_version_map={"spawntabledefinition.v1": SpawnTableDefinition, "classtable.v1": ClassTableDefinition}),
@@ -236,6 +238,7 @@ class CatalogRepository:
         self.defaults: Dict[str, DefaultCompileProfile] = {}
         self.blocker_settings: Dict[str, BlockerSettingsDefinition] = {}
         self.navigation_experience_settings: Dict[str, NavigationExperienceSettingsDefinition] = {}
+        self.perception_settings: Dict[str, PerceptionSettingsDefinition] = {}
         self.wayround_settings: Dict[str, WayroundSettingsDefinition] = {}
         
         # Compatibility Projection
@@ -589,6 +592,7 @@ class CatalogRepository:
             "defaults": self.defaults,
             "blocker_settings": self.blocker_settings,
             "navigation_experience_settings": self.navigation_experience_settings,
+            "perception_settings": self.perception_settings,
             "wayround_settings": self.wayround_settings,
             "legacy_enemy_projection": self.legacy_enemy_projections,
         }
@@ -633,6 +637,7 @@ class CatalogRepository:
             ("defaults", self.defaults),
             ("blocker_settings", self.blocker_settings),
             ("navigation_experience_settings", self.navigation_experience_settings),
+            ("perception_settings", self.perception_settings),
             ("wayround_settings", self.wayround_settings),
             ("legacy_enemy_projection", self.legacy_enemy_projections),
         ]:

@@ -442,6 +442,31 @@ class NavigationExperienceSettingsDefinition(CatalogBaseDefinition):
     occupied_review_delay: int = Field(..., ge=1, strict=True, description="Ticks after an OCCUPIED give-up (other bodies at the place: waiting, not failure) before the place is due for another try; an integer >= 1")
 
 
+class PerceptionSettingsDefinition(CatalogBaseDefinition):
+    """Schema for the perception gate's calibration (PERC 3a): a one-record family like `navigation_experience_settings`, so the values are part of the catalog fingerprint (the run's identity).
+    The shape checks live here; the checks that need the gate's ladder and the derived still signals (the threshold above the still-body ceiling, the floor that never admits) are
+    `src.world.perception.gate.validate_perception_settings`, run when a gate is built."""
+    perception_threshold: float = Field(..., gt=0.0, le=1.0, strict=True, description="Score a channel needs to be perceived; strictly above the still-body ceiling (checked at gate construction)")
+    distance_falloff_per_tile: float = Field(..., gt=0.0, le=0.1, strict=True, description="Linear fall-off of a channel's score per tile of Manhattan distance")
+    distance_factor_min: float = Field(..., gt=0.0, lt=1.0, strict=True, description="Floor of the distance factor; the floor alone must not admit a channel")
+    night_vision_steps: int = Field(..., ge=0, le=7, strict=True, description="Ladder rungs vision drops at night unless the profile declares night vision")
+    size_visibility: Dict[str, str] = Field(..., description="Visibility a body gives off by size: small, medium, large (strictly increasing on the signal ladder); an undeclared size gives off the medium entry")
+
+    @field_validator("size_visibility")
+    @classmethod
+    def validate_size_visibility(cls, value: Dict[str, str]) -> Dict[str, str]:
+        """Exactly small, medium and large, each a signal level, strictly increasing small < medium < large."""
+        if set(value) != {"small", "medium", "large"}:
+            raise ValueError(f"size_visibility keys must be exactly small, medium, large; got {sorted(value)}")
+        bad = {k: v for k, v in value.items() if v not in SIGNAL_LEVELS}
+        if bad:
+            raise ValueError(f"size_visibility levels must be in {SIGNAL_LEVELS}; got {bad}")
+        rank = {level: len(SIGNAL_LEVELS) - i for i, level in enumerate(SIGNAL_LEVELS)}  # a higher rank is a stronger signal
+        if not rank[value["small"]] < rank[value["medium"]] < rank[value["large"]]:
+            raise ValueError(f"size_visibility must be strictly increasing small < medium < large; got {value}")
+        return value
+
+
 class WayroundSettingsDefinition(CatalogBaseDefinition):
     """Schema for the way-round law's two numbers (F1, divergence 2.213): a one-record family like `defaults`, so the values are part of the catalog fingerprint (the run's identity). Both are integers >= 1; there is no cross-check between them (one counts steps, the other ticks)."""
     wayround_limit: int = Field(..., ge=1, strict=True, description="Way-round steps allowed on one target with no net progress before the oscillation replan is the real one; an integer >= 1")
