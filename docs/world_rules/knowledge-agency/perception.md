@@ -140,6 +140,7 @@ gate formula stays an implementation choice (the scope boundary below).
 - **Amendment, night lowers sight (decided by the owner, 2026-11-17, Q2(a), owner answers #715 6937049127 (recommended option on every question)).** At night
   (one `time_of_day` helper, SURV-08), vision counts two levels lower unless the kind's senses
   declare night sight; other senses are unchanged.
+- **Implementation note (PERC 3a, divergence 2.229, STRAT-360).** The gate's threshold, fall-off, night steps and size visibility are one data record (`data/content/perception/perception_settings.yaml`), calibrated so an ordinary observer sees a still small body by day and a still medium one at night within a few tiles, while a still body is never heard or smelled; the load checks keep the threshold above that still-body ceiling.
 - **Repository evidence: CONFLICTING (2026-11-17, main bb26e4e5f).** Senses are declared
   (`data/content/living/sense_profiles.yaml`) but compiled worlds never wire them
   (`sense_profile_id` is set only by `ArchetypeEntityFactory`), so every measured body perceives

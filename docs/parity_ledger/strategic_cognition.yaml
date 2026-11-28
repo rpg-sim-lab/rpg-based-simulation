@@ -4812,3 +4812,13 @@
   test_path: tests/unit/strategic/test_escalated_need_takes_the_project_switch.py
   divergence_note: See docs/guidelines/intentional_divergences.md Section 2.228.
   support_boundary: 'Unit rows: the switch from a locked town_return and a resolve_blocker, the present threat, a non-escalated winner, need against need by kind identity (four rows), a fatigue winner, detour, no state and no current, the same update as the ordinary path, and the pre-refactor oracle over 360 combinations with the rule off. Not measured in a run: the K3 count on the fix tree and the hash (the S9 measurement).'
+- id: STRAT-360
+  text: 'TCK-20261128-AN-ORDINARY-OBSERVER-CANNOT-SEE-A-STILL-SMALL-BODY-OR-A-MEDIUM-ONE-AT-NIGHT (ch04 perception; PERC-02): the perception gate''s threshold (0.15), fall-off (0.04, floor 0.05), night vision steps (2) and size visibility (small medium_high, medium high, large very_high) are the one data record data/content/perception/perception_settings.yaml, calibrated so a baseline observer sees a still small body to 13 tiles by day, medium 15, large 16, and at night medium 6, small 2; a still body is never heard or smelled (the threshold is load-checked above the still-body ceiling 0.135). Limit: the margin holds only at the default alertness.'
+  status: missing
+  priority: P1
+  legacy_evidence: null
+  v2_evidence: 'src/content/perception_settings.py, src/world/perception/gate.py (validate_perception_settings, still_body_ceiling), src/engine/perception_signals.py, data/content/perception/perception_settings.yaml, docs/guidelines/intentional_divergences.md Section 2.229.'
+  proof_type: regression
+  test_path: tests/unit/world/test_perception_calibration.py
+  divergence_note: See docs/guidelines/intentional_divergences.md Section 2.229.
+  support_boundary: 'NOT RUN; own-job NOT MEASURED. Status is missing (not yet evidenced) until the test paths are green (tests/unit/world/test_perception_calibration.py, test_perc02a_senses_signals_night.py) and the own-job result is in.'
