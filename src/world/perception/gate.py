@@ -18,9 +18,13 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from src.content.perception_settings import (
+    PerceptionSettings,
+    PerceptionSettingsError,
+    perception_settings,
+)
 from src.content.repository import CatalogRepository
 from src.content.species_senses import species_sense_profile
-from src.content.perception_settings import PerceptionSettings, PerceptionSettingsError, perception_settings
 from src.core.species import SenseProfileError, species_of  # noqa: F401  (SenseProfileError is re-exported for callers of the gate)
 from src.engine.perception_signals import LIVING_SCENT_LEVEL, STILL_ACTIVITY_LEVEL
 
