@@ -8,12 +8,17 @@ Set-up (crowded_frontier, seed 42, the pinned kernel): the engine's own cooperat
 asserted equal to the returned one field for field. The deliberate departure from a natural conception: ``conceived_tick`` is ``due - gestation_ticks`` and PREDATES the run, and the father's
 interval expiry runs from that tick. ``due = set-up + 30``. The litter is drawn at conceived_tick with the profile's keyed draw, as at a natural conception. The reachability guard runs on the
 REAL set-up state and asks births' own code (``_candidates``, ``_may_conceive``, ``_find_mate`` with ``passes_mate_gate``) exactly as a conception would, with the keyed draw EXCLUDED (the test writes the pregnancy itself). No bond, no group and no
-body is edited by hand; the one hand step is assigning the apply path's result back as the kernel state.
+body is edited by hand; the hand steps are assigning the apply path's result back as the kernel state and the one SETUP departure below (the hostile-free world).
+
+HOSTILE-FREE SETUP (owner #715 7243168993, option B; designer read drafts/rpg-designer-newborn-deaths-read.md d697e246; HARD ticket TCK-20261129-A-NEWBORN-IN-SIGHT-OF-HOSTILES-DOES-NOT-FLEE-FOR-ITS-FIRST-TEN-TICKS):
+on the calibrated perception gate a newborn in sight of a hostile human stands still for about 10 ticks before it retreats, and a retreat may not get away, so hostile humans killed both newborns (kernel ticks 150/157) and the
+litter leg could not hold. The set-up therefore keeps every body that is not of the goblin kind out of the world before tick 0 (``hostile_free_kernel``): no hostile body is within reach of the nest at pick time, and none can arrive or spawn in the
+window (the final-state assert below). It is a SETUP change only: the claim, every assertion, and the litter leg (a newborn alive at the end with the full reads) are unchanged. The natural run with hostiles is the S9 cells' business, not this controlled arm.
 
 Pair selection (rpg-designer-ubuntu selector ruling, sections 30-32): by RULE, not by pin - check ticks 90..270 in steps of 30; live groups by ascending id, then members by ascending eid; the mother is the first member of
 ``births._candidates`` for whom ``births._may_conceive`` holds; the mate is exactly what ``births._find_mate`` returns for her, skipped to the next member when that is None or outside her group. The pick is
-reported in the facts as ``pick`` = [tick, group, mother, mate]. The test is the authority, not the probe: on this head the pick is t90, group 10001, goblin mother 25, mate 27 (the earlier pin was 24/26 in group
-10004 at t90, which the rule picks on 609cb3015). THIN WINDOW: only t90 yields a pair on this head; t120-270 yield none (/data/vboxuser/births-runs/controlled-pair-b687742cc/); if a later shift leaves no pair
+reported in the facts as ``pick`` = [tick, group, mother, mate]. The test is the authority, not the probe: on this head, with the hostile-free SETUP below, the pick is t90, group 10000, goblin mother 27, mate 24, a litter of 1 (without it the rule picked group 10003, mother 24, mate 26 on this head;
+group 10001, mother 25, mate 27 on 6331ff211; the earlier pin was 24/26 in group 10004 at t90, which the rule picks on 609cb3015). THIN WINDOW: only t90 yields a pair on this head; t120-270 yield none (/data/vboxuser/births-runs/controlled-pair-b687742cc/); if a later shift leaves no pair
 the assert-found fails and that is a FINDING for rpg-designer-ubuntu, not a reason to widen the window. Mate gate: goblin has mate_gate none.
 DISCLOSURE, word for word: "the controlled natural-path test does not cover human newborns in groups: no human pair's mutual SocialBond reaches the mate gate (FRIEND, 0.8) within the set-up window (best 0.2 at
 t120 in the read-only probes); the S9 5000t cell is the natural-run row for humans." (Q-N6: a human bond cannot reach 0.8 early; on the merged head no human mother passes the guard with an in-group mate at any
@@ -34,7 +39,7 @@ evidence (owner rule, #715 6971915608).
 Litter leg (rpg-designer-ubuntu, ruling (c) of 2026-11-18): at least one newborn must be ALIVE at the end with the full W+1 = 201 reads and no C3 (``litter_blocks``); a litter that all dies early by a
 typed non-starvation death passes ``needs_blocks`` per newborn but FAILS this leg.
 
-Guard leg, NOT claimed as tested coverage: the mother's-group leg has little data on this set-up. The parents died of COMBAT to humans, the mother 25 at t131 and the father 27 at t178 (11 and 58 reads); the
+Guard leg, NOT claimed as tested coverage (the readings in this paragraph are from BEFORE the hostile-free SETUP, with humans in the world; in the hostile-free world no body dies of combat): the mother's-group leg has little data on this set-up. The parents died of COMBAT to humans, the mother 25 at t131 and the father 27 at t178 (11 and 58 reads); the
 watched set also takes in the members of every group the newborn forms. A control without the pregnancy write (same kernel, world, seed, ticks; /data/vboxuser/births-runs/control-combat-47718413c-pair25-27/ with
 SHA256SUMS) shows the mother dying at t132 to the same killer (33), who was hitting her every 11 ticks from t78, before the pregnancy at t90, and the father at t195 instead of t178 with a different killer (17 against 14).
 So the mother's death is not a births effect, and the father's moves 17 ticks earlier because the runs diverge after the pregnancy write at t90 (an expected consequence: a pregnant body behaves differently and
@@ -60,6 +65,16 @@ from src.systems.world_systems.generator import EntityGenerator
 from src.world import births
 from tests.integration.world.group_window_reader import WINDOW, GroupWindowReader, hits_by_eid
 from tools.test_architecture.rpg_gate_run import build_kernel
+
+HOSTILE_FREE_KIND = "goblin"  # the only kind left in the SETUP world: the mother and father are goblins (mate gate none) and goblins are not hostile to goblins
+
+
+def hostile_free_kernel(world, seed, run_id):
+    """SETUP ONLY (see the module docstring): the pinned kernel with every body that is not of ``HOSTILE_FREE_KIND`` removed before tick 0, so no hostile body is near the nest at pick time and none exists to arrive in the window."""
+    kernel = build_kernel(world, seed, run_id)
+    state = kernel.state
+    kernel._state = dataclasses.replace(state, entities={eid: e for eid, e in state.entities.items() if species_of(e) == HOSTILE_FREE_KIND})
+    return kernel
 
 WORLD, SEED = "crowded_frontier", 42
 N_TICKS = 30  # due = set-up + N; a multiple of the 30-tick births check, <= 60
@@ -144,7 +159,7 @@ def violations(hits, newborn_ids, watched, newborn_groups, typed_dissolved):
 
 def scenario():
     catalog = get_catalog()
-    kernel = build_kernel(WORLD, SEED, "controlled_natural_path")
+    kernel = hostile_free_kernel(WORLD, SEED, "controlled_natural_path")
     facts = {}
     reader = GroupWindowReader()
     try:
@@ -194,6 +209,7 @@ def scenario():
                     in_group = True
             grouped_ticks += in_group
         final = kernel.state
+        assert {species_of(e) for e in final.entities.values()} == {HOSTILE_FREE_KIND}, "SETUP: a body of another kind arrived or spawned in the window (the hostile-free world no longer holds)"
         hits = hits_by_eid(reader.rows)
         typed = {gid for gid in newborn_groups if gid in final.groups and getattr(final.groups[gid], "dissolution_tick", None) is not None}
         untyped_vanished = sorted(gid for gid in newborn_groups if gid not in final.groups)
