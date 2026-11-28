@@ -36,6 +36,9 @@ def _first(state, species):
     return next(e for e in state.entities.values() if species_of(e) == species)
 
 
+NIGHT_DX = 8.0  # PERC 3a: a still medium body is seen at night out to 6 tiles (divergence 2.229), so the night rows that need an UNSEEN target stand 8 tiles off (the relation check precedes the range check, so the refusal they assert is still the one reached)
+
+
 def _pair(world, world_time, dx=2.0):
     """(state, predator, prey): a hungry wild dragonkin (the wolf's wild body re-kinded: wild faction, no night vision) `dx` tiles from a still human."""
     wolf, human = _first(world, "wolf"), _first(world, "human")
@@ -73,7 +76,7 @@ def test_a_forgotten_night_or_tick_fails_at_the_call(world, fn, args):
 @pytest.mark.parametrize("world_time", [DAY_WORLD_TIME, NIGHT_WORLD_TIME])
 def test_the_decision_and_the_legality_agree_on_the_same_target_by_day_and_by_night(world, world_time):
     """By day the hunt is allowed and by night it is refused, and the decision's `perceived_hostile` says the same as the legality's verdict."""
-    state, hunter, prey = _pair(world, world_time)
+    state, hunter, prey = _pair(world, world_time, dx=NIGHT_DX if world_time == NIGHT_WORLD_TIME else 2.0)
     night = is_night(state.world_time)
     decided = perceived_hostile(hunter, prey, night=night, tick=state.tick)
     legal, reason = LegalityServiceV2.verify_attack_legality(hunter, prey, state)
@@ -84,7 +87,7 @@ def test_the_decision_and_the_legality_agree_on_the_same_target_by_day_and_by_ni
 
 
 def test_a_context_with_no_clock_must_be_given_night_and_is_never_read_as_day(world):
-    state, hunter, prey = _pair(world, NIGHT_WORLD_TIME)
+    state, hunter, prey = _pair(world, NIGHT_WORLD_TIME, dx=NIGHT_DX)
 
     class NoClock:  # a context that carries entities and a tick but no world_time
         tick = state.tick
@@ -99,7 +102,7 @@ def test_a_context_with_no_clock_must_be_given_night_and_is_never_read_as_day(wo
 
 
 def test_a_night_kill_of_a_target_the_killer_cannot_perceive_is_not_a_feeding_kill(world):
-    state, hunter, prey = _pair(world, NIGHT_WORLD_TIME)
+    state, hunter, prey = _pair(world, NIGHT_WORLD_TIME, dx=NIGHT_DX)
     assert is_feeding_kill(state, hunter.id, prey) is False
 
 
@@ -142,12 +145,12 @@ def test_a_dead_held_target_is_dropped(world):
 
 # --- the action-routing phase hands legality a clocked state (designer confirmation C1) ----------------------------------------------------------------
 
-def _routed_reasons(world, world_time):
+def _routed_reasons(world, world_time, dx=2.0):
     """Drive an ATTACK intent of the hunter on the prey through ActionRoutingPhase.route (-> SimulationDomainLogic.execute_action(context=sliding_state) -> CombatActions -> verify_attack_legality)."""
     from src.core.updates import EntityUpdate, StateUpdate, TaskUpdate
     from src.engine.pipeline_phases.actions import ActionRoutingPhase
 
-    state, hunter, prey = _pair(world, world_time)
+    state, hunter, prey = _pair(world, world_time, dx=dx)
     update = StateUpdate(entity_updates={hunter.id: EntityUpdate(
         entity_id=hunter.id, task=TaskUpdate(work_kind_set="ENTITY_ACT", payload_set={"action": "ATTACK", "target_id": prey.id}))})
     refined = ActionRoutingPhase.route(state, update)
@@ -156,5 +159,5 @@ def _routed_reasons(world, world_time):
 
 def test_an_attack_intent_routed_through_the_action_phase_is_judged_by_the_states_clock(world):
     """The routed context is a clocked AuthoritativeState (a clockless one would raise): the same attack is refused on the relation at night and passes that step by day."""
-    assert ReasonCode.FRIENDLY_FIRE_ILLEGAL.value in _routed_reasons(world, NIGHT_WORLD_TIME)
+    assert ReasonCode.FRIENDLY_FIRE_ILLEGAL.value in _routed_reasons(world, NIGHT_WORLD_TIME, dx=NIGHT_DX)
     assert ReasonCode.FRIENDLY_FIRE_ILLEGAL.value not in _routed_reasons(world, DAY_WORLD_TIME)
