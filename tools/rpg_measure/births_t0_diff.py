@@ -41,8 +41,9 @@ def diff_canonical(ref: Any, head: Any, path: Tuple[Any, ...] = ()) -> List[Tupl
 
 
 def is_archetype_stamp(path: Tuple[Any, ...], kind: str) -> bool:
-    """An added `identity.properties.archetype_id` of one entity (the path ends in these three keys)."""
-    return kind == "added" and len(path) >= 3 and tuple(path[-3:]) == ("identity", "properties", "archetype_id")
+    """An ADDED ``entities/<id>/properties/archetype_id``: exactly four path parts. The shape is read from a real canonical dump (``out_t0_diff/*_t0_head.json``): the canonical writer
+    ``EntityState.to_canonical_dict`` (src/core/state.py:947) writes ``identity.properties`` as the entity's own ``properties`` key, with no ``identity`` level."""
+    return kind == "added" and len(path) == 4 and path[0] == "entities" and path[2] == "properties" and path[3] == "archetype_id"
 
 
 def t0_verdict(diffs: List[Tuple[Tuple[Any, ...], str]]) -> Dict[str, Any]:

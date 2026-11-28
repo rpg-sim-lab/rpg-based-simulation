@@ -78,3 +78,6 @@ The measurement kits and their tests were renamed so a file name says what it me
 
 Kit directories on the host (unchanged, old names): `k2k3_kit_v5`/`v6`, `k2fix_ownjob_kit_v1`-`v3`, `k3_phase0_kit_v1`/`v2`, `k3_switch_kit_v1`-`v3`, and their output directories (`k3_phase0_out`, `k3_ownjob_*_out`, `k3_k6_neg_out`, `k2fix_*`). Closed tickets, stored artifacts, monitoring shards and archive docs keep the old names as history. `tests/tools/test_file_names_carry_meaning.py` fails on a new file whose name carries a bare internal code.
 
+
+## Lesson (births own-job T0 STOP, 2026-11-28)
+Kit unit tests take their input from a real compiled state (or the real canonical writer), never from a hand-built dict. The births T0 matcher passed its tests on a hand-written dict whose shape was assumed, and then stopped a real run because the canonical form puts `properties` at the entity level (`entities/<id>/properties/...`, written at `src/core/state.py:947`).

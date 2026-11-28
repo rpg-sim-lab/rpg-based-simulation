@@ -455,15 +455,55 @@ def test_w3_four_mid_run_adds_only_the_one_with_no_source_and_the_undeclared_one
     assert sorted((r["id"], r["source"]) for r in watch.fails["W3"]) == [(10, None), (11, "UNDECLARED_SOURCE")]
 
 
-def test_t0_diff_passes_only_for_added_archetype_stamps_and_stops_on_anything_else():
+def _canonical(*bodies):
+    """The REAL canonical form of a state (what the t0 child dumps), through the canonical writer, never a hand-written dict."""
+    import json
+    from src.engine.checkpoint import CanonicalStateHasher
+    return json.loads(CanonicalStateHasher.to_canonical_json(_state(*bodies, tick=0)))
+
+
+def _stamped(entity_id, stamp, role=2, **props):
+    properties = {"population_id": "p", **props, **({"archetype_id": "a"} if stamp else {})}
+    return V2EntityBuilder(entity_id).kind("wolf").location(5.0, 5.0).identity(role=role, properties=properties).build()
+
+
+def test_t0_diff_passes_only_for_added_archetype_stamps_on_the_real_canonical_shape_and_stops_on_anything_else():
     from tools.rpg_measure import births_t0_diff as t0
-    ref = {"entities": {"1": {"identity": {"properties": {"population_id": "p"}, "role": 2}}, "2": {"identity": {"properties": {}, "role": 3}}}, "tick": 0}
-    head = {"entities": {"1": {"identity": {"properties": {"population_id": "p", "archetype_id": "a"}, "role": 2}}, "2": {"identity": {"properties": {"archetype_id": "b"}, "role": 3}}}, "tick": 0}
-    verdict = t0.t0_verdict(t0.diff_canonical(ref, head))
+    ref = _canonical(_stamped(1, False), _stamped(2, False))
+    head = _canonical(_stamped(1, True), _stamped(2, True))
+    assert "properties" in head["entities"]["1"] and "identity" in head["entities"]["1"], "the real shape: properties is an entity-level key"
+    diffs = t0.diff_canonical(ref, head)
+    assert sorted(p for p, _ in diffs) == [("entities", "1", "properties", "archetype_id"), ("entities", "2", "properties", "archetype_id")]
+    verdict = t0.t0_verdict(diffs)
     assert (verdict["verdict"], verdict["archetype_stamps_added"], verdict["other_count"]) == ("PASS", 2, 0)
-    head["entities"]["2"]["identity"]["role"] = 2  # a role change is not the stamp
-    assert t0.t0_verdict(t0.diff_canonical(ref, head))["verdict"] == "STOP"
-    head["entities"]["2"]["identity"]["role"] = 3
-    head["entities"]["2"]["identity"]["properties"]["extra"] = 1  # another added property is not the stamp
-    assert t0.t0_verdict(t0.diff_canonical(ref, head))["verdict"] == "STOP"
-    assert t0.t0_verdict(t0.diff_canonical(ref, ref))["verdict"] == "STOP", "no stamp at all (nothing to measure) is not a PASS"
+    # a role change, another added property, and no stamp at all are each a STOP
+    assert t0.t0_verdict(t0.diff_canonical(ref, _canonical(_stamped(1, True, role=3), _stamped(2, True))))["verdict"] == "STOP"
+    assert t0.t0_verdict(t0.diff_canonical(ref, _canonical(_stamped(1, True, extra=1), _stamped(2, True))))["verdict"] == "STOP"
+    assert t0.t0_verdict(t0.diff_canonical(ref, ref))["verdict"] == "STOP"
+
+
+def test_the_archetype_mask_on_a_real_compiled_world_equals_the_hash_of_a_copy_with_the_key_deleted_and_differs_from_the_unmasked_hash():
+    import os
+    from dataclasses import replace as dc_replace
+    from src.engine.checkpoint import CanonicalStateHasher
+    from src.worldbuilding.compiler import WorldCompiler
+    from src.worldbuilding.repository import WorldRepository
+    from tools.rpg_measure.births_child import archetype_masked_hash
+    spec, context = WorldRepository(os.path.join("data", "worlds")).load_world_with_context("frontier_living_world")
+    state, _ = WorldCompiler.compile(spec, 42, context=context)
+    stamped = [e for e in state.entities.values() if "archetype_id" in (e.identity.properties or {})]
+    assert len(stamped) == 52
+    deleted = {i: (dc_replace(e, identity=dc_replace(e.identity, properties={k: v for k, v in e.identity.properties.items() if k != "archetype_id"})) if "archetype_id" in e.identity.properties else e) for i, e in state.entities.items()}
+    copy = dc_replace(state, entities=deleted)
+    assert archetype_masked_hash(state) == CanonicalStateHasher.get_hash(copy)
+    assert archetype_masked_hash(state) != CanonicalStateHasher.get_hash(state)
+    assert all("archetype_id" not in e.identity.properties for e in copy.entities.values())
+    # the canonical "properties" key of an entity IS entity.identity.properties (the object the mask edits), stamped key included (written at src/core/state.py:947)
+    import json
+    canonical = json.loads(CanonicalStateHasher.to_canonical_json(state))
+    for e in stamped:
+        assert canonical["entities"][str(e.id)]["properties"] == dict(e.identity.properties)
+        assert "archetype_id" in canonical["entities"][str(e.id)]["properties"] and "archetype_id" in e.identity.properties
+        assert "identity" not in canonical["entities"][str(e.id)] or "properties" not in canonical["entities"][str(e.id)]["identity"], "there is no identity/properties path in the canonical form"
+    others = {k for e in stamped for k in e.identity.properties} - {"archetype_id"}
+    assert others, "every other property key is kept by the mask"
