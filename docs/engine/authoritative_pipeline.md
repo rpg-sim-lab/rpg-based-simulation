@@ -99,6 +99,7 @@ Phase names in the table match `run_phase()` call identifiers in `src/engine/pip
 **Responsibility**: Resolves macro-simulation laws.
 - **Trauma Law**: Deaths increase regional trauma.
 - **Sovereignty Law**: Influence shifts between Hero and Monster factions based on regional kills.
+- **Births Law**: Every 30 ticks (absolute kernel tick), a mother eligible under her species' reproduction profile, with an eligible same-species mate in range, may bear one newborn at life stage CHILD, by the profile's chance per check, drawn from the run's seeded RNG. The step runs inside this phase, outside its 50-tick gate, and commits only typed updates (the newborn, its birth source, the parents' cooldowns and the mother's hunger cost, the region's birth count).
 
 ## 🧠 Cognitive Refinement
 **Logic ID**: `STRAT-002`  

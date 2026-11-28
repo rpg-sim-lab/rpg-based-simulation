@@ -1111,7 +1111,7 @@ Marriage is a propose/accept relationship contract following the same `ContractK
 `SocialAppraisalSystem` pattern §Social Systems Contract already documents for `TEACH` and
 `TEAM_UP` -- it is not a scoring function and does not add a new tier-5 project kind.
 
-> **Current play.** Nothing in play issues PROPOSE_MARRIAGE, so this law does not run in play and no `MarriageState` is written (see 07, Contract Kinds, Current play).
+> **Current play.** Nothing in play issues PROPOSE_MARRIAGE, so this law does not run in play and no `MarriageState` is written (see 07, Contract Kinds, Current play). An ACCEPTED `MarriageState` is one arm of the reproduction mate gate (05, Births Law, Mate gate); that arm is unreached until something issues PROPOSE_MARRIAGE.
 
 **Gate.** `ContractKind.MARRIAGE` routes through `SocialAppraisalSystem.appraise_contract()`'s
 shared trust prelude exactly like every other contract kind, with no marriage-specific

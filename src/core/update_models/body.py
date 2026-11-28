@@ -5,6 +5,7 @@ from dataclasses import dataclass, field, replace
 from typing import Any, Dict, Optional
 
 from src.core.death_cause import DeathRecord
+from src.core.pregnancy import PregnancyState
 from src.systems.lifecycle_systems.genetics import GeneticProfile
 
 
@@ -129,7 +130,7 @@ class AttributeUpdate:
 
 # The scalar fields a later update overwrites (a None leaves the earlier value); the list and dict fields accumulate.
 _LIFECYCLE_SET_FIELDS = ("is_permadeath_set", "death_tick_set", "death_reason_set", "death_record_set", "heir_entity_id_set", "parent_a_entity_id_set",
-                         "parent_b_entity_id_set", "birth_tick_set", "birth_city_id_set", "genetic_profile_set")
+                         "parent_b_entity_id_set", "birth_tick_set", "birth_city_id_set", "genetic_profile_set", "pregnancy_set")
 
 
 @dataclass(frozen=True, slots=True)
@@ -148,7 +149,10 @@ class LifecycleUpdate:
     birth_tick_set: Optional[int] = None
     birth_city_id_set: Optional[int] = None
     reproduction_cooldowns_add: Dict[int, int] = field(default_factory=dict)  # per-key upsert, NOT wholesale replace
+    reproduction_cooldowns_remove: tuple[int, ...] = ()  # partner ids dropped before the adds apply; an absent id is a no-op
     genetic_profile_set: Optional[GeneticProfile] = None
+    pregnancy_set: Optional[PregnancyState] = None
+    pregnancy_clear: bool = False  # the mother's death (or the birth at term) ends the pregnancy; a clear wins over a set in the same update
 
     def is_noop(self) -> bool:
         """True when no age, death, heir, parent, birth, heirloom, dependent, cooldown or genetics change is staged."""
@@ -158,8 +162,8 @@ class LifecycleUpdate:
                 not self.heirlooms_add and self.parent_a_entity_id_set is None and
                 self.parent_b_entity_id_set is None and not self.dependent_entity_ids_add and
                 self.birth_tick_set is None and
-                self.birth_city_id_set is None and not self.reproduction_cooldowns_add and
-                self.genetic_profile_set is None)
+                self.birth_city_id_set is None and not self.reproduction_cooldowns_add and not self.reproduction_cooldowns_remove and
+                self.genetic_profile_set is None and self.pregnancy_set is None and not self.pregnancy_clear)
 
     def merge(self, other: LifecycleUpdate) -> LifecycleUpdate:
         """Fold `other` in: age adds, `*_add` lists concatenate, a staged `*_set` value from `other` wins."""
@@ -172,6 +176,9 @@ class LifecycleUpdate:
         if other.dependent_entity_ids_add: changes["dependent_entity_ids_add"] = self.dependent_entity_ids_add + other.dependent_entity_ids_add
         if other.reproduction_cooldowns_add:
             changes["reproduction_cooldowns_add"] = {**self.reproduction_cooldowns_add, **other.reproduction_cooldowns_add}
+        if other.reproduction_cooldowns_remove:
+            changes["reproduction_cooldowns_remove"] = tuple(sorted({*self.reproduction_cooldowns_remove, *other.reproduction_cooldowns_remove}))
+        if other.pregnancy_clear: changes["pregnancy_clear"] = True
         return replace(self, **changes)
 
 

@@ -13,3 +13,6 @@
 {"ts":"2026-11-21T13:33:54.171638Z","event":"governing_edit_attempt","seat":"rpg-planner","path":".github/workflows/rpg-gate-report.yml","basis":"mention","attempt":true}
 {"ts":"2026-11-21T14:15:49.884617Z","event":"governing_edit_attempt","seat":"testing-implementer","path":".github/workflows/test.yml","basis":"mention","attempt":true}
 {"ts":"2026-11-21T14:15:53.885283Z","event":"governing_edit_attempt","seat":"testing-implementer","path":".github/workflows/test.yml","basis":"mention","attempt":true}
+{"ts":"2026-11-17T19:10:43.009006Z","event":"governing_edit_attempt","seat":"unresolved","path":".github/workflows/test.yml","basis":"mention","attempt":true}
+{"ts":"2026-11-17T19:10:48.343379Z","event":"governing_edit_attempt","seat":"unresolved","path":".github/workflows/test.yml","basis":"mention","attempt":true}
+{"ts":"2026-11-17T19:11:12.739751Z","event":"governing_edit_attempt","seat":"unresolved","path":".github/workflows/test.yml","basis":"mention","attempt":true}

@@ -79,6 +79,22 @@ def _copy_set(value: Optional[Iterable]) -> set:
     return set(value) if value is not None else set()
 
 
+# Mixes the world seed into the genetics combination seed; a prime far above any id or tick product, so two world seeds do not alias.
+_WORLD_SEED_COMBO_STRIDE = 2_147_483_647
+
+
+def _combined_genetics(
+    parent_ids: tuple, profiles: tuple, combat_lean: bool, birth_tick: int, world_seed: Optional[int],
+) -> GeneticProfile:
+    """The child's profile: both parents' (a missing one falls back to an id-derived profile), combined with a seed from the ids and the birth tick, plus the world seed when one is given."""
+    a_profile = profiles[0] or GeneticsSystem.generate_profile_from_seed(parent_ids[0] or 0)
+    b_profile = profiles[1] or GeneticsSystem.generate_profile_from_seed(parent_ids[1] or 0)
+    combo_seed = (parent_ids[0] or 0) * 1_000_003 + (parent_ids[1] or 0) * 97 + birth_tick
+    if world_seed is not None:
+        combo_seed += world_seed * _WORLD_SEED_COMBO_STRIDE
+    return GeneticsSystem.combine_profiles(a_profile, b_profile, combat_lean=combat_lean, seed=combo_seed)
+
+
 class V2EntityBuilder:
     """
     Fresh V2 entity builder.
@@ -660,6 +676,7 @@ class V2EntityBuilder:
         parent_b_role: Optional[int] = None,
         parent_a_public_reputation: Optional[float] = None,
         parent_b_public_reputation: Optional[float] = None,
+        world_seed: Optional[int] = None,
     ) -> V2EntityBuilder:
         """
         Populate the new entity's parentage/birth fields and seed its own
@@ -690,11 +707,10 @@ class V2EntityBuilder:
         )
         if parent_a_genetic_profile is not None or parent_b_genetic_profile is not None:
             combat_lean = (parent_a_role == EntityRole.HERO and parent_b_role == EntityRole.HERO)
-            a_profile = parent_a_genetic_profile or GeneticsSystem.generate_profile_from_seed(parent_a_entity_id or 0)
-            b_profile = parent_b_genetic_profile or GeneticsSystem.generate_profile_from_seed(parent_b_entity_id or 0)
-            combo_seed = (parent_a_entity_id or 0) * 1_000_003 + (parent_b_entity_id or 0) * 97 + birth_tick
-            combined = GeneticsSystem.combine_profiles(a_profile, b_profile, combat_lean=combat_lean, seed=combo_seed)
-            self.lifecycle(genetic_profile=combined)
+            self.lifecycle(genetic_profile=_combined_genetics(
+                (parent_a_entity_id, parent_b_entity_id), (parent_a_genetic_profile, parent_b_genetic_profile),
+                combat_lean, birth_tick, world_seed,
+            ))
         if parent_a_public_reputation is not None and parent_b_public_reputation is not None:
             combined_reputation = ReputationService.combine_public_reputation(
                 parent_a_public_reputation, parent_b_public_reputation

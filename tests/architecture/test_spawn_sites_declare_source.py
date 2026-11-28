@@ -1,6 +1,6 @@
 """Static spawn-site guard (TCK-20261013-RPG-GATE-V8-SPAWN-SOURCE-CHECK, AC5).
 
-Every call to ``generator.spawn_*`` in ``src/`` creates an entity that reaches the world as a mid-run add, so its enclosing function must hand a
+Every call to ``generator.spawn_*`` (or the factory's ``build_newborn`` / ``build_risen``) in ``src/`` creates an entity that reaches the world as a mid-run add, so its enclosing function must hand a
 ``SpawnSource`` to the update (``entity_spawn_sources``), or the site must sit in ``OFF_SITES`` below. A new spawn site then fails here, at unit-test
 time, instead of after a 5000-tick gate run, which is how the camp spawn went unseen.
 
@@ -29,6 +29,7 @@ PROFILES = REPO / "config" / "simulation_quality" / "profiles"
 WORLDS = REPO / "data" / "worlds"
 EXCLUDED_PREFIXES = ("src/certification/", "src/systems/world_systems/generator.py")
 TAG = "entity_spawn_sources"
+NEWBORN_BUILDERS = ("build_newborn", "build_risen")  # births and the risen origin build their bodies through the factory, not a generator.spawn_* method
 ON_VALUES = {"ON", "STRICT", "SHADOW"}
 
 
@@ -62,10 +63,6 @@ OFF_SITES: Tuple[OffSite, ...] = (
             (Gate("ENABLE_REPRODUCTION_MAGICAL_DEMONIC_PATH", "DEV-002 / TCK-20260902-REPRODUCTION-MAGICAL-DEMONIC-PATH"),)),
     OffSite("src/world/creature_territory.py", "process_territories", "spawn_monster", 1,
             (Gate("ENABLE_CREATURE_TERRITORY_LIFECYCLE", "D67/D70 stays OFF; DEV-002 / TCK-20260831-CREATURE-TERRITORY-LIFECYCLE"),)),
-    # camp.py makes two calls to the same spawner, behind two different flags (rpg-planner ruling 2026-10-19: both OFF).
-    OffSite("src/world/camp.py", "process_camps", "spawn_natural_creature_offspring", 2,
-            (Gate("ENABLE_CAMP_NEST_SPREAD", "D70 / TCK-20261014-CAMPS-STOP-SPAWNING-MONSTERS-FROM-NOTHING-D70"),
-             Gate("ENABLE_REPRODUCTION_NATURAL_CREATURE_PATH", "DEV-002 / TCK-20260902-REPRODUCTION-NATURAL-CREATURE-PATH"))),
 )
 
 
@@ -97,7 +94,7 @@ def find_spawn_sites(root: Path, src: str = "src") -> List[Tuple[str, str, str, 
             tagged = _mentions_tag(func)
             for call in (n for n in ast.walk(func) if isinstance(n, ast.Call) and id(n) not in nested):
                 f = call.func
-                if isinstance(f, ast.Attribute) and f.attr.startswith("spawn_") and _receiver(f.value) == "generator":
+                if isinstance(f, ast.Attribute) and ((f.attr.startswith("spawn_") and _receiver(f.value) == "generator") or f.attr in NEWBORN_BUILDERS):
                     found.append((rel, func.name, f.attr, tagged))
     return found
 
@@ -168,9 +165,13 @@ def test_every_spawn_site_in_src_hands_a_spawn_source_or_is_ruled_off():
     assert check_sites(find_spawn_sites(REPO), OFF_SITES) == []
 
 
-def test_the_tagged_humanoid_birth_site_is_seen_and_needs_no_entry():
+def test_the_tagged_birth_site_is_seen_and_needs_no_entry():
     sites = find_spawn_sites(REPO)
-    assert ("src/world/reproduction_humanoid.py", "process_reproduction", "spawn_humanoid_offspring", True) in sites
+    assert ("src/world/births.py", "_birth_at_term", "build_newborn", True) in sites
+
+
+def test_the_tagged_risen_site_is_seen_and_needs_no_entry():
+    assert ("src/engine/risen.py", "process_rises", "build_risen", True) in find_spawn_sites(REPO)
 
 
 def test_every_off_site_is_held_shut_by_a_registered_off_by_default_flag_no_gate_world_turns_on():
@@ -225,20 +226,20 @@ def test_an_extra_call_beside_a_listed_site_fails_the_count(tmp_path):
 
 
 def test_a_flipped_flag_default_fails_the_gate_check():
-    flipped = {**_flag_defaults(), "ENABLE_CAMP_NEST_SPREAD": "ON"}
+    flipped = {**_flag_defaults(), "ENABLE_WORLD_BOSS_SPAWN": "ON"}
     problems = check_gates(OFF_SITES, flipped, _gate_worlds())
-    assert any("ENABLE_CAMP_NEST_SPREAD defaults to ON" in p for p in problems)
+    assert any("ENABLE_WORLD_BOSS_SPAWN defaults to ON" in p for p in problems)
 
 
 def test_a_flag_missing_from_the_registry_fails_the_gate_check():
-    defaults = {k: v for k, v in _flag_defaults().items() if k != "ENABLE_CAMP_NEST_SPREAD"}
-    assert any("ENABLE_CAMP_NEST_SPREAD is not in the feature-flag registry" in p for p in check_gates(OFF_SITES, defaults, _gate_worlds()))
+    defaults = {k: v for k, v in _flag_defaults().items() if k != "ENABLE_WORLD_BOSS_SPAWN"}
+    assert any("ENABLE_WORLD_BOSS_SPAWN is not in the feature-flag registry" in p for p in check_gates(OFF_SITES, defaults, _gate_worlds()))
 
 
 def test_a_gate_world_that_turns_a_flag_on_fails_the_gate_check(tmp_path):
     profiles = tmp_path / "config" / "simulation_quality" / "profiles"
     profiles.mkdir(parents=True)
-    (profiles / "w1.yaml").write_text('feature_flags:\n  ENABLE_CAMP_NEST_SPREAD: "ON"\n', encoding="utf-8")
+    (profiles / "w1.yaml").write_text('feature_flags:\n  ENABLE_WORLD_BOSS_SPAWN: "ON"\n', encoding="utf-8")
     (tmp_path / "data" / "worlds" / "w1").mkdir(parents=True)
     problems = check_gates(OFF_SITES, _flag_defaults(), ["w1"], root=tmp_path)
-    assert problems == ["gate world w1 turns ENABLE_CAMP_NEST_SPREAD on in w1.yaml"]
+    assert problems == ["gate world w1 turns ENABLE_WORLD_BOSS_SPAWN on in w1.yaml"]

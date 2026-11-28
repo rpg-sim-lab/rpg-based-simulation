@@ -293,11 +293,10 @@ def test_high_population_region_higher_resource_demand():
 # ---------------------------------------------------------------------------
 
 @pytest.mark.slow
-def test_population_pressure_region_responds_to_real_births():
+def test_population_pressure_region_responds_to_real_births(monkeypatch):
     """
-    AC#4: a region receiving real individual births via the Reproduction epic's humanoid
-    path (chosen over natural-creature/magical-demonic because it operates on real entity
-    pairs rather than a per-camp/per-calamity spawn anchor, per investigation.md) shows its
+    AC#4: a region receiving real individual births from the one births system (BirthService,
+    which operates on real entity pairs rather than a per-camp/per-calamity spawn anchor) shows its
     aggregate population_cohorts count increase and RegionalPressureModel's resource
     pressure respond accordingly -- driven end-to-end through the real authoritative apply
     path (WorldDynamicsSystem.resolve_dynamics() + ApplyPath.apply_generation()), never a
@@ -314,30 +313,66 @@ def test_population_pressure_region_responds_to_real_births():
     from src.engine.cadence import SystemCadence
     from src.engine.world_dynamics import WorldDynamicsSystem
     from src.systems.world_systems.generator import EntityGenerator
-    from src.world.reproduction_humanoid import HumanoidReproductionService
+    from src.world import births
+
+    real_catalog = births.get_catalog()
+
+    class _CertainCatalog:
+        def get_reproduction_profile(self, profile_id):
+            return real_catalog.get_reproduction_profile(profile_id).model_copy(update={"birth_chance_per_check": 1.0})
+
+        def __getattr__(self, name):
+            return getattr(real_catalog, name)
+
+    monkeypatch.setattr(births, "get_catalog", lambda: _CertainCatalog())
 
     region = _make_region("tiny_town", cohorts={}, bounds_=(0, 0, 1, 1))
-    parent_a = (V2EntityBuilder(1).kind("villager").location(0.5, 0.5).identity(role=EntityRole.CITIZEN).build())
-    parent_b = (V2EntityBuilder(2).kind("villager").location(0.5, 0.5).identity(role=EntityRole.CITIZEN).build())
+    # Under the births rules the pair first conceives (the mate gate `bond` needs reciprocal sentiment at the FRIEND line) and the child is born at the
+    # pregnancy's due tick: two real steps through resolve_dynamics + apply_generation (stale since TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND
+    # febf43bb9 retargeted this test, before the gestation split and the mate gate landed).
+    import dataclasses
+
+    from src.core.state import SocialBond
+    from src.systems.social_systems.relationships import RelationshipService
+
+    line = RelationshipService.FRIEND_SENTIMENT_THRESHOLD
+
+    def _person(entity_id, partner_id):
+        body = V2EntityBuilder(entity_id).kind("human").location(0.5, 0.5).identity(role=EntityRole.CITIZEN).build()
+        return dataclasses.replace(body, social=dataclasses.replace(body.social, bonds={partner_id: SocialBond(target_id=partner_id, sentiment=line)}))
+
+    parent_a, parent_b = _person(1, 2), _person(2, 1)
 
     state = AuthoritativeState(
-        tick=200, seed=42,
+        tick=210, seed=42,
         regions={"tiny_town": region},
         entities={1: parent_a, 2: parent_b},
-        feature_flags={"ENABLE_REPRODUCTION_HUMANOID_PATH": "ON"},
     )
     generator = EntityGenerator(seed=42)
     generator._last_id = state.next_entity_id - 1
-    cadence = SystemCadence(world_dynamics=1, reproduction_humanoid=1)
+    cadence = SystemCadence(world_dynamics=1, births=1)
 
-    update = WorldDynamicsSystem.resolve_dynamics(state, StateUpdate(), generator, cadence)
-    next_state = ApplyPath.apply_generation(state, update, 201, 201, cadence=cadence)
+    # step 1: the conception
+    conception = WorldDynamicsSystem.resolve_dynamics(state, StateUpdate(), generator, cadence)
+    conceived = ApplyPath.apply_generation(state, conception, 211, 211, cadence=cadence)
+    pregnancy = conceived.entities[1].lifecycle.pregnancy
+    assert pregnancy is not None and pregnancy.father_entity_id == 2
+
+    # step 2: the check at the due tick bears the child
+    due = pregnancy.due_tick
+    at_term = AuthoritativeState(
+        tick=due, seed=42, regions=conceived.regions, entities=conceived.entities, next_entity_id=conceived.next_entity_id,
+    )
+    generator = EntityGenerator(seed=42)
+    generator._last_id = at_term.next_entity_id - 1
+    update = WorldDynamicsSystem.resolve_dynamics(at_term, StateUpdate(), generator, cadence)
+    next_state = ApplyPath.apply_generation(at_term, update, due + 1, due + 1, cadence=cadence)
 
     # cadence=1 also fires SpawnService's ordinary monster replenishment in the same call,
-    # so filter to the tracked-parent offspring the humanoid path actually produces rather
+    # so filter to the tracked-parent offspring the births system actually produces rather
     # than "any new entity" -- an untracked garrison spawn must not make this test pass.
     children = [e for e in next_state.entities.values() if e.lifecycle.parent_a_entity_id == 1]
-    assert len(children) == 1, "the humanoid path must actually produce a birth for this test to be meaningful"
+    assert len(children) == 1, "the births system must actually produce a birth for this test to be meaningful"
     assert next_state.regions["tiny_town"].population_cohorts["young"].count == 1
 
     aggregates = (

@@ -131,7 +131,9 @@ def test_makefile_wires_mechanism_state_caller_check_target():
 
 def test_real_registry_findings_pinned():
     """[Load-bearing] Pins today's known finding set against the real, committed registry so any
-    drift is visible in CI. `genetics_aptitude`'s own `gated_without_flag_context` is a known,
+    drift is visible in CI. `genetics_aptitude`'s `gated_without_flag_context` finding is GONE since TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND:
+    births deleted `src/world/reproduction_humanoid.py` (the one flagged caller) and the `ENABLE_REPRODUCTION_HUMANOID_PATH` branch, and `GeneticsSystem` is now read
+    unflagged from `src/world/births.py` (:176, :205, `_fallback_genetics` :232-234), so the registry entry is `partial`, not `gated`. Before that it was a known,
     understood low-confidence false positive: the real `ENABLE_REPRODUCTION_HUMANOID_PATH` flag
     check happens several call-frames up (`engine/world_dynamics.py`), not within the 5-line text
     window of the direct `GeneticsSystem` reference in `reproduction_humanoid.py` -- the check's
@@ -247,7 +249,6 @@ def test_real_registry_findings_pinned():
     report = build_report(data)
     finding_keys = {(f.mechanism_id, f.check) for f in report.findings}
     assert finding_keys == {
-        ("genetics_aptitude", "gated_without_flag_context"),
         ("knowledge_model", "gated_without_flag_context"),
         ("opportunity_rumor_seeds", "gated_without_flag_context"),
         ("temporal_pressure", "gated_without_flag_context"),

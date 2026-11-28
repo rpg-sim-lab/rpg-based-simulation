@@ -12,6 +12,7 @@ from src.core.state import GroundItemState
 from src.domains.world_emergence.schema import WorldEvent as _WorldEvent, WorldEventCategory as _WorldEventCategory
 from src.engine.carcass import RAW_MEAT_ITEM
 from src.engine.hostility import is_feeding_kill
+from src.world.births import BirthService
 
 if TYPE_CHECKING:
     from src.core.state import AuthoritativeState, RegionState, EntityState
@@ -40,7 +41,7 @@ def _meat_decayed_events(state: "AuthoritativeState") -> list:
     """The MEAT_DECAYED events of this tick: a body the decay step removes (the same tick+1 rule as ``WorldDynamicsSystem._decay_corpses``) that
     still holds raw meat sends that meat out of the world through a typed sink (decision 44), so conservation balances from records."""
     return [
-        _WorldEvent(category=_WorldEventCategory.MEAT_DECAYED, tick=state.tick, subject=str(corpse_id), payload={"quantity": float(meat_left)})
+        _WorldEvent(category=_WorldEventCategory.MEAT_DECAYED, tick=state.tick, subject=str(corpse_id), payload={"quantity": float(meat_left), "cause": "decay"})
         for corpse_id, corpse in state.corpses.items()
         if state.tick + 1 >= corpse.decay_tick
         for meat_left in [sum(s.quantity for s in corpse.items if s.item_id == RAW_MEAT_ITEM)]
@@ -246,7 +247,7 @@ class WorldDynamicsSystem:
 
             # 3.6 Process Camps (Persistent Encampments)
             from src.world.camp import CampService
-            camp_state_update = CampService.process_camps(state, generator, faction_directives=faction_directives)
+            camp_state_update = CampService.process_camps(state, faction_directives=faction_directives)
 
             # 3.7 Demographic Birth/Death Cycle (E52A)
             from src.domains.demographics.cohort import DemographicCycleService
@@ -299,13 +300,11 @@ class WorldDynamicsSystem:
             if not displacement_update.is_noop():
                 update = update.merge(displacement_update)
 
-            # 3.10 Humanoid Reproduction
-            if (flags.get("ENABLE_REPRODUCTION_HUMANOID_PATH", "OFF") == "ON"
-                    and should_run(state.tick, None, cadence.reproduction_humanoid)):
-                from src.world.reproduction_humanoid import HumanoidReproductionService
-                repro_update = HumanoidReproductionService.process_reproduction(state, generator)
-                if not repro_update.is_noop():
-                    update = update.merge(repro_update)
+        # Births run on their own cadence outside the world_dynamics gate: 30 does not divide 50 (Q9). ApplyPath advances next_entity_id past every added id.
+        if should_run(state.tick, None, cadence.births):
+            births_update = BirthService.process_births(state, generator)
+            if not births_update.is_noop():
+                update = update.merge(births_update)
 
         # 4. Regional Transformations (Type Shifting)
         from src.world.transformation import TransformationService

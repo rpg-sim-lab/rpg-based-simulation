@@ -33,13 +33,13 @@ def _state(tick, *, maturity=10.0, members=1, last_raid_tick=0):
 def test_an_undersized_camp_adds_nothing_on_any_tick_of_a_long_run():
     adds = []
     for tick in range(0, 1500):
-        adds += CampService.process_camps(_state(tick, members=1), EntityGenerator.for_state(_state(tick, members=1))).entities_add
+        adds += CampService.process_camps(_state(tick, members=1)).entities_add
     assert adds == []
 
 
 def test_a_raid_ready_camp_adds_nothing_and_pays_nothing_on_any_tick():
     for tick in range(0, 1500, 7):
-        upd = CampService.process_camps(_state(tick, maturity=95.0, last_raid_tick=-10_000), EntityGenerator(seed=42))
+        upd = CampService.process_camps(_state(tick, maturity=95.0, last_raid_tick=-10_000))
         assert upd.entities_add == [] and upd.camp_updates["camp_1"].last_raid_tick_set is None
         assert upd.camp_updates["camp_1"].maturity_delta > 0
 
@@ -51,7 +51,7 @@ def test_a_camps_members_only_fall_as_they_die():
     assert members(state) == 3
     state = dataclasses.replace(state, entities={**state.entities, 2: _goblin(2, alive=False)})
     assert members(state) == 2
-    assert CampService.process_camps(state, EntityGenerator.for_state(state)).entities_add == []
+    assert CampService.process_camps(state).entities_add == []
     assert members(state) == 2
 
 
@@ -62,6 +62,6 @@ def test_the_camp_service_names_no_spawner():
 
 
 def test_a_camp_update_is_deterministic():
-    a = CampService.process_camps(_state(500, maturity=95.0, last_raid_tick=-10_000), EntityGenerator(seed=42))
-    b = CampService.process_camps(_state(500, maturity=95.0, last_raid_tick=-10_000), EntityGenerator(seed=42))
+    a = CampService.process_camps(_state(500, maturity=95.0, last_raid_tick=-10_000))
+    b = CampService.process_camps(_state(500, maturity=95.0, last_raid_tick=-10_000))
     assert a.camp_updates == b.camp_updates and a.entities_add == b.entities_add

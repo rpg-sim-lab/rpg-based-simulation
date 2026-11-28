@@ -46,6 +46,7 @@ class ResolvedEntityRuntimeContract(BaseModel):
     # --- Traits and themes ---
     traits: Tuple[str, ...]
     themes: Tuple[str, ...]
+    species_trait_ids: Tuple[str, ...] = ()
 
     # --- Profile source IDs (string refs only) ---
     cognition_profile_id: Optional[str] = None

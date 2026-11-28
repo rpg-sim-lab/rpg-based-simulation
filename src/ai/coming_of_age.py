@@ -127,9 +127,8 @@ def is_excluded_no_birth_record(entity: "EntityState") -> bool:
 
     Forward-compatibility caveat: this is not provably safe against a hypothetical future
     reproduction path with neither an accumulation gate nor tracked parent ids. No such path
-    exists in the live codebase today -- both current CHILD-construction call sites
-    (spawn_natural_creature_offspring, spawn_humanoid_offspring in
-    src/systems/world_systems/generator.py) unconditionally chain into .birth_record(...).
+    exists in the live codebase today -- the one CHILD-construction call site
+    (ArchetypeEntityFactory.build_newborn, src/entities/archetype_factory.py) unconditionally chains into .birth_record(...).
     """
     return (
         entity.lifecycle.birth_tick == 0

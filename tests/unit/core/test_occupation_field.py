@@ -132,21 +132,9 @@ def test_writer_generator_monster_writes_the_species_and_the_label_it_is_given()
         assert entity.kind == species and entity.identity.occupation == label
 
 
-def test_writer_generator_natural_creature_offspring_writes_the_species_and_the_spawn_label():
-    entity = EntityGenerator(7).spawn_natural_creature_offspring((5.0, 5.0), species="goblin", occupation="goblin_warrior")
-    assert entity.kind == "goblin" and entity.identity.occupation == "goblin_warrior"
-
-
 def test_writer_generator_magical_entity_has_no_label():
     entity = EntityGenerator(7).spawn_magical_demonic_entity((5.0, 5.0))
     assert entity.kind == "magical_demonic_entity" and entity.identity.occupation is None
-
-
-def test_writer_generator_humanoid_offspring_has_the_parents_species_and_no_label():
-    from src.core.state import AuthoritativeState
-
-    entity = EntityGenerator(7).spawn_humanoid_offspring((5.0, 5.0), AuthoritativeState(tick=0, seed=1), "human", 1, 2, 0, None, None, None, 3, 3)
-    assert entity.kind == "human" and entity.identity.occupation is None
 
 
 def test_writer_generator_goblin_keeps_the_label_it_wrote_before():
@@ -340,7 +328,7 @@ def test_the_entity_copies_in_the_archetype_factory_keep_occupation():
 
 
 def test_k6c_every_src_spawn_call_passes_a_species_id_not_a_label():
-    """Static, rpg-designer 2026-11-17: the spawners do not validate `species`, so every src CALL of spawn_monster / spawn_natural_creature_offspring must pass an id in
+    """Static, rpg-designer 2026-11-17: the spawners do not validate `species`, so every src CALL of spawn_monster must pass an id in
     species.yaml (or the named non-living allowlist) as a literal, or a species read from content or from an entity that already carries one (`camp.kind`, `entity.kind`)."""
     from src.content.common_knowledge_seed import warmed_catalog
     from src.core.species import NON_LIVING_KIND_ALLOWLIST
@@ -352,7 +340,7 @@ def test_k6c_every_src_spawn_call_passes_a_species_id_not_a_label():
     for path in sorted((root / "src").rglob("*.py")):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for n in ast.walk(tree):
-            if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr in {"spawn_monster", "spawn_natural_creature_offspring"}:
+            if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr == "spawn_monster":
                 species = [kw.value for kw in n.keywords if kw.arg == "species"]
                 calls += 1
                 where = f"{path.relative_to(root)}:{n.lineno}"
@@ -363,7 +351,7 @@ def test_k6c_every_src_spawn_call_passes_a_species_id_not_a_label():
                         bad.append((where, species[0].value))
                 elif ast.unparse(species[0]) not in carried:
                     bad.append((where, ast.unparse(species[0])))
-    assert calls >= 7 and bad == [], bad
+    assert calls >= 5 and bad == [], bad
 
 
 # ---- the presenter shows both --------------------------------------------------------------------------------------------------------------

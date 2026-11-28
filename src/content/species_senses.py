@@ -7,18 +7,10 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from src.content.common_knowledge_seed import warmed_catalog
+from src.content.sense_resolution import species_sense_profile
 from src.core.species import SenseProfileError
 
-
-def species_sense_profile(catalog: Any, species_id: str) -> Optional[Any]:
-    """The ``SenseProfileDefinition`` of `species_id`: None when the species is not in content (a test fixture body); ``SenseProfileError`` when it is but its profile does not resolve."""
-    species = catalog.get_species(species_id)
-    if species is None:
-        return None
-    defn = catalog.get_sense_profile(species.sense_profile) if species.sense_profile else None
-    if defn is None:
-        raise SenseProfileError(f"species {species_id!r} has no usable sense profile (declared {species.sense_profile!r})")
-    return defn
+__all__ = ["require_species_sense_profile", "species_sense_profile"]
 
 
 def require_species_sense_profile(species_id: Optional[str], where: str, catalog: Optional[Any] = None) -> Any:

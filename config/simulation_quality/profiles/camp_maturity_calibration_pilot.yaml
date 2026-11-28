@@ -1,2 +1,1 @@
-feature_flags:
-  ENABLE_CAMP_NEST_SPREAD: "ON"
+feature_flags: {}

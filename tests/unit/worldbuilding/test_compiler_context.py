@@ -99,6 +99,7 @@ def test_compiler_with_full_context():
         attack_range=2,
         readiness=95.0,
         species_id="goblin",
+        archetype_id="goblin_raider",  # SETUP (M1 births): a MONSTER profile of a breeding species must name an archetype (the archetype-less refusal); the shipped raider, so the fixture mirrors content; no assertion depends on it
     ))
 
     # 2. Register overridden building profile

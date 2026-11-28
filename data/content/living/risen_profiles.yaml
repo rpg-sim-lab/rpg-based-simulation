@@ -1,0 +1,10 @@
+# M1 risen origin: how a kind that does not eat arises from a corpse (STR-02: a new subject, the dead body stays dead). Values are provisional and report-only
+# (TCK-20261118-BIRTHS-BALANCING-PASS); they are fixed before data and never tuned on measurement data.
+# source_species: the people-shaped kinds whose bodies are left behind in play (human, elf, dwarf, goblin, orc); a beast or a plant eater does not rise.
+# rise_chance_per_check 0.002 per 30-tick check (cadence.rises) is a mean wait of 500 checks for a corpse that keeps lying; a corpse decays long before that, so a rising is rare.
+# risen_archetype: the body of the risen subject; its faction (undead_remnants) is the archetype's, never the dead body's.
+- id: "undead_rising"
+  display_name: "Undead rising"
+  source_species: ["human", "elf", "dwarf", "goblin", "orc"]
+  rise_chance_per_check: 0.002
+  risen_archetype: "undead_sentinel"

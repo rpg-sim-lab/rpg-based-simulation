@@ -7,7 +7,6 @@ from src.systems.world_systems.generator import EntityGenerator
 from src.engine.world_dynamics import WorldDynamicsSystem
 from src.core.updates import StateUpdate, CampUpdate
 from src.world.camp import CampService
-from src.domains.optimization.feature_flags import FeatureFlagManager, FeatureMode
 
 def test_camp_maturity_grows_and_an_undersized_camp_spawns_nothing():
     # Setup state with a goblin camp
@@ -59,7 +58,7 @@ def test_a_raid_eligible_camp_spawns_no_raiders_and_pays_no_cost():
         camps={"camp_1": CampState(id="camp_1", kind="goblin", position=(50, 50), maturity=90.0, last_raid_tick=0)},
         places={"town_1": PlaceState(place_id="town_1", region_id="forest", kind=PlaceKind.CITY, position=(10, 10))},
     )
-    update = CampService.process_camps(state, EntityGenerator(seed=42))
+    update = CampService.process_camps(state)
 
     assert update.camp_updates["camp_1"].maturity_delta == pytest.approx(0.05)
     assert update.camp_updates["camp_1"].last_raid_tick_set is None
@@ -84,7 +83,7 @@ def test_a_camp_with_no_city_place_is_charged_nothing_either():
     )
     generator = EntityGenerator(seed=42)
 
-    update = CampService.process_camps(state, generator)
+    update = CampService.process_camps(state)
 
     # Only the plain per-tick growth delta from step 1 -- no raid cost applied.
     assert update.camp_updates["camp_1"].maturity_delta == pytest.approx(0.05)
@@ -93,18 +92,6 @@ def test_a_camp_with_no_city_place_is_charged_nothing_either():
 
 
 # TCK-20260904-CAMP-NEST-CLASSIFICATION
-
-
-def test_nest_race_kinds_classification_matches_documented_table():
-    """Parity guard: CampService.NEST_RACE_KINDS must match the investigation/plan's
-    documented Nest classification exactly -- no more, no fewer."""
-    assert CampService.NEST_RACE_KINDS == frozenset({"wolf", "spider", "troll", "slime"})
-
-
-def test_nest_flag_registered_in_feature_flag_manager_default_off():
-    manager = FeatureFlagManager()
-    assert "ENABLE_CAMP_NEST_SPREAD" in manager.get_all_flags()
-    assert manager.get_flag_mode("ENABLE_CAMP_NEST_SPREAD") == FeatureMode.OFF
 
 
 def test_camp_flag_off_nest_kind_camp_neither_raids_nor_spreads():
@@ -119,7 +106,7 @@ def test_camp_flag_off_nest_kind_camp_neither_raids_nor_spreads():
     )
     generator = EntityGenerator(seed=42)
 
-    update = CampService.process_camps(state, generator)
+    update = CampService.process_camps(state)
 
     assert update.camp_updates["camp_1"].maturity_delta == pytest.approx(0.05)
     assert update.camp_updates["camp_1"].last_raid_tick_set is None
@@ -135,39 +122,14 @@ def test_camp_flag_on_camp_kind_does_not_spread_or_raid():
         regions={"forest": RegionState(id="forest", name="The Deep Woods", kind="forest", bounds=(0, 0, 100, 100), trauma_score=10.0)},
         camps={"camp_1": CampState(id="camp_1", kind="goblin", position=(50, 50), maturity=90.0, last_raid_tick=0)},
         places={"town_1": PlaceState(place_id="town_1", region_id="forest", kind=PlaceKind.CITY, position=(10, 10))},
-        feature_flags={"ENABLE_CAMP_NEST_SPREAD": "ON"},
     )
     generator = EntityGenerator(seed=42)
 
-    update = CampService.process_camps(state, generator)
+    update = CampService.process_camps(state)
 
     assert update.camp_updates["camp_1"].maturity_delta == pytest.approx(0.05)
     assert update.camp_updates["camp_1"].last_raid_tick_set is None
     assert update.entities_add == []
-
-
-def test_camp_flag_on_nest_kind_spreads_instead_of_raiding():
-    """Core new-behavior AC: flag ON + Nest-kind camp at raid maturity, past the cooldown,
-    produces a spread outcome (parentless same-kind offspring) instead of a raid, applying the
-    same cost/cooldown-reset fields the raid path uses."""
-    state = AuthoritativeState(
-        tick=500,
-        seed=42,
-        regions={"forest": RegionState(id="forest", name="The Deep Woods", kind="forest", bounds=(0, 0, 100, 100), trauma_score=10.0)},
-        camps={"camp_1": CampState(id="camp_1", kind="wolf", position=(50, 50), maturity=90.0, last_raid_tick=0)},
-        feature_flags={"ENABLE_CAMP_NEST_SPREAD": "ON"},
-    )
-    generator = EntityGenerator(seed=42)
-
-    update = CampService.process_camps(state, generator)
-
-    offspring = [e for e in update.entities_add if e.kind == "wolf"]
-    assert len(offspring) == 1
-    assert offspring[0].lifecycle.parent_a_entity_id is None
-    assert offspring[0].lifecycle.parent_b_entity_id is None
-    assert offspring[0].lifecycle.genetic_profile is None
-    assert update.camp_updates["camp_1"].maturity_delta == -20.0
-    assert update.camp_updates["camp_1"].last_raid_tick_set == 500
 
 
 def test_nest_spread_reuses_same_500_tick_cooldown_as_raid():
@@ -178,11 +140,10 @@ def test_nest_spread_reuses_same_500_tick_cooldown_as_raid():
         seed=42,
         regions={"forest": RegionState(id="forest", name="The Deep Woods", kind="forest", bounds=(0, 0, 100, 100), trauma_score=10.0)},
         camps={"camp_1": CampState(id="camp_1", kind="wolf", position=(50, 50), maturity=90.0, last_raid_tick=0)},
-        feature_flags={"ENABLE_CAMP_NEST_SPREAD": "ON"},
     )
     generator = EntityGenerator(seed=42)
 
-    update = CampService.process_camps(state, generator)
+    update = CampService.process_camps(state)
 
     assert all(e.kind != "wolf" for e in update.entities_add)
     # No raid/spread outcome fired -- camp_updates["camp_1"] only carries the normal
@@ -274,7 +235,7 @@ def test_campservice_process_camps_operates_on_world_gen_seeded_camp():
     state = replace(compiled_state, tick=30)
     generator = EntityGenerator(seed=42)
 
-    update = CampService.process_camps(state, generator)
+    update = CampService.process_camps(state)
 
     assert "camp_1" in update.camp_updates
     assert update.camp_updates["camp_1"].maturity_delta is not None
@@ -312,7 +273,7 @@ def test_a_world_gen_seeded_camp_spawns_and_raids_nothing_with_no_flags_set():
     assert state.feature_flags == {}
     generator = EntityGenerator(seed=42)
 
-    update = CampService.process_camps(state, generator)
+    update = CampService.process_camps(state)
 
     assert update.camp_updates["camp_1"].maturity_delta == pytest.approx(0.05)
     assert update.camp_updates["camp_1"].last_raid_tick_set is None
@@ -338,7 +299,7 @@ def test_camp_service_consumes_expand_territory_directive():
     generator = EntityGenerator(seed=42)
     directive = FactionDirective(faction_id="faction_a", directive_kind="EXPAND_TERRITORY", target_region="forest", created_tick=1)
 
-    update = CampService.process_camps(state, generator, faction_directives=[directive])
+    update = CampService.process_camps(state, faction_directives=[directive])
 
     # Base MATURITY_PER_TICK (0.05, no trauma boost) + EXPAND_TERRITORY_MATURITY_BOOST (1.0).
     assert update.camp_updates["camp_1"].maturity_delta == pytest.approx(0.05 + CampService.EXPAND_TERRITORY_MATURITY_BOOST)
@@ -356,7 +317,7 @@ def test_camp_service_ignores_expand_territory_directive_for_other_region():
     generator = EntityGenerator(seed=42)
     directive = FactionDirective(faction_id="faction_a", directive_kind="EXPAND_TERRITORY", target_region="other_region", created_tick=1)
 
-    update = CampService.process_camps(state, generator, faction_directives=[directive])
+    update = CampService.process_camps(state, faction_directives=[directive])
 
     assert update.camp_updates["camp_1"].maturity_delta == pytest.approx(0.05)
 
@@ -370,7 +331,7 @@ def test_camp_service_process_camps_backward_compatible_no_directives():
     )
     generator = EntityGenerator(seed=42)
 
-    update = CampService.process_camps(state, generator)
+    update = CampService.process_camps(state)
 
     assert update.camp_updates["camp_1"].maturity_delta == pytest.approx(0.05)
 
