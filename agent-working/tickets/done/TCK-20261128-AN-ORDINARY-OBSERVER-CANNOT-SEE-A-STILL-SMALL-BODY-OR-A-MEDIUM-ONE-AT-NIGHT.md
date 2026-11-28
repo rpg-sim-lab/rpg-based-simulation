@@ -41,14 +41,14 @@ This is a common-sense violation already on main. PERC-02b would spread it to ev
 - Stealth, weather (separate tickets).
 
 ## Acceptance Criteria
-- AC1 (day, baseline observer, still target, no touch): small perceived at >= 4 tiles, medium at >= 8, large at >= 12; not at 40.
+- AC1 (day, baseline observer, still target, no touch): small perceived at >= 4 Manhattan tiles, medium at >= 8, large at >= 12; not at 40.
 - AC2 (night, no night_vision): still medium AND small perceived at >= 2 (touch already covers 1); moving targets further via noise, as today.
 - AC3: size order kept: large > medium > small at the same distance.
 - AC4: the threshold, fall-off, night steps and size levels live in data/, loaded and validated.
 - Measured signal (own-job): perceived hostiles/prey plus hunts and engagements started, 3 gate worlds s42 1000 t, base vs fix. A collapse to 0 = STOP.
 
 ## Related Tickets
-- TCK-20261117-DECISIONS-SEE-OTHER-BODIES-ONLY-THROUGH-PERCEPTION (3b; its S3/S4 rows become strict xfail citing this ticket and flip when this lands)
+- TCK-20261117-DECISIONS-SEE-OTHER-BODIES-ONLY-THROUGH-PERCEPTION (3b; its S3/S4 rows flip only on a day clock; 3b re-drives them to day, designer ruling ba60c385)
 - TCK-20261117-EACH-BODY-PERCEIVES-BY-ITS-SPECIES-SENSES-AND-SIGNALS-FOLLOW-THE-BODY (02a, the gate's origin)
 - overlap scan: search_docs not run at filing; none known.
 
@@ -97,4 +97,4 @@ Perception calibration (Option C), 3 gate worlds × s42 × 1000 t, BASE ac759e0b
 - NOT MEASURED: bodies_hit (a kit off-by-one);
 - PERF flag 1.13 and 1.12 (frontier_living_world, urban_political), crowded 1.02.
 
-AC1-AC4 hold in the table test (day: small seen at >= 4, medium >= 8, large >= 12, not at 40; night: still medium and small seen at >= 2; size order large > medium > small; settings in data/, loaded and validated). Known limits (docs/engine/known_limitations.md): the hunt path is not exercised at 1000 t, the engagement shift is unattributed, the perf cost is about 12%. 3b (PERC-02b) rebases onto this branch; its S3/S4 strict xfails flip to pass here.
+AC1-AC4 hold in the table test (day: small seen at >= 4, medium >= 8, large >= 12, not at 40; night: still medium and small seen at >= 2; size order large > medium > small; settings in data/, loaded and validated). Known limits (docs/engine/known_limitations.md): the hunt path is not exercised at 1000 t, the engagement shift is unattributed, the perf cost is about 12%. 3b (PERC-02b) rebases onto this branch; its S3/S4 rows flip only on a day clock; 3b re-drives them to day (designer ba60c385).
