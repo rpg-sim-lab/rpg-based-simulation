@@ -93,7 +93,7 @@ def _auto_init() -> None:
 def get_entity_signals(entity: Any, tick: Optional[int] = None) -> Dict[str, str]:
     """The signals `entity` gives off for perception checks (PERC-02: they follow the body; see ``src.world.perception.signals.emitted_signals``)."""
     _, body = get_kind_properties(species_of(entity))
-    return emitted_signals(entity, body, tick)
+    return emitted_signals(entity, body, tick, get_perception_gate().settings.size_visibility)
 
 
 def _seeding_catalog() -> Any:

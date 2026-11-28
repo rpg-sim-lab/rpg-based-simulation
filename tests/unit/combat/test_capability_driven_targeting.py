@@ -27,7 +27,10 @@ from src.core.state import AuthoritativeState
 from src.cognition.common_knowledge import danger_fact_key
 from src.core.self_model import KnowledgeFact
 from src.engine.tactical import TacticalDecisionSystem
+from src.core.calendar import is_night
 from tests.helpers.clock import DAY_WORLD_TIME
+
+NIGHT_WORLD_TIME = 0  # tick 0 of the day: night (0-599)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -108,9 +111,19 @@ def test_target_score_reflects_capability_estimate_for_differentiated_enemy_kind
     state = AuthoritativeState(tick=1, seed=42, world_time=DAY_WORLD_TIME, entities={1: attacker, 10: goblin, 20: dragon})
     update = TacticalDecisionSystem.evaluate_entity_intent(state, attacker)
 
-    # PERC-02a law: the goblin is a still small body five tiles away, which a baseline humanoid does not perceive on any channel, so it is not in the ranked set and the
-    # capability term never sees it. (The capability-term purpose of this test is kept by the two tests below, where the goblin is moving and heard.)
-    assert update.task.payload_set["target_id"] == dragon.id, "a still small candidate five tiles away is not perceived, so it is not in the ranked set"
+    # PERC 3a calibration (divergence 2.229, TCK-20261128-AN-ORDINARY-OBSERVER-CANNOT-SEE-A-STILL-SMALL-BODY-OR-A-MEDIUM-ONE-AT-NIGHT): by day the gate now reaches a still small body five tiles
+    # away (visibility, confidence 0.27), so the goblin is in the ranked set again. The dragon is nearer and has lower HP, which alone would win it (the no-belief test below picks the
+    # dragon); the attacker's capability estimate of the goblin overrides that and picks the goblin: the capability-term purpose of this test (AC1) is restored.
+    assert update.task.payload_set["target_id"] == goblin.id
+
+
+def test_a_still_small_candidate_five_tiles_away_is_not_perceived_at_night_so_the_nearer_dragon_is_picked():
+    """The night half of the calibration: at night a baseline observer does not see a still small body five tiles away (vision two levels lower), so the goblin is not in the ranked set and the capability term never sees it."""
+    assert is_night(NIGHT_WORLD_TIME)
+    attacker = _attacker(atk=10, def_stat=5)
+    state = AuthoritativeState(tick=1, seed=42, world_time=NIGHT_WORLD_TIME, entities={1: attacker, 10: _goblin(), 20: _dragon()})
+    update = TacticalDecisionSystem.evaluate_entity_intent(state, attacker)
+    assert update.task.payload_set["target_id"] == 20, "a still small candidate five tiles away is unseen at night, so only the dragon is ranked"
 
 
 def test_a_hostile_with_no_species_is_unrecognised_even_if_its_kind_matches_a_belief():

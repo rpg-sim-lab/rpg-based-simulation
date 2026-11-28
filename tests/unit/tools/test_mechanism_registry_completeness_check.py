@@ -319,7 +319,8 @@ def test_wider_scope_numbers_pinned():
     # 392 -> 393 on 2026-11-26 (merge of main 0ba291224 into the births branch; sum of both sides, to be confirmed from the check's own output)
     # 393 -> 397 on 2026-11-26 (TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND, the four code-health blocker moves; a PIN update for the S10, rpg-planner ruling, from the check's own output): +src/core/spawn_errors.py, +src/core/intent_result.py, +src/content/profile_lookups.py, +src/engine/rise_trigger.py (risen.py and corpse_goods.py only moved, so they add none)
     # 397 -> 398 on 2026-11-27 (TCK-20261109-M1-BASIC-WILD-BIRTHS-FOR-EVERY-LIVING-KIND, from the check's own output; a PIN update for the S10, rpg-planner ruling): +src/content/archetype_less_breeders.py (the shared archetype-less MONSTER-breeder refusal, called by both build paths)
-    assert wider["scope_files"] == 398
+    # 398 -> 399 on 2026-11-28 (TCK-20261128-AN-ORDINARY-OBSERVER-CANNOT-SEE-A-STILL-SMALL-BODY-OR-A-MEDIUM-ONE-AT-NIGHT, rpg-planner ruling, from the check's own output): +src/content/perception_settings.py (the gate's calibration accessor, bound to sense_gated_detection); none removed
+    assert wider["scope_files"] == 399
     # 233 -> 227 on 2026-10-05: the world-building split names six more files (worldmodules/normalizer,
     # worldassembly/resolve_io, worldbuilding/repository and validator, worldgeneration/generator and scorer).
     # Then +1 for the unbound entity_target_objective.py module (TCK-20261002-COMBAT-OBJECTIVE-TARGETS-...).

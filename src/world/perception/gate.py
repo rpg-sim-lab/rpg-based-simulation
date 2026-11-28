@@ -18,9 +18,15 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from src.content.perception_settings import (
+    PerceptionSettings,
+    PerceptionSettingsError,
+    perception_settings,
+)
 from src.content.repository import CatalogRepository
 from src.content.species_senses import species_sense_profile
 from src.core.species import SenseProfileError, species_of  # noqa: F401  (SenseProfileError is re-exported for callers of the gate)
+from src.engine.perception_signals import LIVING_SCENT_LEVEL, STILL_ACTIVITY_LEVEL
 
 logger = logging.getLogger(__name__)
 
@@ -39,16 +45,15 @@ _LEVEL_TO_FLOAT: Dict[str, float] = {
     "none": 0.0,
 }
 
-_PERCEPTION_THRESHOLD = 0.2
+DEFAULT_ALERTNESS = 0.5  # the alertness a caller that passes none gets (no src caller passes one: tests/unit/world/test_perception_calibration.py guards that; the threshold margin below holds only at this value)
 
 # PERC-02 touch (rpg-designer ruling 2026-11-18): every bodily kind feels a body that is next to it. It is a channel, not a score term: it needs no light, no movement and
 # no profile entry, and it changes no other channel's score. `reach` (context) is the Chebyshev tile distance the caller measured; a context without `reach` gets no touch (a forgotten key never means "always perceived").
 CHANNEL_TOUCH = "touch"
 TOUCH_REACH = 1
 
-# PERC-02 (owner Q2a, #715 6937049127): at night vision counts NIGHT_VISION_STEPS levels lower on this ladder unless the profile declares night_vision.
+# PERC-02 (owner Q2a, #715 6937049127): at night vision counts `night_vision_steps` (data/content/perception/perception_settings.yaml) levels lower on this ladder unless the profile declares night_vision.
 _LEVEL_LADDER = ("very_high", "high", "medium_high", "medium", "low_medium", "low", "very_low", "none")
-NIGHT_VISION_STEPS = 2
 
 
 def _lower_level(val: Optional[str], steps: int) -> Optional[str]:
@@ -119,6 +124,33 @@ class PerceptionResult(BaseModel):
 # Gate
 # ---------------------------------------------------------------------------
 
+def still_body_ceiling() -> float:
+    """The best score a STILL living body can get on any channel but vision, from a baseline observer at distance 0 and the default alertness: the larger of hearing x a still body's noise and smell x a living
+    body's scent (and the other baseline senses against the other still signals, which are none). A threshold at or below it would let a still body be heard or smelled, so vision (by size) would stop being the only way
+    to see one. 0.135 with today's ladder (0.6 x 0.3 x 0.75)."""
+    still = {"noise": STILL_ACTIVITY_LEVEL, "vibration": STILL_ACTIVITY_LEVEL, "scent": LIVING_SCENT_LEVEL, "life_signal": LIVING_SCENT_LEVEL}
+    alert = 0.5 + 0.5 * DEFAULT_ALERTNESS
+    best = 0.0
+    for sense_field, signal_key in _SENSE_TO_SIGNAL.items():
+        if sense_field == "vision":
+            continue
+        best = max(best, _level(_BASELINE_SENSE.get(sense_field)) * _level(still.get(signal_key)) * alert)
+    return best
+
+
+def validate_perception_settings(settings: PerceptionSettings) -> None:
+    """The load checks that need the ladder (the schema checks the shapes): the threshold must be STRICTLY above the still-body ceiling, and the distance-factor floor must not admit by itself
+    (floor x the maximum sense, signal, terrain and alertness factors, all 1.0, below the threshold). Raises ``PerceptionSettingsError`` naming the values."""
+    ceiling = still_body_ceiling()
+    if settings.perception_threshold <= ceiling:
+        raise PerceptionSettingsError(
+            f"perception_threshold {settings.perception_threshold} must be strictly above the still-body ceiling {ceiling:.4f} (baseline hearing x a still body's noise, smell x scent, at alertness {DEFAULT_ALERTNESS}): "
+            "a lower value lets a still body be heard or smelled, not only seen")
+    if settings.distance_factor_min >= settings.perception_threshold:
+        raise PerceptionSettingsError(
+            f"distance_factor_min {settings.distance_factor_min} x the maximum sense, signal, terrain and alertness factors (1.0) must stay below perception_threshold {settings.perception_threshold}: the floor alone would admit a channel")
+
+
 class PerceptionGate:
     """
     Checks whether a source entity can perceive a target/event given its sense
@@ -132,6 +164,8 @@ class PerceptionGate:
 
     def __init__(self, catalog: CatalogRepository) -> None:
         self._catalog = catalog
+        self.settings: PerceptionSettings = perception_settings(catalog)  # read once: the catalog is loaded before the gate is built
+        validate_perception_settings(self.settings)
         self.unprofiled_counts: Dict[str, int] = {}  # species id (or kind) -> reads by a body whose species is not in content; observability, not durable state
 
     def can_perceive(
@@ -161,21 +195,22 @@ class PerceptionGate:
         ctx = context or {}
         distance: float = float(ctx.get("distance", 1.0))
         terrain_mod: float = float(ctx.get("terrain_modifier", 1.0))
-        alertness: float = float(ctx.get("alertness", 0.5))
+        alertness: float = float(ctx.get("alertness", DEFAULT_ALERTNESS))
 
         # Clamp modifiers
         distance = max(0.0, distance)
         terrain_mod = max(0.0, min(1.0, terrain_mod))
         alertness = max(0.0, min(1.0, alertness))
 
-        # Distance factor: linear falloff, min 0.05
-        distance_factor = max(0.05, 1.0 - distance * 0.02)
+        # Distance factor: linear falloff with a floor (both data: perception_settings)
+        settings = self.settings
+        distance_factor = max(settings.distance_factor_min, 1.0 - distance * settings.distance_falloff_per_tile)
 
         # Load sense profile
         sense_strengths, profile_source, night_vision = self._load_sense_strengths(source_entity)
         if bool(ctx.get("night", False)) and not night_vision:
             sense_strengths = dict(sense_strengths)
-            sense_strengths["vision"] = _lower_level(sense_strengths.get("vision"), NIGHT_VISION_STEPS) or "none"
+            sense_strengths["vision"] = _lower_level(sense_strengths.get("vision"), settings.night_vision_steps) or "none"
 
         # Extract target signals
         signals = _extract_signals(target_signals)
@@ -195,7 +230,7 @@ class PerceptionGate:
                 continue
 
             score = sense_strength * signal_strength * distance_factor * terrain_mod * (0.5 + alertness * 0.5)
-            if score >= _PERCEPTION_THRESHOLD:
+            if score >= settings.perception_threshold:
                 signals_used.append(signal_key)
                 if score > max_score:
                     max_score = score

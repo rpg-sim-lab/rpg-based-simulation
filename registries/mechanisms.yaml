@@ -1323,11 +1323,11 @@ mechanisms:
         decision 8). Its runtime reach is measured there; its effect is not.
   - id: sense_gated_detection
     layer: entity
-    summary: "A creature notices a neighbour only if it can sense it, using the senses its species has (derived at read from the shared resolver, not stored) and the signals the neighbour gives off; at night vision drops two levels unless the species has night vision. A body next to another (distance 1 or less) is always felt by touch."
+    summary: "A creature notices a neighbour only if it can sense it, using the senses its species has (derived at read from the shared resolver, not stored) and the signals the neighbour gives off; at night vision drops two levels unless the species has night vision. A body next to another (distance 1 or less) is always felt by touch. The gate's threshold, fall-off, night steps and size visibility are data (perception_settings.yaml, divergence 2.229): an ordinary observer sees a still small body to 13 Manhattan tiles by day and a still medium one to 6 at night; a still body is never heard or smelled."
     systems: [cognition]
     depends_on: []
     state: done
-    implemented_by: [src/world/perception/gate.py::PerceptionGate, src/content/sense_resolution.py::species_sense_profile, src/content/species_senses.py::require_species_sense_profile, src/engine/perception_signals.py::emitted_signals, src/engine/tile_distance.py::chebyshev_tile_distance, src/engine/checkpoint_senses.py::check_restored_body_senses, src/entities/checked_builder.py::species_builder]
+    implemented_by: [src/world/perception/gate.py::PerceptionGate, src/content/sense_resolution.py::species_sense_profile, src/content/species_senses.py::require_species_sense_profile, src/engine/perception_signals.py::emitted_signals, src/engine/tile_distance.py::chebyshev_tile_distance, src/engine/checkpoint_senses.py::check_restored_body_senses, src/entities/checked_builder.py::species_builder, src/content/perception_settings.py::perception_settings]
     verified:
       instrument: corpus_run
       verdict: observed

@@ -11,7 +11,8 @@ import pytest
 
 from src.content.repository import CatalogRepository
 from src.core.species import SenseProfileError
-from src.world.perception.gate import NIGHT_VISION_STEPS, PerceptionGate, _lower_level, _LEVEL_TO_FLOAT, _PERCEPTION_THRESHOLD
+from src.content.perception_settings import perception_settings
+from src.world.perception.gate import PerceptionGate, _lower_level, _LEVEL_TO_FLOAT
 from src.engine.perception_signals import emitted_signals
 
 NIGHT_SIGHTED_PROFILES = {"goblin_alert_senses", "predator_smell_senses", "spider_vibration_senses", "undead_dread_senses", "troll_senses"}
@@ -70,10 +71,12 @@ def test_species_with_no_resolvable_profile_is_a_typed_error(catalog):
 
 # --- signals follow the body --------------------------------------------------------------------------------------------------------
 
-@pytest.mark.parametrize("species_id,visibility", [("goblin", "low"), ("human", "medium"), ("troll", "high")])
-def test_visibility_follows_size(catalog, species_id, visibility):
+@pytest.mark.parametrize("species_id,size", [("goblin", "small"), ("human", "medium"), ("troll", "large")])
+def test_visibility_follows_size(catalog, species_id, size):
+    """Visibility is read from the size map in data (perception_settings.size_visibility; PERC 3a: small medium_high, medium high, large very_high)."""
     body = catalog.get_body_model(catalog.get_species(species_id).body_model)
-    assert emitted_signals(_body(species_id), body, TICK)["visibility"] == visibility
+    assert body.size == size
+    assert emitted_signals(_body(species_id), body, TICK)["visibility"] == perception_settings(catalog).size_visibility[size]
 
 
 def test_noise_and_vibration_follow_activity(catalog):
@@ -92,18 +95,21 @@ def test_scent_and_life_for_the_living_none_for_undead_and_spirit(catalog):
         assert sig["scent"] == "medium"
 
 
-def test_a_body_not_in_content_keeps_the_old_default_visibility():
-    assert emitted_signals(_body("fixture_species"), None, TICK)["visibility"] == "medium"
+def test_a_body_not_in_content_gives_off_the_medium_size_entry(catalog):
+    """An undeclared size gives off the medium entry of the size map (one value, in data), not a second default."""
+    assert emitted_signals(_body("fixture_species"), None, TICK, perception_settings(catalog).size_visibility)["visibility"] == perception_settings(catalog).undeclared_visibility == "high"
 
 
 # --- night: vision counts two levels lower unless the profile declares night vision -----------------------------------------------------
 
-def test_lower_level_steps_down_the_ladder_and_floors_at_none():
-    assert _lower_level("medium", NIGHT_VISION_STEPS) == "low"
-    assert _lower_level("high", NIGHT_VISION_STEPS) == "medium"
-    assert _lower_level("very_low", NIGHT_VISION_STEPS) == "none"
-    assert _lower_level("none", NIGHT_VISION_STEPS) == "none"
-    assert _lower_level(None, NIGHT_VISION_STEPS) is None
+def test_lower_level_steps_down_the_ladder_and_floors_at_none(catalog):
+    steps = perception_settings(catalog).night_vision_steps
+    assert steps == 2  # owner Q2(a): two levels, now a data value
+    assert _lower_level("medium", steps) == "low"
+    assert _lower_level("high", steps) == "medium"
+    assert _lower_level("very_low", steps) == "none"
+    assert _lower_level("none", steps) == "none"
+    assert _lower_level(None, steps) is None
 
 
 def test_night_hides_a_target_from_a_day_eyed_kind_but_not_from_a_night_sighted_one(catalog):
@@ -138,7 +144,7 @@ def test_no_perception_is_granted_below_the_threshold_on_a_grid(catalog):
                     res = gate.can_perceive(_body(species_id), {"visibility": level, "noise": level, "scent": level, "vibration": level},
                                             {"distance": distance, "night": night})
                     if res.perceived:
-                        assert res.confidence >= _PERCEPTION_THRESHOLD, (species_id, level, distance, night)
+                        assert res.confidence >= perception_settings(catalog).perception_threshold, (species_id, level, distance, night)
                     else:
                         assert res.confidence == 0.0
 
@@ -317,10 +323,11 @@ def test_a_still_medium_body_two_tiles_away_at_night_is_still_not_perceived(cata
 
 def test_touch_adds_no_score_to_a_by_day_vision_pair(catalog):
     gate = PerceptionGate(catalog)
+    fall = perception_settings(catalog).distance_falloff_per_tile  # the fall-off is data (PERC 3a), not a literal
     far = gate.can_perceive(_body("not_in_content_kind"), STILL_MEDIUM, {"distance": 2.0, "reach": 2.0})
-    assert far.signals_used == ["visibility"] and far.confidence == pytest.approx(0.6 * 0.6 * (1 - 0.02 * 2) * 0.75)
+    assert far.signals_used == ["visibility"] and far.confidence == pytest.approx(0.6 * 0.6 * (1 - fall * 2) * 0.75)
     near = gate.can_perceive(_body("not_in_content_kind"), STILL_MEDIUM, {"distance": 1.0, "reach": 1.0})
-    assert near.signals_used == ["visibility", "touch"] and near.confidence == pytest.approx(0.6 * 0.6 * (1 - 0.02) * 0.75)
+    assert near.signals_used == ["visibility", "touch"] and near.confidence == pytest.approx(0.6 * 0.6 * (1 - fall) * 0.75)
 
 
 def test_touch_is_felt_by_every_content_species(catalog):
@@ -345,7 +352,8 @@ def test_the_callers_hand_the_gate_the_chebyshev_reach():
 
     me = at(1, 0, 0)
     assert perceives(me, at(2, 1, 1), night=True, tick=None)  # the diagonal neighbour is touched
-    assert not perceives(me, at(3, 2, 0), night=True, tick=None)
+    # PERC 3a changed expectation (divergence 2.229, AC2): a still body two tiles away is now SEEN at night, so "not touched" is asserted beyond what the night gate reaches (a still medium body: 6 tiles)
+    assert not perceives(me, at(3, 8, 0), night=True, tick=None)
 
 
 def test_the_gate_error_path_is_unchanged_by_touch(catalog, caplog):
@@ -373,7 +381,7 @@ def test_a_context_without_reach_gets_no_touch_and_the_old_score(catalog):
     still_small = gate.can_perceive(_body("not_in_content_kind"), STILL_SMALL, {"distance": 1.0, "night": True})
     assert not still_small.perceived and still_small.signals_used == [] and still_small.confidence == 0.0
     medium_day = gate.can_perceive(_body("not_in_content_kind"), STILL_MEDIUM, {"distance": 1.0})
-    assert medium_day.signals_used == ["visibility"] and medium_day.confidence == pytest.approx(0.6 * 0.6 * (1 - 0.02) * 0.75)
+    assert medium_day.signals_used == ["visibility"] and medium_day.confidence == pytest.approx(0.6 * 0.6 * (1 - perception_settings(catalog).distance_falloff_per_tile) * 0.75)
     assert gate.can_perceive(_body("not_in_content_kind"), STILL_SMALL, {}).signals_used == []  # the default distance of 1.0 gives no touch either
 
 
