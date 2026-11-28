@@ -22,9 +22,9 @@ check, probe dir above.)
 Passes when (rpg-designer-ubuntu Read 2 (b), 2026-11-18): BirthService bears the newborn at due (G1), born + unplaced = the litter (G2), at life stage CHILD; then, for W+1 = 201 ticks after the
 birth, the newborn EITHER forms a group through the engine path (GroupSystem formation) OR stays ungrouped - both outcomes pass, and the test does NOT assert a join into the mother's existing group
 (no join-existing path has been seen: TCK-20261118-A-RECRUIT-OR-A-NEWBORN-NEVER-JOINS-AN-EXISTING-GROUP). In either case: no member has C3 (the newborn, and every member of the mother's group
-or of any group the newborn is in), and every group the newborn is in either dissolves through its typed dissolution or has no member with C1/C2 (births_measure_spy's detectors, imported unchanged).
+or of any group the newborn is in), and every group the newborn is in either dissolves through its typed dissolution or has no member with C1/C2 (``group_window_reader``'s detectors: C2 is folded into C1, see that module).
 A C3 is a BLOCK; a newborn C1/C2 in a group without a TYPED dissolution (dissolution_tick set) is a FINDING, and a newborn group that vanishes untyped is a FINDING.
-C3 is read from the kernel state every tick for each newborn and each watched id, independent of group membership (the spy only has rows for members of a live group, so an ungrouped newborn has none):
+C3 is read from the kernel state every tick for each newborn and each watched id, independent of group membership (the reader only has rows for members of a live group, so an ungrouped newborn has none):
 hunger >= STARVING_LINE or death by STARVATION is a BLOCK; each newborn must have >= 201 reads or a typed death (its cause is reported). The checker is a pure function (``violations``) positive-controlled below with planted rows.
 
 Natural-run in-group evidence is NOT this test: S9 cell 2 (s9-56dd071ea-002, urban_political s42 5000t) has the human CHILD 31 (mother 2) in 6 formation groups over 469 grouped ticks, no C1/C2/C3,
@@ -58,13 +58,11 @@ from src.engine.checkpoint import CanonicalStateHasher
 from src.engine.starvation import STARVING_LINE
 from src.systems.world_systems.generator import EntityGenerator
 from src.world import births
-from tools.rpg_measure import births_measure_spy
-from tools.rpg_measure.births_measure_spy import GroupSpy, hits_by_eid
+from tests.integration.world.group_window_reader import WINDOW, GroupWindowReader, hits_by_eid
 from tools.test_architecture.rpg_gate_run import build_kernel
 
 WORLD, SEED = "crowded_frontier", 42
 N_TICKS = 30  # due = set-up + N; a multiple of the 30-tick births check, <= 60
-WINDOW = births_measure_spy.WINDOW
 FIRST_SETUP_TICK, LAST_SETUP_TICK = 90, 270
 
 
@@ -148,7 +146,7 @@ def scenario():
     catalog = get_catalog()
     kernel = build_kernel(WORLD, SEED, "controlled_natural_path")
     facts = {}
-    spy = None
+    reader = GroupWindowReader()
     try:
         while kernel.state.tick < FIRST_SETUP_TICK:
             kernel.tick_once()
@@ -167,10 +165,11 @@ def scenario():
         applied = ApplyPath.apply_generation(state, update, state.tick, state.world_time)
         assert applied.entities[mother.id].lifecycle.pregnancy == pregnancy, "the applied PregnancyState equals the one births built, field for field"
         kernel._state = applied
-        spy = GroupSpy(applied).install()
         facts.update({"setup_tick": state.tick, "due": due, "mother": mother.id, "father": father.id, "group": group.id, "pick": [state.tick, group.id, mother.id, father.id], "litter": pregnancy.litter_size, "species": species_of(mother)})
         for _ in range(due - state.tick + 1):
+            prior = kernel.state
             kernel.tick_once()
+            reader.observe(prior, kernel.state)
         now = kernel.state
         newborn_ids = sorted(e.id for e in now.entities.values() if e.lifecycle.parent_a_entity_id == mother.id and e.id not in applied.entities)
         facts["newborn_ids"] = newborn_ids
@@ -182,8 +181,10 @@ def scenario():
         newborn_groups, grouped_ticks, needs = set(), 0, {}
         read_needs(needs, now, set(newborn_ids) | watched)
         while kernel.state.tick < due + WINDOW + 1:
+            prior = kernel.state
             kernel.tick_once()
             current = kernel.state
+            reader.observe(prior, current)
             read_needs(needs, current, set(newborn_ids) | watched)
             in_group = False
             for gid, g in current.groups.items():
@@ -193,20 +194,18 @@ def scenario():
                     in_group = True
             grouped_ticks += in_group
         final = kernel.state
-        hits = hits_by_eid(spy.rows)
+        hits = hits_by_eid(reader.rows)
         typed = {gid for gid in newborn_groups if gid in final.groups and getattr(final.groups[gid], "dissolution_tick", None) is not None}
         untyped_vanished = sorted(gid for gid in newborn_groups if gid not in final.groups)
-        reasons = {str(gid): spy.group_seen.get(gid, {}).get("dissolution_reason") for gid in sorted(typed)}
+        reasons = {str(gid): str(getattr(getattr(final.groups[gid], "dissolution_reason", None), "value", getattr(final.groups[gid], "dissolution_reason", None))) for gid in sorted(typed)}
         facts.update({
             "outcome": "formed_group" if newborn_groups else "ungrouped", "newborn_groups": sorted(newborn_groups), "grouped_ticks": grouped_ticks, "typed_dissolved_groups": sorted(typed), "dissolution_reasons": reasons, "untyped_vanished_groups": untyped_vanished,
             "needs": {str(k): v for k, v in sorted(needs.items())}, "watched_reads": {str(k): needs[k]["reads"] for k in sorted(watched)},
-            "watched": sorted(watched), "rows_members": sorted(spy.rows), "row_count": sum(len(r) for r in spy.rows.values()), "ticks_after_birth": final.tick - due,
+            "watched": sorted(watched), "rows_members": sorted(reader.rows), "row_count": sum(len(r) for r in reader.rows.values()), "ticks_after_birth": final.tick - due,
             "hits": {str(k): sorted(v) for k, v in hits.items()}, "final_hash": CanonicalStateHasher.get_hash(final), "final_tick": final.tick,
             "_hits": hits, "_newborn_ids": set(newborn_ids), "_watched": watched, "_newborn_groups": newborn_groups, "_dissolved": typed, "_needs": needs,
         })
     finally:
-        if spy is not None:
-            spy.restore()
         kernel.shutdown()
     return facts
 
@@ -215,7 +214,7 @@ def test_the_engine_bears_the_newborn_and_it_forms_a_group_or_stays_ungrouped_wi
     facts = scenario()
     assert facts["ticks_after_birth"] >= WINDOW + 1
     assert facts["outcome"] in ("formed_group", "ungrouped")
-    assert facts["row_count"] > 0, "the spy recorded no member rows: the checker would pass vacuously"
+    assert facts["row_count"] > 0, "the reader recorded no member rows: the checker would pass vacuously"
     bad = violations(facts["_hits"], facts["_newborn_ids"], facts["_watched"], facts["_newborn_groups"], facts["_dissolved"])
     assert not bad, f"{bad}: {facts['hits']}"
     assert not facts["untyped_vanished_groups"], f"FINDING: a newborn group vanished without a typed dissolution: {facts['untyped_vanished_groups']}"
