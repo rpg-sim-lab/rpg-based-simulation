@@ -73,17 +73,22 @@ def test_a_wolf_walks_to_a_still_small_prey_at_three_tiles_by_scent(world):
     assert update.navigation is not None and update.navigation.target_set is not None, f"must walk toward the prey; got {payload}"
 
 
-def test_a_human_hunter_does_not_perceive_a_still_small_prey_at_three_tiles(world):
-    """PERC-02a law (rpg-designer, owner-approved #715 6966454372): a still small body is perceived only by touch (distance 1 or less) or by a strong enough sense, so a human
-    hunter does not find still small prey three tiles away: not perceived, not chosen, no walk toward it."""
+def test_a_human_hunter_perceives_a_still_small_prey_at_three_tiles_by_day_but_not_at_fourteen_or_at_night(world):
+    """PERC 3a changed expectation (divergence 2.229, AC1/AC2; WITH THE OWNER; it reverses the PERC-02a law of #715 6966454372 that a still small body is perceived only by touch or a strong enough sense):
+    an ordinary observer sees a still small body by day out to 13 tiles and at night only to 2. So a human hunter finds a still small prey at three tiles by day, not at fourteen, and not at three by night.
+    The moving-prey rows (a prey that just stepped is heard) are unchanged."""
     from src.engine.behavior_consumers import get_entity_signals, get_perception_gate
-    payload, update, hunter, prey, ents = _decide(world, "human", prey_dx=3.0, project=None, check_prey=False)      # no hunt project: nothing names the prey (a held project walks to its named target lawfully, #715 6967398421)
     state_tick = world.tick + 1
-    gate = get_perception_gate().can_perceive(hunter, get_entity_signals(prey, state_tick), {"distance": 3.0, "reach": 3.0, "night": False})
-    assert gate.perceived is False and gate.signals_used == []
-    assert relation(hunter, prey, night=False, tick=state_tick) is Relation.NONE
-    assert payload.get("target_id") != prey.id, f"a still small prey at 3 tiles is not found; got {payload}"
-    assert update.navigation is None or update.navigation.target_set is None, f"a still small prey at 3 tiles is not walked to; got {payload}"
+    _, _, hunter, prey, _ = _decide(world, "human", prey_dx=3.0, project=None, check_prey=False)
+    gate = get_perception_gate()
+    day3 = gate.can_perceive(hunter, get_entity_signals(prey, state_tick), {"distance": 3.0, "reach": 3.0, "night": False})
+    assert day3.perceived is True and day3.signals_used == ["visibility"]
+    assert relation(hunter, prey, night=False, tick=state_tick) is Relation.PREDATION
+    day14 = gate.can_perceive(hunter, get_entity_signals(prey, state_tick), {"distance": 14.0, "reach": 14.0, "night": False})
+    assert day14.perceived is False and day14.signals_used == []
+    night3 = gate.can_perceive(hunter, get_entity_signals(prey, state_tick), {"distance": 3.0, "reach": 3.0, "night": True})
+    assert night3.perceived is False and night3.signals_used == []
+    assert relation(hunter, prey, night=True, tick=state_tick) is Relation.NONE
 
 
 @pytest.mark.parametrize("sp", HUNTERS)

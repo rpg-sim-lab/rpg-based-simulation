@@ -161,3 +161,28 @@ def test_an_attack_intent_routed_through_the_action_phase_is_judged_by_the_state
     """The routed context is a clocked AuthoritativeState (a clockless one would raise): the same attack is refused on the relation at night and passes that step by day."""
     assert ReasonCode.FRIENDLY_FIRE_ILLEGAL.value in _routed_reasons(world, NIGHT_WORLD_TIME, dx=NIGHT_DX)
     assert ReasonCode.FRIENDLY_FIRE_ILLEGAL.value not in _routed_reasons(world, DAY_WORLD_TIME)
+
+
+# --- PERC 3a changed expectations (divergence 2.229, AC2; WITH THE OWNER): at two tiles a still medium body IS seen at night, so the pair sees each other and only the range stops the strike ------------------
+
+def test_at_two_tiles_by_night_the_decision_and_the_legality_both_see_the_pair(world):
+    state, hunter, prey = _pair(world, NIGHT_WORLD_TIME, dx=2.0)
+    assert perceived_hostile(hunter, prey, night=True, tick=state.tick) is True
+    legal, reason = LegalityServiceV2.verify_attack_legality(hunter, prey, state)
+    assert reason is not ReasonCode.FRIENDLY_FIRE_ILLEGAL and reason is ReasonCode.OUT_OF_RANGE  # seen, so refused only for range
+
+
+def test_at_two_tiles_by_night_a_context_given_night_reaches_out_of_range_not_the_relation_refusal(world):
+    state, hunter, prey = _pair(world, NIGHT_WORLD_TIME, dx=2.0)
+    legal, reason = LegalityServiceV2.verify_attack_legality(hunter, prey, state, night=True)
+    assert reason is ReasonCode.OUT_OF_RANGE
+
+
+def test_a_night_kill_of_a_target_seen_at_two_tiles_is_a_feeding_kill(world):
+    state, hunter, prey = _pair(world, NIGHT_WORLD_TIME, dx=2.0)
+    assert is_feeding_kill(state, hunter.id, prey) is True
+
+
+def test_an_attack_routed_at_two_tiles_by_night_is_refused_for_range_only(world):
+    reasons = _routed_reasons(world, NIGHT_WORLD_TIME, dx=2.0)
+    assert ReasonCode.FRIENDLY_FIRE_ILLEGAL.value not in reasons and ReasonCode.OUT_OF_RANGE.value in reasons
