@@ -7996,6 +7996,22 @@
   - content
   last_verified: '2026-10-09'
 - type: ticket
+  path: agent-working/tickets/done/TCK-20261128-AN-ORDINARY-OBSERVER-CANNOT-SEE-A-STILL-SMALL-BODY-OR-A-MEDIUM-ONE-AT-NIGHT.md
+  ticket_id: TCK-20261128-AN-ORDINARY-OBSERVER-CANNOT-SEE-A-STILL-SMALL-BODY-OR-A-MEDIUM-ONE-AT-NIGHT
+  title: 'An ordinary observer can''t see a still small body at any distance, or a
+    still medium one at night beyond touch: calibrate the perception gate (PERC 3a).'
+  tier: standard
+  ticket_type: bug
+  date: '2026-11-28'
+  related_code_areas:
+  - src/world/perception/gate.py, perception_signals, src/engine/appraisal.py (perceives)
+  artifact_files:
+  - agent-working/stored_artifacts/TCK-20261128-AN-ORDINARY-OBSERVER-CANNOT-SEE-A-STILL-SMALL-BODY-OR-A-MEDIUM-ONE-AT-NIGHT/investigation.md
+  - agent-working/stored_artifacts/TCK-20261128-AN-ORDINARY-OBSERVER-CANNOT-SEE-A-STILL-SMALL-BODY-OR-A-MEDIUM-ONE-AT-NIGHT/plan.md
+  - agent-working/stored_artifacts/TCK-20261128-AN-ORDINARY-OBSERVER-CANNOT-SEE-A-STILL-SMALL-BODY-OR-A-MEDIUM-ONE-AT-NIGHT/test_plan.md
+  tags:
+  - cognition
+- type: ticket
   path: agent-working/tickets/todos/TCK-20261126-RENAME-THE-TEST-PHASE-N-FILES-TO-NAMES-THAT-SAY-WHAT-THEY-TEST.md
   ticket_id: TCK-20261126-RENAME-THE-TEST-PHASE-N-FILES-TO-NAMES-THAT-SAY-WHAT-THEY-TEST
   title: Rename the `test_phase<N>_*` files (and the other bare-code file names) to
