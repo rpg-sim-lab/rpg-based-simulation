@@ -1,0 +1,97 @@
+{
+ "kit": "perception_gate_calibration",
+ "version": 1,
+ "files": [
+  {
+   "path": "tools/rpg_measure/perception_gate_calibration_spy.py",
+   "sha256": "f4602045635190e6add78bf6a29ea2ba75d361b1fadd4bd4988475033def2e23"
+  },
+  {
+   "path": "tools/rpg_measure/perception_gate_calibration_logic.py",
+   "sha256": "604edf74cafeb1d08609f6067bc8fc75dd422a266a87287584549bb8cd2396fd"
+  },
+  {
+   "path": "tools/rpg_measure/perception_gate_calibration_summary.py",
+   "sha256": "318348da5ac7cbe12d78ed5a90fba6bcc889d5fef3662417ca02e8eae4386405"
+  },
+  {
+   "path": "tools/rpg_measure/perception_gate_calibration_launch.sh",
+   "sha256": "7827170ed97495c52748c075524620c7bc2149c4fff839ebe54db74a136f8ff7",
+   "role": "runner"
+  }
+ ],
+ "processes": [
+  {
+   "name": "spy",
+   "entry": [
+    "{python}",
+    "-I",
+    "{file:tools/rpg_measure/perception_gate_calibration_spy.py}",
+    "{world}",
+    "{seed}",
+    "{ticks}",
+    "{out}",
+    "--mode",
+    "spy"
+   ],
+   "env": {
+    "PYTHONHASHSEED": "0",
+    "SIM_OBS_MODE": "OFF",
+    "RPG_OBS_MODE": "OFF"
+   },
+   "heavy": true,
+   "import_files": [
+    "tools/rpg_measure/perception_gate_calibration_spy.py"
+   ],
+   "fixture": {
+    "world": "frontier_living_world",
+    "seed": 42,
+    "ticks": 10
+   },
+   "output": {
+    "fields": [
+     {
+      "path": "gate_calls",
+      "may_be_constant": false
+     },
+     {
+      "path": "apply_calls",
+      "may_be_constant": false
+     },
+     {
+      "path": "final_hash",
+      "may_be_constant": false
+     },
+     {
+      "path": "vision_still_small_day",
+      "may_be_constant": true
+     },
+     {
+      "path": "hunts_started",
+      "may_be_constant": true
+     }
+    ]
+   },
+   "guards": {
+    "ok_regex": "PERCEPTION CALIBRATION CELL OK",
+    "bad_regex": "CELL VOID"
+   },
+   "hooks": [
+    {
+     "name": "gate_wrap",
+     "count_path": "gate_calls"
+    },
+    {
+     "name": "apply_wrap",
+     "count_path": "apply_calls"
+    }
+   ],
+   "wraps": [
+    {
+     "target": "src.world.perception.gate:PerceptionGate.can_perceive",
+     "wrapper": "tools/rpg_measure/perception_gate_calibration_spy.py:CalibrationSpy.install"
+    }
+   ]
+  }
+ ]
+}
