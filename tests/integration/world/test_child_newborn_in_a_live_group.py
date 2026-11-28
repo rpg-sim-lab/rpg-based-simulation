@@ -7,6 +7,7 @@ cohesion services, with the detectors of ``group_window_reader`` (state-read: no
 Asserted: no C3 for any member; and the evaluation TERMINATES within the test's ticks, either the group dissolves through its typed dissolution, or every member makes progress inside every
 W-tick window, so no member has C1 or C2. Deterministic: urban_political seed 42 under the pinned kernel (audit_mode, sequential executor)."""
 import dataclasses
+from types import SimpleNamespace
 
 from src.core.state import LifeStage
 from tests.integration.world.group_window_reader import WINDOW, GroupWindowReader, hits_by_eid
@@ -50,3 +51,25 @@ def test_a_child_newborn_in_a_live_group_runs_w_plus_one_ticks_with_no_c3_and_th
     dissolved = record is None or getattr(record, "dissolution_tick", None) is not None
     members_with_stuck = [eid for eid, found in hits.items() if "C1" in found]
     assert dissolved or not members_with_stuck, f"the group neither dissolved nor kept every member progressing: {hits}"
+
+
+def _body(hunger, record=None):
+    return SimpleNamespace(
+        strategic=SimpleNamespace(current_objective_id=None, current_project_id=None), interaction=SimpleNamespace(kind=None, target_node_id=None),
+        inventory=SimpleNamespace(gold=0, items=[]), navigation=SimpleNamespace(position=(0.0, 0.0)), biological=SimpleNamespace(hunger=hunger),
+        lifecycle=SimpleNamespace(death_record=record),
+    )
+
+
+def test_the_reader_reads_a_death_by_starvation_without_comparing_ticks():
+    """The death record carries the pre-apply tick and the observed state is one tick later, so the reader compares the body before and after the tick, not the ticks."""
+    group = SimpleNamespace(member_ids=[7], dissolution_tick=None)
+    record = SimpleNamespace(tick=41, cause=SimpleNamespace(value="STARVATION"))
+    other = SimpleNamespace(tick=41, cause=SimpleNamespace(value="OLD_AGE"))
+    for dead, expected in ((record, True), (other, False), (None, False)):
+        reader = GroupWindowReader()
+        reader.observe(SimpleNamespace(entities={7: _body(0.1)}, groups={1: group}, tick=41), SimpleNamespace(entities={7: _body(0.1, dead)}, groups={1: group}, tick=42))
+        assert reader.rows[7][0]["starved"] is expected
+    already = GroupWindowReader()  # a body that was already dead before the tick is not a new death
+    already.observe(SimpleNamespace(entities={7: _body(0.1, record)}, groups={1: group}, tick=41), SimpleNamespace(entities={7: _body(0.1, record)}, groups={1: group}, tick=42))
+    assert already.rows[7][0]["starved"] is False

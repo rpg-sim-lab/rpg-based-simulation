@@ -3,7 +3,9 @@
 Test support for the two newborn-in-a-group integration tests. It keeps the window and the C1 (stuck) / C3 (needs) definitions those tests were written against, with one stated difference: progress is
 read from the STATE before and after each tick, not from the applied update. Progress here = a goal change, a task change, a moved position, a drop in hunger, or a change in the carried items or gold.
 C2 (the same failing action repeated) is not read: it needs the applied intent results, and every C2 run is also a C1 run (C2 requires no progress), so a window with no C1 has no C2 either.
-A member that only fights in place and changes none of the above reads as stuck, which is the stricter side."""
+A member that only fights in place and changes none of the above reads as stuck, which is the stricter side.
+The carried-items/gold-as-progress reading must be revisited if a passive transfer path (sharing, theft, tax) is ever added: a transfer would then count as the receiver's progress.
+A death by starvation is read tick-independently: the body had no death record before the tick and has a STARVATION record after it (the record carries the pre-apply tick, the observed state is one tick later)."""
 from collections import defaultdict
 from typing import Any, Dict, List
 
@@ -43,11 +45,12 @@ class GroupWindowReader:
                 if body is None or before is None:
                     continue
                 record = body.lifecycle.death_record
+                cause = None if record is None else getattr(record.cause, "value", str(record.cause))
                 self.rows[eid].append({
                     "tick": state.tick, "group": gid, "goal_changed": _goal(body) != _goal(before), "task_changed": _task(body) != _task(before),
                     "moved": tuple(body.navigation.position) != tuple(before.navigation.position),
                     "completed": int(_carried(body) != _carried(before)), "consumed": body.biological.hunger < before.biological.hunger, "attacked": False, "failed": [],
-                    "hunger": body.biological.hunger, "starved": record is not None and record.tick == state.tick and getattr(record.cause, "value", str(record.cause)) == "STARVATION",
+                    "hunger": body.biological.hunger, "starved": record is not None and before.lifecycle.death_record is None and cause == "STARVATION",
                 })
 
 
